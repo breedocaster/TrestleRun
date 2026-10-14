@@ -6,6 +6,7 @@ const Title := preload("res://scripts/screens/title_screen.gd")
 const Levels := preload("res://scripts/screens/level_select.gd")
 const Garage := preload("res://scripts/screens/garage.gd")
 const GameScreen := preload("res://scripts/screens/game_screen.gd")
+const Credits := preload("res://scripts/screens/credits.gd")
 
 var current: Node
 
@@ -16,6 +17,12 @@ func _ready() -> void:
 	for a in args:
 		if a == "--verify":
 			add_child(load("res://scripts/dev/verify.gd").new())
+			return
+		if a.begins_with("--demo="):
+			var d = load("res://scripts/dev/demo.gd").new()
+			d.main = self
+			d.spec = a.substr(7)
+			add_child(d)
 			return
 		if a == "--physics-report":
 			add_child(load("res://scripts/dev/physics_report.gd").new())
@@ -45,9 +52,14 @@ func navigate(target: String, arg: String) -> void:
 		"game":
 			n = GameScreen.new()
 			n.setup(arg)
+		"credits":
+			n = Credits.new()
 		_:
 			n = Title.new()
 	if current:
+		# Detach first so the old screen's _exit_tree (audio cleanup) runs before
+		# the new screen's _ready, e.g. on RETRY / NEXT.
+		remove_child(current)
 		current.queue_free()
 	current = n
 	n.navigate.connect(navigate)

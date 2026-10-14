@@ -60,6 +60,10 @@ func _ready() -> void:
 			if parts.size() > 1:
 				main.current._tabs[parts[1]].button_pressed = true
 				main.current._set_tab(parts[1])
+		"settings":
+			main.navigate("title", "")
+			await get_tree().process_frame
+			main.current._open_settings()
 		"setup":
 			main.navigate("levels", "")
 			await get_tree().process_frame

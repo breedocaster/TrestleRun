@@ -142,6 +142,8 @@ func _tile(it: Dictionary) -> Control:
 
 func _equip(id: String) -> void:
 	GameState.equip(tab, id)
+	if tab == "bike":
+		AudioDirector.preview_engine(id)
 	_build()
 
 
@@ -151,7 +153,10 @@ func _try_buy(id: String) -> void:
 		_build()
 		return
 	_confirm = ""
-	GameState.buy(tab, id)
+	if GameState.buy(tab, id):
+		AudioDirector.play("purchase")
+		if tab == "bike":
+			AudioDirector.preview_engine(id)
 	_build()
 
 

@@ -11,10 +11,13 @@ const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const Widgets := preload("res://scripts/ui/widgets.gd")
 const Catalog := preload("res://scripts/catalog.gd")
 const WeatherFX := preload("res://scripts/game/weather_fx.gd")
+const Phys := preload("res://scripts/game/bike_physics.gd")
+const Depth := preload("res://scripts/game/depth.gd")
 
 var level_id := ""
 var world: Node2D
 var backdrop: Node2D
+var depth: Node
 var hud: Control
 var _overlay_layer: CanvasLayer
 var _overlay: Control
@@ -39,6 +42,17 @@ func _ready() -> void:
 	backdrop.theme_index = world.level.theme
 	backdrop.time_mode = String(cond.time)
 	backdrop.weather = String(cond.weather)
+	AudioDirector.set_context("game")
+	AudioDirector.set_ambience(String(cond.time), String(cond.weather), level_id)
+	AudioDirector.engine_start(GameState.equipped("bike"))
+
+	depth = Depth.new()
+	depth.theme_index = world.level.theme
+	depth.time_mode = String(cond.time)
+	depth.weather = String(cond.weather)
+	depth.level_id = level_id
+	add_child(depth)
+	depth.attach(self, backdrop)
 
 	var fl := CanvasLayer.new()
 	fl.layer = 2
@@ -68,6 +82,19 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if world.cam:
 		backdrop.cam = world.cam.position
+	if world.cam:
+		depth.cam = world.cam.position
+	depth.speed = float(world.state.vx) if world.phase == "ride" or world.phase == "done" else 0.0
+	if world.level.get("wind", 0.0) > 0.0:
+		var gust: float = Phys.wind_at(world.level, world.state.t) / Phys.WIND_PEAK
+		depth.gust = gust
+		AudioDirector.wind_gust(gust)
+
+
+func _exit_tree() -> void:
+	AudioDirector.engine_stop(0.4)
+	AudioDirector.clear_ambience()
+	AudioDirector.set_context("menu")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -106,7 +133,12 @@ func pause() -> void:
 	var q := Kit.button("QUIT TO TRAILS", 150)
 	q.pressed.connect(func(): _go("levels", ""))
 	for b in [r, rs, q]:
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(b)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 2)
+	col.add_child(gap)
+	col.add_child(Widgets.audio_sliders())
 	_show_overlay(col)
 
 

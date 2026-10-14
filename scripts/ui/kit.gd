@@ -16,11 +16,13 @@ static func label(text: String, size := 8, color := UITheme.CREAM, align := HORI
 	return l
 
 
-static func button(text: String, min_w := 0, min_h := 28) -> Button:
+static func button(text: String, min_w := 0, min_h := 28, sound := "tap") -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(min_w, min_h)
 	b.focus_mode = Control.FOCUS_NONE
+	if sound != "":
+		b.pressed.connect(func(): AudioDirector.play(sound))
 	return b
 
 

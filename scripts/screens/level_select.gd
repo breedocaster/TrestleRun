@@ -104,7 +104,8 @@ func _try_unlock(id: String) -> void:
 		_build_cards()
 		return
 	_confirm = ""
-	GameState.buy_level(id)
+	if GameState.buy_level(id):
+		AudioDirector.play("purchase")
 	_build_cards()
 
 

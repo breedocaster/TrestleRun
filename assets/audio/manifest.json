@@ -1,0 +1,315 @@
+{
+ "ambience/creek.ogg": {
+  "kb": 363.7,
+  "loop": true,
+  "lufs": -36.0,
+  "peak_db": -13.3,
+  "seam_score": 0.001,
+  "seconds": 36.0,
+  "start": 42.5
+ },
+ "ambience/day_birds.ogg": {
+  "kb": 395.4,
+  "loop": true,
+  "lufs": -33.0,
+  "peak_db": -17.0,
+  "seam_score": 0.086,
+  "seconds": 48.0,
+  "start": 58.0
+ },
+ "ambience/night_crickets.ogg": {
+  "kb": 305.2,
+  "loop": true,
+  "lufs": -34.0,
+  "peak_db": -20.5,
+  "seam_score": 0.006,
+  "seconds": 42.0,
+  "start": 3.5
+ },
+ "ambience/rain.ogg": {
+  "kb": 380.7,
+  "loop": true,
+  "lufs": -28.0,
+  "peak_db": -3.5,
+  "seam_score": 0.004,
+  "seconds": 44.0,
+  "start": 41.0
+ },
+ "ambience/wind.ogg": {
+  "kb": 85.8,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -13.7,
+  "seam_score": 0.421,
+  "seconds": 10.34,
+  "start": 1.0
+ },
+ "engines/cafe_cruise.ogg": {
+  "cycles": 187,
+  "fire_hz": 140.0,
+  "kb": 35.0,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -11.8,
+  "rpm": 5600,
+  "seconds": 4.007
+ },
+ "engines/cafe_idle.ogg": {
+  "cycles": 38,
+  "fire_hz": 28.8,
+  "kb": 41.9,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -10.0,
+  "rpm": 1150,
+  "seconds": 3.965
+ },
+ "engines/chopper_cruise.ogg": {
+  "cycles": 83,
+  "fire_hz": 41.7,
+  "kb": 35.3,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -9.1,
+  "rpm": 2500,
+  "seconds": 3.984
+ },
+ "engines/chopper_idle.ogg": {
+  "cycles": 32,
+  "fire_hz": 15.8,
+  "kb": 43.6,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -9.6,
+  "rpm": 950,
+  "seconds": 4.042
+ },
+ "engines/dirt_cruise.ogg": {
+  "cycles": 213,
+  "fire_hz": 53.3,
+  "kb": 61.3,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -9.1,
+  "rpm": 6400,
+  "seconds": 3.994
+ },
+ "engines/dirt_idle.ogg": {
+  "cycles": 58,
+  "fire_hz": 14.6,
+  "kb": 42.6,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -7.6,
+  "rpm": 1750,
+  "seconds": 3.977
+ },
+ "engines/minibike_cruise.ogg": {
+  "cycles": 140,
+  "fire_hz": 35.0,
+  "kb": 59.1,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -5.1,
+  "rpm": 4200,
+  "seconds": 4.0
+ },
+ "engines/minibike_idle.ogg": {
+  "cycles": 60,
+  "fire_hz": 15.0,
+  "kb": 37.0,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -5.5,
+  "rpm": 1800,
+  "seconds": 4.0
+ },
+ "engines/scooter_cruise.ogg": {
+  "cycles": 493,
+  "fire_hz": 123.3,
+  "kb": 32.9,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -12.7,
+  "rpm": 7400,
+  "seconds": 3.997
+ },
+ "engines/scooter_idle.ogg": {
+  "cycles": 127,
+  "fire_hz": 31.7,
+  "kb": 39.7,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -10.5,
+  "rpm": 1900,
+  "seconds": 4.011
+ },
+ "engines/scrambler_cruise.ogg": {
+  "cycles": 143,
+  "fire_hz": 71.7,
+  "kb": 35.1,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -10.4,
+  "rpm": 4300,
+  "seconds": 3.991
+ },
+ "engines/scrambler_idle.ogg": {
+  "cycles": 38,
+  "fire_hz": 19.2,
+  "kb": 43.6,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -9.8,
+  "rpm": 1150,
+  "seconds": 3.965
+ },
+ "engines/sport_cruise.ogg": {
+  "cycles": 253,
+  "fire_hz": 253.3,
+  "kb": 36.4,
+  "loop": true,
+  "lufs": -20.0,
+  "peak_db": -8.9,
+  "rpm": 7600,
+  "seconds": 3.995
+ },
+ "engines/sport_idle.ogg": {
+  "cycles": 43,
+  "fire_hz": 43.3,
+  "kb": 53.2,
+  "loop": true,
+  "lufs": -24.0,
+  "peak_db": -8.2,
+  "rpm": 1300,
+  "seconds": 3.969
+ },
+ "music/trestle_dreams.ogg": {
+  "bars": 32,
+  "bpm": 78.0,
+  "kb": 1468.6,
+  "loop": true,
+  "lufs": -16.0,
+  "peak_db": -4.6,
+  "seconds": 98.462
+ },
+ "sfx/bag.ogg": {
+  "kb": 28.0,
+  "loop": false,
+  "lufs": -20.0,
+  "peak_db": -9.2,
+  "seconds": 2.2
+ },
+ "sfx/checkpoint.ogg": {
+  "kb": 25.7,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -12.9,
+  "seconds": 2.4
+ },
+ "sfx/coin.ogg": {
+  "kb": 15.5,
+  "loop": false,
+  "lufs": -22.0,
+  "peak_db": -14.6,
+  "seconds": 1.5
+ },
+ "sfx/crash.ogg": {
+  "kb": 40.8,
+  "loop": false,
+  "lufs": -19.0,
+  "peak_db": -7.4,
+  "seconds": 3.4
+ },
+ "sfx/deck_roll.ogg": {
+  "kb": 32.0,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -11.8,
+  "seconds": 4.0
+ },
+ "sfx/deny.ogg": {
+  "kb": 13.7,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -11.4,
+  "seconds": 0.8
+ },
+ "sfx/finish.ogg": {
+  "kb": 66.5,
+  "loop": false,
+  "lufs": -17.0,
+  "peak_db": -7.6,
+  "seconds": 5.5
+ },
+ "sfx/gear.ogg": {
+  "kb": 49.8,
+  "loop": false,
+  "lufs": -19.0,
+  "peak_db": -8.3,
+  "seconds": 3.6
+ },
+ "sfx/jump.ogg": {
+  "kb": 11.7,
+  "loop": false,
+  "lufs": -27.0,
+  "peak_db": -14.7,
+  "seconds": 0.75
+ },
+ "sfx/land.ogg": {
+  "kb": 13.7,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -6.5,
+  "seconds": 0.8
+ },
+ "sfx/purchase.ogg": {
+  "kb": 31.0,
+  "loop": false,
+  "lufs": -20.0,
+  "peak_db": -8.9,
+  "seconds": 2.2
+ },
+ "sfx/splash.ogg": {
+  "kb": 17.2,
+  "loop": false,
+  "lufs": -27.0,
+  "peak_db": -15.9,
+  "seconds": 1.0
+ },
+ "sfx/stomp.ogg": {
+  "kb": 17.0,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -5.2,
+  "seconds": 1.0
+ },
+ "sfx/tap.ogg": {
+  "kb": 7.5,
+  "loop": false,
+  "lufs": -26.0,
+  "peak_db": -3.4,
+  "seconds": 0.247
+ },
+ "sfx/thunder.ogg": {
+  "kb": 61.5,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -7.3,
+  "seconds": 5.5
+ },
+ "sfx/toggle.ogg": {
+  "kb": 6.8,
+  "loop": false,
+  "lufs": -28.0,
+  "peak_db": -9.3,
+  "seconds": 0.168
+ },
+ "sfx/train_horn.ogg": {
+  "kb": 65.7,
+  "loop": false,
+  "lufs": -24.9,
+  "peak_db": -15.2,
+  "seconds": 6.2
+ }
+}

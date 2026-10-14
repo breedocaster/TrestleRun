@@ -74,6 +74,27 @@ func loadout() -> Dictionary:
 	return {"rider": equipped("rider"), "bike": equipped("bike"), "paint": equipped("paint")}
 
 
+# --- settings --------------------------------------------------------------
+
+## "music" / "sound" volume, 0..1.
+func volume(key: String) -> float:
+	return clampf(float((data.get("settings", {}) as Dictionary).get(key, 1.0)), 0.0, 1.0)
+
+
+## Live while dragging; pass save=false and call save_settings() on release.
+func set_volume(key: String, v: float, save := true) -> void:
+	if not data.has("settings"):
+		data.settings = {"music": 1.0, "sound": 1.0}
+	data.settings[key] = clampf(v, 0.0, 1.0)
+	AudioDirector.apply_settings()
+	if save:
+		save_game()
+
+
+func save_settings() -> void:
+	save_game()
+
+
 # --- ride conditions -------------------------------------------------------
 
 func conditions() -> Dictionary:
@@ -161,6 +182,7 @@ func _defaults() -> Dictionary:
 		"levels_unlocked": [Catalog.levels()[0].id],
 		"levels": {},
 		"conditions": {"time": "dusk", "weather": "clear"},
+		"settings": {"music": 1.0, "sound": 1.0},
 	}
 
 
@@ -183,6 +205,11 @@ func load_game() -> void:
 		data.paint = parsed.get("skin", "stock")
 		data.erase("skins_owned")
 		data.erase("skin")
+	# 0.3.0 stored on/off switches; sliders want 0..1.
+	for k in ["music", "sound"]:
+		var v = (data.settings as Dictionary).get(k, 1.0)
+		if typeof(v) == TYPE_BOOL:
+			data.settings[k] = 1.0 if v else 0.0
 	data.version = SAVE_VERSION
 	data.money = int(data.money)
 

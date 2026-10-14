@@ -11,6 +11,8 @@ const Backdrop := preload("res://scripts/game/backdrop.gd")
 const Icons := preload("res://scripts/game/icons.gd")
 const Catalog := preload("res://scripts/catalog.gd")
 
+const SWOOP_SETTLE := 190.0
+const SWOOP_RANGE := 170.0
 const READY_TICKS := 54
 const RESPAWN_TICKS := 36
 const CRASH_TICKS := 80
@@ -108,6 +110,8 @@ func _process(delta: float) -> void:
 		tick()
 	_vis_t += delta
 	_sync_visuals()
+	if phase == "ride" or phase == "done" or phase == "ready":
+		AudioDirector.engine_update(delta, state.grounded, float(state.vx) / float(level.speed))
 	queue_redraw()
 
 
@@ -121,6 +125,8 @@ func tick() -> void:
 				phase = "ride"
 				phase_ticks = 0
 				first_ready = false
+				if not headless:
+					AudioDirector.engine_ride()
 		"ride":
 			_ride_tick()
 		"crash":
@@ -154,11 +160,14 @@ func _ride_tick() -> void:
 	var ev := Phys.step(level, state, pressed, h)
 	if ev & Phys.EV_JUMP:
 		_puff(Vector2(state.x - 6, state.y), 5, Color(theme.deck_hi, 0.9))
+		_sfx("jump", randf_range(0.94, 1.06))
 	if ev & Phys.EV_LAND:
 		_squash = 1.0
 		_puff(Vector2(state.x, state.y), 6, Color(theme.deck_hi, 0.9))
+		_sfx("land", randf_range(0.92, 1.05))
 		if level.rain:
 			_splash(Vector2(state.x, state.y))
+			_sfx("splash", randf_range(0.9, 1.1), -2.0)
 	if ev & Phys.EV_STOMP:
 		_on_stomp()
 	if ev & Phys.EV_DEAD:
@@ -170,11 +179,15 @@ func _ride_tick() -> void:
 		_snapshot(c.x, c.track)
 		_next_cp += 1
 		_float(Vector2(c.x, state.y - 34), "CHECKPOINT", Color("8ff0a4"))
+		_sfx("checkpoint")
 	if state.x >= level.finish_x:
 		phase = "done"
 		phase_ticks = 0
 		_float(Vector2(state.x + 20, state.y - 40), "FINISH!", Color("fff1a8"))
 		_vibrate(40)
+		_sfx("finish")
+		if not headless:
+			AudioDirector.engine_coast()
 
 
 func _on_stomp() -> void:
@@ -188,6 +201,7 @@ func _on_stomp() -> void:
 	_float(e.squash_pos + Vector2(0, -16), "+%d" % Catalog.STOMP_COINS, Icons.GOLD)
 	_puff(e.squash_pos, 8, Color("fff1a8"))
 	_vibrate(25)
+	_sfx("stomp", randf_range(0.95, 1.05))
 
 
 func _collect() -> void:
@@ -209,15 +223,19 @@ func _collect() -> void:
 			Library.P_COIN:
 				run_coins += 1
 				_puff(p.pos, 3, Icons.GOLD_LIGHT)
+				if not headless:
+					AudioDirector.coin()
 			Library.P_BAG:
 				run_coins += int(p.value)
 				_float(p.pos + Vector2(0, -10), "+%d" % int(p.value), Icons.GOLD)
 				_puff(p.pos, 8, Icons.GOLD)
+				_sfx("bag")
 			Library.P_GEAR:
 				gears[int(p.gear)] = true
 				_float(p.pos + Vector2(0, -12), "GEAR!", Icons.BRASS)
 				_puff(p.pos, 10, Icons.BRASS)
 				_vibrate(30)
+				_sfx("gear")
 
 
 func _snapshot(x: float, track: int) -> void:
@@ -247,6 +265,8 @@ func _crash() -> void:
 	_puff(Vector2(state.x, state.y - 8), 14, Color("ffb347"))
 	_puff(Vector2(state.x, state.y - 8), 8, Color("e8e2d0"))
 	_vibrate(70)
+	_sfx("crash")
+	AudioDirector.engine_cut()
 
 
 func _respawn() -> void:
@@ -264,6 +284,13 @@ func _respawn() -> void:
 	_focus_y = state.y
 	phase = "ready"
 	phase_ticks = 0
+	if not headless:
+		AudioDirector.engine_start(String(loadout.get("bike", "scrambler")))
+
+
+func _sfx(sfx_name: String, pitch := 1.0, vol_db := 0.0) -> void:
+	if not headless:
+		AudioDirector.play(sfx_name, pitch, vol_db)
 
 
 func _vibrate(ms: int) -> void:
@@ -494,8 +521,21 @@ func _draw_enemies(left: float, right: float) -> void:
 				_draw_spiker(p.floor())
 				glow = p.floor() + Vector2(0, -6)
 			Phys.DRONE:
-				_draw_drone(p.floor())
-				glow = p.floor() + Vector2(-4, 0)
+				# 2.5D swoop: drones fly in from the background and settle into their
+				# real spot >= SWOOP_SETTLE px before the rider reaches them.
+				var dx: float = p.x - float(state.x)
+				var k := smoothstep(0.0, 1.0, clampf((dx - SWOOP_SETTLE) / SWOOP_RANGE, 0.0, 1.0))
+				if k > 0.0:
+					var gy := _ground_y(p.x)
+					draw_circle(Vector2(p.x, gy - 1), 6.0 - 3.0 * k, Color(0, 0, 0, 0.25 * (1.0 - k)))
+					var vp := (p + Vector2(18.0 * k, -42.0 * k)).floor()
+					draw_set_transform(vp, 0.0, Vector2.ONE * (1.0 - 0.5 * k))
+					_draw_drone(Vector2.ZERO, k * 0.6)
+					draw_set_transform(Vector2.ZERO)
+					glow = Vector2.INF
+				else:
+					_draw_drone(p.floor())
+					glow = p.floor() + Vector2(-4, 0)
 		if theme.time == "night" and glow != Vector2.INF:
 			draw_circle(glow, 4.0, Color(1.0, 0.35, 0.25, 0.22 + 0.08 * sin(_vis_t * 6.0)))
 
@@ -535,16 +575,19 @@ func _draw_spiker(p: Vector2) -> void:
 	draw_rect(Rect2(c.x - 1, c.y - 1, 2, 2), Color("ff4a4a", 0.6 + 0.4 * sin(_vis_t * 8.0)))
 
 
-func _draw_drone(p: Vector2) -> void:
+## haze 0..1 pushes colours toward the distant hills (used while swooping in).
+func _draw_drone(p: Vector2, haze := 0.0) -> void:
+	var hz: Color = theme.mid
 	var w := roundf(9.0 * absf(cos(_vis_t * 30.0))) + 1.0
-	draw_line(Vector2(p.x, p.y - 4), Vector2(p.x, p.y - 7), Color("4a4f5c"), -1.0)
-	draw_rect(Rect2(p.x - w, p.y - 8, w * 2, 1), Color("c9d1d9"))
+	draw_line(Vector2(p.x, p.y - 4), Vector2(p.x, p.y - 7), Color("4a4f5c").lerp(hz, haze), -1.0)
+	draw_rect(Rect2(p.x - w, p.y - 8, w * 2, 1), Color("c9d1d9").lerp(hz, haze))
 	for i in 3:
 		var sx := p.x - 5 + i * 5
-		draw_colored_polygon(PackedVector2Array([Vector2(sx - 1, p.y - 3), Vector2(sx, p.y - 6), Vector2(sx + 1, p.y - 3)]), Color("e8e2d0"))
-	draw_rect(Rect2(p.x - 7, p.y - 3, 14, 6), Color("4a4f5c"))
-	draw_rect(Rect2(p.x - 6, p.y - 3, 12, 4), Color("8a93a6"))
-	draw_rect(Rect2(p.x - 6, p.y + 2, 12, 1), Color("2a2d36"))
+		draw_colored_polygon(PackedVector2Array([Vector2(sx - 1, p.y - 3), Vector2(sx, p.y - 6), Vector2(sx + 1, p.y - 3)]),
+			Color("e8e2d0").lerp(hz, haze))
+	draw_rect(Rect2(p.x - 7, p.y - 3, 14, 6), Color("4a4f5c").lerp(hz, haze))
+	draw_rect(Rect2(p.x - 6, p.y - 3, 12, 4), Color("8a93a6").lerp(hz, haze))
+	draw_rect(Rect2(p.x - 6, p.y + 2, 12, 1), Color("2a2d36").lerp(hz, haze))
 	var blink := 1.0 if int(_vis_t * 3.0) % 4 != 0 else 0.3
 	draw_rect(Rect2(p.x - 5, p.y - 1, 2, 2), Color(1.0, 0.25, 0.2, blink))
 

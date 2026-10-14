@@ -8,6 +8,7 @@ const BikeView := preload("res://scripts/game/bike_view.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const MoneyBadge := preload("res://scripts/ui/money_badge.gd")
+const Widgets := preload("res://scripts/ui/widgets.gd")
 
 
 class TitleRide extends Node2D:
@@ -60,6 +61,8 @@ class TitleRide extends Node2D:
 var _backdrop: Node2D
 var _ride: Node2D
 var _taps := 0
+var _settings: Control
+var _depth: Node
 
 
 func _ready() -> void:
@@ -76,6 +79,12 @@ func _ready() -> void:
 	add_child(rl)
 	_ride = TitleRide.new()
 	rl.add_child(_ride)
+	_depth = preload("res://scripts/game/depth.gd").new()
+	_depth.with_front = false
+	_depth.with_sound = false
+	_depth.level_id = "title"
+	add_child(_depth)
+	_depth.attach(self, _backdrop)
 
 	var col := VBoxContainer.new()
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -94,9 +103,21 @@ func _ready() -> void:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(b)
 	var center := Kit.full_rect(CenterContainer.new())
-	center.offset_bottom = -34
+	center.offset_top = 16
+	center.offset_bottom = -30
 	center.add_child(col)
 	add_child(center)
+
+	var opts := HBoxContainer.new()
+	opts.add_theme_constant_override("separation", 4)
+	opts.position = Vector2(8, 6)
+	var settings := Kit.button("SETTINGS", 0, 22)
+	settings.pressed.connect(_open_settings)
+	var credits := Kit.button("CREDITS", 0, 22)
+	credits.pressed.connect(func(): navigate.emit("credits", ""))
+	for b in [settings, credits]:
+		opts.add_child(b)
+	add_child(opts)
 
 	var mb := MoneyBadge.new()
 	mb.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -105,7 +126,7 @@ func _ready() -> void:
 	mb.offset_top = 6
 	mb.offset_bottom = 30
 	add_child(mb)
-	if OS.is_debug_build():
+	if OS.is_debug_build() or OS.has_feature("testing"):
 		# Dev shortcut: tap the wallet five times for +500 to test unlocks.
 		var hit := Button.new()
 		hit.flat = true
@@ -121,6 +142,38 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_backdrop.cam = Vector2(_ride.scroll, 0)
+	_depth.cam = _backdrop.cam
+	_depth.speed = 110.0
+
+
+func _open_settings() -> void:
+	if _settings:
+		return
+	var root := Kit.full_rect(Control.new())
+	var dim := Kit.full_rect(ColorRect.new())
+	dim.color = Color(0.04, 0.02, 0.07, 0.6)
+	root.add_child(dim)
+	var center := Kit.full_rect(CenterContainer.new())
+	root.add_child(center)
+	var panel := PanelContainer.new()
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	v.add_child(Kit.label("SETTINGS", 16, UITheme.GOLD))
+	v.add_child(Widgets.audio_sliders())
+	var done := Kit.button("DONE", 100, 26)
+	done.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	done.pressed.connect(_close_settings)
+	v.add_child(done)
+	panel.add_child(v)
+	center.add_child(panel)
+	add_child(root)
+	_settings = root
+
+
+func _close_settings() -> void:
+	if _settings:
+		_settings.queue_free()
+		_settings = null
 
 
 func _dev_tap() -> void:
@@ -131,4 +184,7 @@ func _dev_tap() -> void:
 
 
 func on_back() -> void:
+	if _settings:
+		_close_settings()
+		return
 	get_tree().quit()

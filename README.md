@@ -38,6 +38,30 @@ Tapping RIDE opens a picker; the choice is remembered.
 
 Tuning lives at the top of `scripts/game/bike_physics.gd` (`RAIN_TAKEOFF`, `RAIN_SLIDE`, `GRIP_WET`, `WIND_PEAK`, `WIND_DRAG`).
 
+### Depth (2.5D parallax)
+
+Layers in front of and behind the play plane scroll at their own rates, and things happen in them (`scripts/game/depth.gd`). All of it is visual only and never touches the physics.
+
+| Layer | Scroll | What happens |
+|---|---|---|
+| Far | 0.18x | A high trestle bridge across the far valley. Every 30–55 s a train crosses it (lit windows at dusk/night, smoke by day), with a soft distant horn in the theme's key. Hot-air balloon and a circling hawk by day. |
+| Mid | 0.35x | Bats at dusk. In rain: lightning forks behind the hills, the sky flashes, thunder rolls in 1–2 s later. |
+| Valley lane | 0.6x | A lower trestle in the valley. Two rival riders (other garage characters, hazed by distance) race you, drifting ahead and behind, jumping its gaps and sometimes backflipping. |
+| Play plane | 1.0x | You. Drones now swoop in from the background (small, hazed, high) and settle into their real spot at least 190 px before you reach them, with a shadow on the deck marking where they'll be. |
+| Foreground | 1.6x | Dark silhouettes per trail (saguaros, boulders, scrap, telegraph poles), grass tufts, fireflies at dusk/night, dust motes by day, tumbleweeds in wind. Kept to the bottom quarter, plus an occasional see-through post whipping past. |
+
+The title screen runs the far and valley layers too, so rivals race behind the menu.
+
+### Sound
+
+- **Engines:** every bike model has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. Equipping a bike in the garage blips its throttle.
+- **Ambience:** birds by day; crickets at dusk and night; a creek under Copper Canyon. Rain adds a rain bed. In wind, the wind recording's volume follows the same gust curve that pushes the bike.
+- **Foley:** soft chimes tuned to the theme's key (coin streaks climb a pentatonic ladder), a soft whoosh on jumps, wooden thock on landings, splash in rain, plank-joint "ta-dak" while rolling, gentle crash with a falling two-note chime.
+- **Theme:** "Trestle Dreams", an original dreamy desert-Americana loop (tremolo guitar, pad, brushes, slide melody).
+- **Settings:** MUSIC and SOUND sliders (0–100%, squared taper so 50% sounds about half as loud) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
+- **Mix:** set from Movie Maker captures of real gameplay with each bus soloed: engine and theme near -24 LUFS, chimes -24, nature bed -33, about -19 LUFS overall.
+- **Swapping sounds:** replace any file in `assets/audio/` with one of the same name. Engine files should loop cleanly. To use real engine recordings later, drop in `<bike>_idle.ogg` / `<bike>_cruise.ogg`.
+
 Debug builds only: tap the wallet on the title screen 5 times for +500 coins to test unlocks.
 
 ## Run it on Arch
@@ -92,7 +116,9 @@ scripts/
     bike_view.gd         bike models + riders drawn from primitives (paint = palette)
   screens/               title, trail select, garage, game (pause/results)
   ui/                    theme, HUD, widgets
-  dev/                   bot, verifier, screenshot + input tests (excluded from export)
+  audio/audio_director.gd  autoload: buses, engine, ambience, SFX pool, theme
+  dev/                   bot, verifier, screenshots, input test, Movie Maker demo (excluded from export)
+tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio
 ```
 
 Levels are lists of chunks, e.g. `["gap", 56.0]`, `["branch_upper", 1]` (1 = put a gear on it). Adding a level means adding a layout in `level_library.gd` plus an entry in `catalog.gd`.
@@ -114,7 +140,6 @@ Current result: all 12 runs (4 trails x 3 weathers) cleared with 0 crashes and 3
 
 ## Not done yet
 
-- Audio (engine, jump, coin, crash, music)
 - In-app purchases and ads: Godot needs platform plugins for Google Play Billing, StoreKit and an ad network, plus consent handling. Next phase.
 - Hand-drawn sprite art (current art is code-drawn placeholders that already read as pixel art)
 - More enemy types, moving platforms, longer levels (current ones run 31–36 s)

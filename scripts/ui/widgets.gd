@@ -96,3 +96,85 @@ class LevelThumb extends Control:
 			draw_rect(Rect2(c.x - 4, c.y - 9, 8, 2), Color("c9d1d9"))
 			draw_rect(Rect2(c.x - 1, c.y + 1, 2, 3), Color("2b2135"))
 		draw_rect(Rect2(Vector2.ZERO, size), Color("5a4a6e"), false, 1.0)
+
+
+## Pixel volume slider: drag or tap anywhere on the track; snaps to 5%.
+class VolumeSlider extends Control:
+	signal changed(v: float)
+	signal released
+
+	const UITheme := preload("res://scripts/ui/ui_theme.gd")
+	const LABEL_W := 64.0
+	const PCT_W := 40.0
+
+	var label := ""
+	var value := 1.0
+	var _drag := false
+
+	func _init(lbl: String, v: float) -> void:
+		label = lbl
+		value = v
+		custom_minimum_size = Vector2(240, 26)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _track() -> Rect2:
+		return Rect2(LABEL_W, floorf(size.y * 0.5) - 3, size.x - LABEL_W - PCT_W - 6, 6)
+
+	func _gui_input(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			if e.pressed:
+				_drag = true
+				_set_from(e.position.x)
+			elif _drag:
+				_drag = false
+				released.emit()
+			accept_event()
+		elif e is InputEventMouseMotion and _drag:
+			_set_from(e.position.x)
+			accept_event()
+
+	func _set_from(x: float) -> void:
+		var t := _track()
+		var v := snappedf(clampf((x - t.position.x) / t.size.x, 0.0, 1.0), 0.05)
+		if not is_equal_approx(v, value):
+			value = v
+			changed.emit(v)
+			queue_redraw()
+
+	func _draw() -> void:
+		var font: Font = GameState.font
+		var cy := floorf(size.y * 0.5)
+		draw_string(font, Vector2(0, cy + 4), label, HORIZONTAL_ALIGNMENT_LEFT, LABEL_W, 8, UITheme.CREAM)
+		var t := _track()
+		draw_rect(t.grow(1), UITheme.INK)
+		draw_rect(t, Color("3d3050"))
+		var fill := floorf(t.size.x * value)
+		draw_rect(Rect2(t.position, Vector2(fill, t.size.y)), UITheme.GOLD)
+		draw_rect(Rect2(t.position.x, t.position.y, fill, 1), Color("fff1a8"))
+		for i in range(1, 4):
+			var tx := floorf(t.position.x + t.size.x * i / 4.0)
+			draw_rect(Rect2(tx, t.end.y + 2, 1, 2), Color("5a4a6e"))
+		var kx := floorf(t.position.x + fill)
+		var knob := Rect2(kx - 4, cy - 8, 8, 16)
+		draw_rect(knob.grow(1), UITheme.INK)
+		draw_rect(knob, UITheme.CREAM if not _drag else Color.WHITE)
+		draw_rect(Rect2(knob.position.x + 2, cy - 3, 4, 1), Color("a89cb8"))
+		draw_rect(Rect2(knob.position.x + 2, cy + 2, 4, 1), Color("a89cb8"))
+		var pct := "OFF" if value <= 0.001 else "%d%%" % int(round(value * 100))
+		draw_string(font, Vector2(size.x - PCT_W, cy + 4), pct, HORIZONTAL_ALIGNMENT_RIGHT, PCT_W, 8,
+			UITheme.DIM if value <= 0.001 else UITheme.CREAM)
+
+
+## MUSIC + SOUND sliders, saved on release. The SOUND slider chimes so you can hear it.
+static func audio_sliders() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	for key in ["music", "sound"]:
+		var s := VolumeSlider.new(key.to_upper(), GameState.volume(key))
+		s.changed.connect(func(v): GameState.set_volume(key, v, false))
+		s.released.connect(func():
+			GameState.save_settings()
+			if key == "sound":
+				AudioDirector.play("checkpoint"))
+		box.add_child(s)
+	return box

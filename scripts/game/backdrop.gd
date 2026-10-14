@@ -9,6 +9,9 @@ var theme_index := 0
 var time_mode := "dusk"
 var weather := "clear"
 var cam := Vector2.ZERO
+## Optional depth director: draw_far() runs between the far and mid ridges and
+## draw_mid() between the mid ridge and the near band, so things sit in depth.
+var hooks: Object = null
 
 static var _base: Array = []
 
@@ -102,11 +105,11 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	draw_scene(self, get_viewport_rect().size, cam, theme(theme_index, time_mode, weather),
-		Time.get_ticks_msec() / 1000.0)
+		Time.get_ticks_msec() / 1000.0, hooks)
 
 
 ## Also used for level-select thumbnails, so it draws into any CanvasItem.
-static func draw_scene(ci: CanvasItem, vs: Vector2, cam: Vector2, th: Dictionary, t: float) -> void:
+static func draw_scene(ci: CanvasItem, vs: Vector2, cam: Vector2, th: Dictionary, t: float, hooks: Object = null) -> void:
 	var sky: Array = th.sky
 	var horizon := vs.y * 0.7
 	var bh := ceilf(horizon / sky.size())
@@ -142,7 +145,11 @@ static func draw_scene(ci: CanvasItem, vs: Vector2, cam: Vector2, th: Dictionary
 		_clouds(ci, vs, cam.x * 0.05 + t * (14.0 if th.weather == "wind" else 4.0), horizon, th)
 
 	_ridge(ci, vs, cam.x * 0.12, horizon - 8.0 + vy * 0.08, 46.0, 70.0, th.far, 3.0, 6.0)
+	if hooks:
+		hooks.draw_far(ci, vs, cam, th, horizon, vy)
 	_ridge(ci, vs, cam.x * 0.3, horizon + 26.0 + vy * 0.18, 34.0, 44.0, th.mid, 11.0, 2.0)
+	if hooks:
+		hooks.draw_mid(ci, vs, cam, th, horizon, vy)
 	_props(ci, vs, cam.x * 0.55, horizon + 58.0 + vy * 0.3, th)
 
 
