@@ -1,0 +1,13 @@
+.godot/
+build/
+*.tmp
+
+# Signing keys, passwords and credentials never go in the repo.
+*.jks
+*.keystore
+*.p12
+*.pem
+*password*
+*upload-key*
+.env
+export_credentials.cfg
