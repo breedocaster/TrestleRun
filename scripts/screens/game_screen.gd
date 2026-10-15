@@ -13,6 +13,7 @@ const Catalog := preload("res://scripts/catalog.gd")
 const WeatherFX := preload("res://scripts/game/weather_fx.gd")
 const Phys := preload("res://scripts/game/bike_physics.gd")
 const Depth := preload("res://scripts/game/depth.gd")
+const HintCard := preload("res://scripts/ui/hint_card.gd")
 
 var level_id := ""
 var world: Node2D
@@ -70,6 +71,11 @@ func _ready() -> void:
 	hud.world = world
 	hud.show_hint = Catalog.level_index(level_id) == 0 and not GameState.level_record(level_id).cleared
 	hud.pause_pressed.connect(pause)
+	hud.hint_pressed.connect(show_hint)
+	var meta := Catalog.level(level_id)
+	hud.feature = String((Catalog.FEATURES.get(String(meta.get("feature", "")), [""]) as Array)[0])
+	hud.feature_new = not GameState.level_record(level_id).cleared
+	hud.ability_title = String(Catalog.ability_text(GameState.equipped("bike"))[0])
 	hl.add_child(hud)
 	hud.theme = GameState.theme
 
@@ -142,6 +148,16 @@ func pause() -> void:
 	_show_overlay(col)
 
 
+## The trail's new feature explained, with a live demo. Pauses the run.
+func show_hint() -> void:
+	if _overlay != null or world.phase == "done":
+		return
+	get_tree().paused = true
+	var card := HintCard.new(level_id)
+	card.closed.connect(resume)
+	_show_overlay(card, false)
+
+
 func resume() -> void:
 	_clear_overlay()
 	get_tree().paused = false
@@ -170,8 +186,19 @@ func _on_finished(r: Dictionary) -> void:
 	col.add_child(line)
 	col.add_child(_row("TOTAL", "+%d" % pay.total, UITheme.GOLD))
 	col.add_child(_row("WALLET", str(GameState.money()), UITheme.DIM))
+	var extras := []
+	var best := float(GameState.level_record(level_id).get("best_time", 0.0))
+	var tag := ""
+	if pay.get("new_best", false):
+		tag = "  NEW BEST!"
+	elif not pay.get("first_clear", false) and best > 0.0:
+		tag = "  BEST %.1fs" % best
+	extras.append("TIME %.1fs%s" % [float(r.get("time", 0.0)), tag])
+	if int(r.get("planes_seen", 0)) > 0:
+		extras.append("BONUS PLANES %d/%d" % [int(r.get("planes", 0)), int(r.get("planes_seen", 0))])
 	if r.crashes > 0:
-		col.add_child(Kit.label("CRASHES: %d" % r.crashes, 8, UITheme.DIM))
+		extras.append("CRASHES %d" % r.crashes)
+	col.add_child(Kit.label("   ".join(extras), 8, UITheme.DIM))
 
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -199,7 +226,7 @@ func _row(left: String, right: String, c: Color) -> HBoxContainer:
 	return h
 
 
-func _show_overlay(content: Control) -> void:
+func _show_overlay(content: Control, wrap := true) -> void:
 	_clear_overlay()
 	var root := Kit.full_rect(Control.new())
 	root.theme = GameState.theme
@@ -208,9 +235,12 @@ func _show_overlay(content: Control) -> void:
 	root.add_child(dim)
 	var center := Kit.full_rect(CenterContainer.new())
 	root.add_child(center)
-	var panel := PanelContainer.new()
-	panel.add_child(content)
-	center.add_child(panel)
+	if wrap:
+		var panel := PanelContainer.new()
+		panel.add_child(content)
+		center.add_child(panel)
+	else:
+		center.add_child(content)
 	_overlay_layer.add_child(root)
 	_overlay = root
 

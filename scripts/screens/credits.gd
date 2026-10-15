@@ -27,6 +27,7 @@ const SECTIONS := [
 		["IMPACTS, UI CLICKS", "Kenney, kenney.nl (CC0)"],
 		["CHIMES, WHOOSHES", "Original, synthesized for this game"],
 		["TRAIN HORN, THUNDER", "Original, synthesized for this game"],
+		["SPRINGS, BONKS, ZIPLINE, BIPLANE", "Original, synthesized for this game"],
 	]],
 	["FONT", [
 		["PRESS START 2P", "CodeMan38, SIL Open Font License 1.1"],

@@ -143,6 +143,10 @@ func record_result(r: Dictionary) -> Dictionary:
 	var first_clear := not bool(rec.cleared)
 	rec.cleared = true
 	rec.best_coins = maxi(int(rec.best_coins), int(r.coins))
+	var t := float(r.get("time", 0.0))
+	var new_best := t > 0.0 and (float(rec.get("best_time", 0.0)) <= 0.0 or t < float(rec.best_time))
+	if new_best:
+		rec.best_time = snappedf(t, 0.1)
 	var pct := Catalog.condition_bonus(r.get("conditions", {}))
 	var payout := {
 		"coins": int(r.coins),
@@ -153,6 +157,7 @@ func record_result(r: Dictionary) -> Dictionary:
 		"bonus": int(meta.bonus),
 		"perfect": Catalog.PERFECT_BONUS if int(r.crashes) == 0 else 0,
 		"first_clear": first_clear,
+		"new_best": new_best and not first_clear,
 	}
 	payout.total = payout.coins + payout.cond_pay + payout.gear_pay + payout.bonus + payout.perfect
 	add_money(payout.total)

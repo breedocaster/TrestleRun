@@ -2,6 +2,7 @@
 extends Control
 
 signal pause_pressed
+signal hint_pressed
 
 const Icons := preload("res://scripts/game/icons.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
@@ -10,7 +11,12 @@ const Phys := preload("res://scripts/game/bike_physics.gd")
 
 var world: Node2D
 var show_hint := false
+## This trail's new feature; on a first visit the "?" button pulses for a while.
+var feature := ""
+var feature_new := false
+var ability_title := ""
 var _t := 0.0
+var _hint_btn: Button
 
 
 func _ready() -> void:
@@ -24,6 +30,15 @@ func _ready() -> void:
 	pb.offset_bottom = 30
 	pb.pressed.connect(func(): pause_pressed.emit())
 	add_child(pb)
+	var hb := Kit.button("?", 30, 26)
+	hb.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	hb.offset_left = -70
+	hb.offset_top = 4
+	hb.offset_right = -40
+	hb.offset_bottom = 30
+	hb.pressed.connect(func(): hint_pressed.emit())
+	add_child(hb)
+	_hint_btn = hb
 
 
 func _process(delta: float) -> void:
@@ -68,7 +83,7 @@ func _draw() -> void:
 	# Progress strip.
 	var lv: Dictionary = world.level
 	var x0 := maxf(size.x * 0.36, 160.0)
-	var x1 := size.x - 48.0
+	var x1 := size.x - 82.0
 	var y := 12.0
 	draw_rect(Rect2(x0, y, x1 - x0, 3), Color(UITheme.INK, 0.8))
 	var span: float = lv.finish_x - lv.start_x
@@ -83,9 +98,38 @@ func _draw() -> void:
 	if world.phase == "ready" and world.first_ready:
 		var msg := "READY" if world.phase_ticks < 36 else "GO!"
 		_center_text(font, size.y * 0.38, msg, 16, UITheme.GOLD)
+	# First visit: the "?" pulses and a small tag names what's new on this trail.
+	if feature_new and _t < 7.0:
+		var pulse := 0.5 + 0.5 * sin(_t * 6.0)
+		var r := _hint_btn.get_rect().grow(2.0 + 2.0 * pulse)
+		draw_rect(r, Color(UITheme.GOLD, 0.35 + 0.5 * pulse), false, 1.0)
+		var tag := "NEW: %s - TAP ? FOR TIPS" % feature
+		var tw := font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+		var tx := size.x - tw - 8.0
+		var fade := clampf((7.0 - _t) / 1.5, 0.0, 1.0)
+		draw_rect(Rect2(tx - 4, 33, tw + 8, 13), Color(UITheme.INK, 0.8 * fade))
+		_text(font, Vector2(tx, 43), tag, Color(UITheme.GOLD, fade))
+	# Bike specialty indicator, bright while it's doing its thing.
+	if ability_title != "":
+		var on := _ability_active()
+		_text(font, Vector2(6, size.y - 8.0), ability_title, UITheme.GOLD if on else Color(UITheme.DIM, 0.8))
 	if show_hint and world.state.x < lv.start_x + 520.0:
 		var a := 0.6 + 0.4 * sin(_t * 4.0)
 		_center_text(font, size.y - 22.0, "TAP TO JUMP - HOLD TO JUMP HIGHER", 8, Color(UITheme.CREAM, a))
+
+
+func _ability_active() -> bool:
+	var st: Dictionary = world.state
+	match String(st.ab):
+		"wheelie":
+			return bool(st.wheelie) or float(st.boost) > 2.0
+		"hop", "dash":
+			return not st.grounded and not bool(st.air_used) and int(st.zip) < 0 and int(st.loop) < 0
+		"glide":
+			return not st.grounded and float(st.vy) > 0.0 and world.held_now
+		"tough":
+			return int(st.armor) > 0
+	return false
 
 
 func _text(font: Font, p: Vector2, s: String, c: Color, sz := 8) -> void:

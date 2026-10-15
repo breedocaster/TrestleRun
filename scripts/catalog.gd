@@ -34,18 +34,44 @@ static func riders() -> Array:
 	return _riders
 
 
+## ability: the bike's specialty (bike_physics). k: wheelie boost as a share of speed.
 static func bikes() -> Array:
 	if _bikes.is_empty():
 		_bikes = [
-			{"id": "scrambler", "name": "SCRAMBLER", "price": 0},
-			{"id": "dirt", "name": "DIRT BIKE", "price": 150},
-			{"id": "minibike", "name": "MINIBIKE", "price": 200},
-			{"id": "scooter", "name": "SCOOTER", "price": 250},
-			{"id": "cafe", "name": "CAFE RACER", "price": 350},
-			{"id": "chopper", "name": "CHOPPER", "price": 500},
-			{"id": "sport", "name": "SPORTBIKE", "price": 700},
+			{"id": "scrambler", "name": "SCRAMBLER", "price": 0, "ability": "wheelie", "k": 0.10},
+			{"id": "dirt", "name": "DIRT BIKE", "price": 150, "ability": "wheelie", "k": 0.14},
+			{"id": "minibike", "name": "MINIBIKE", "price": 200, "ability": "hop"},
+			{"id": "scooter", "name": "SCOOTER", "price": 250, "ability": "glide"},
+			{"id": "cafe", "name": "CAFE RACER", "price": 350, "ability": "dash"},
+			{"id": "chopper", "name": "CHOPPER", "price": 500, "ability": "tough"},
+			{"id": "sport", "name": "SPORTBIKE", "price": 700, "ability": "wheelie", "k": 0.18},
 		]
 	return _bikes
+
+
+## Specialty for physics: {"id", "k"}.
+static func ability(bike_id: String) -> Dictionary:
+	var b := item("bike", bike_id)
+	return {"id": String(b.get("ability", "")), "k": float(b.get("k", 0.0))}
+
+
+## [title, how-to] shown in the garage and the HUD.
+static func ability_text(bike_id: String) -> Array:
+	var b := item("bike", bike_id)
+	match String(b.get("ability", "")):
+		"wheelie":
+			var pct := int(round(float(b.get("k", 0.1)) * 100.0))
+			var title := "WHEELIE" if pct <= 10 else ("BIG WHEELIE" if pct <= 14 else "POWER WHEELIE")
+			return ["%s +%d%%" % [title, pct], "KEEP HOLDING AS YOU LAND: FRONT WHEEL UP, SPEED BUILDS WHILE YOU HOLD"]
+		"hop":
+			return ["DOUBLE HOP", "TAP AGAIN IN THE AIR FOR ONE MORE HOP"]
+		"glide":
+			return ["UMBRELLA", "HOLD WHILE FALLING TO FLOAT DOWN SLOWLY"]
+		"dash":
+			return ["AIR DASH", "TAP IN THE AIR TO DASH FORWARD"]
+		"tough":
+			return ["IRON HIDE", "SMASH THROUGH ONE ENEMY PER CHECKPOINT"]
+	return ["", ""]
 
 
 static func paints() -> Array:
@@ -93,15 +119,48 @@ static func _paint(id: String, name: String, price: int, body: String, body_dark
 
 
 ## speed: px/s. bonus: coins paid on every clear. theme: index into Backdrop themes.
+## feature: the new thing this trail introduces (FEATURES).
 static func levels() -> Array:
 	if _levels.is_empty():
 		_levels = [
-			{"id": "dusty_trail", "name": "DUSTY TRAIL", "price": 0, "speed": 128.0, "bonus": 40, "theme": 0},
-			{"id": "copper_canyon", "name": "COPPER CANYON", "price": 200, "speed": 136.0, "bonus": 60, "theme": 1},
-			{"id": "rustyard", "name": "RUSTYARD", "price": 350, "speed": 144.0, "bonus": 80, "theme": 2},
-			{"id": "night_trestle", "name": "NIGHT TRESTLE", "price": 550, "speed": 150.0, "bonus": 100, "theme": 3},
+			_lv("dusty_trail", "DUSTY TRAIL", 0, 118.0, 30, 0, "jump"),
+			_lv("copper_canyon", "COPPER CANYON", 120, 122.0, 40, 1, "crawler"),
+			_lv("rustyard", "RUSTYARD", 220, 126.0, 50, 2, "spiker"),
+			_lv("night_trestle", "NIGHT TRESTLE", 350, 130.0, 60, 3, "drone"),
+			_lv("mesa_springs", "MESA SPRINGS", 500, 134.0, 70, 4, "spring"),
+			_lv("lantern_mine", "LANTERN MINE", 650, 138.0, 80, 5, "tunnel"),
+			_lv("hoodoo_loops", "HOODOO LOOPS", 820, 142.0, 90, 6, "loop"),
+			_lv("hoist_yard", "HOIST YARD", 1000, 146.0, 100, 7, "lift"),
+			_lv("skyline_pass", "SKYLINE PASS", 1250, 150.0, 120, 8, "zip"),
 		]
 	return _levels
+
+
+static func _lv(id: String, name: String, price: int, speed: float, bonus: int, theme: int, feature: String) -> Dictionary:
+	return {"id": id, "name": name, "price": price, "speed": speed, "bonus": bonus, "theme": theme, "feature": feature}
+
+
+## What each trail's new feature is and how to get past it (hint button).
+const FEATURES := {
+	"jump": ["JUMPING", "GAPS IN THE TRESTLE.",
+		"TAP FOR A SHORT HOP, HOLD FOR A BIG JUMP. JUMP JUST BEFORE THE EDGE. COINS UP HIGH NEED A LONG HOLD."],
+	"crawler": ["CRAWLERS", "SLOW SHELL BUGS PACING THE DECK.",
+		"LAND ON TOP TO STOMP ONE: YOU BOUNCE UP AND GET +2 COINS. HITTING ITS SIDE IS A CRASH. HOLD DURING THE BOUNCE TO GO HIGHER."],
+	"spiker": ["SPIKERS", "SPIKED BALLS BOLTED TO THE DECK. THEY CAN'T BE STOMPED.",
+		"JUMP CLEAN OVER. A MEDIUM HOLD CLEARS ONE. FOR TWO IN A ROW, LAND BETWEEN THEM AND HOP AGAIN."],
+	"drone": ["DRONES", "SPIKY HOVER DRONES. THEY SWOOP IN FROM THE BACKGROUND: WATCH FOR THEIR SHADOW.",
+		"STAY LOW AND RIDE UNDER. DON'T JUMP! OVER A GAP, USE A QUICK TAP SO YOU STAY BENEATH IT."],
+	"spring": ["SPRINGS", "BOUNCE PADS THAT FLING YOU HIGH AND FAR.",
+		"ROLL ONTO ONE TO REACH A HIGH DECK OR CLEAR A CANYON TOO WIDE TO JUMP. TO STAY LOW, HOP OVER THE PAD. LOOK UP FIRST: SOME HAVE DRONES ABOVE."],
+	"tunnel": ["LOW CEILINGS", "MINE TUNNELS WITH A LOW ROOF.",
+		"ONLY SHORT TAPS IN HERE. A BIG JUMP BONKS YOUR HEAD, SLOWS YOU DOWN AND DROPS YOU SHORT INTO THE PIT."],
+	"loop": ["LOOP-THE-LOOP", "WOODEN LOOPS LINED WITH COINS.",
+		"JUST KEEP ROLLING: THE LOOP CARRIES YOU ROUND. JUMPING RIGHT BEFORE IT SKIPS IT. GAP AT THE EXIT? PRESS AS YOU COME OUT."],
+	"lift": ["LIFTS", "PLATFORMS BOBBING UP AND DOWN OVER A CHASM.",
+		"WATCH THE RHYTHM. JUMP SO YOU COME DOWN ON THE NEXT LIFT, EASIEST WHILE IT'S LOW. DON'T ROLL OFF THE END: HOP ACROSS."],
+	"zip": ["ZIPLINES", "CABLES STRUNG OVER CANYONS TOO WIDE TO JUMP.",
+		"JUMP WITH A LONG HOLD TO GRAB THE CABLE AND KEEP HOLDING TO RIDE IT. LET GO OVER THE FAR DECK, OR RIDE TO THE END AND IT DROPS YOU OFF."],
+}
 
 
 static func level(id: String) -> Dictionary:

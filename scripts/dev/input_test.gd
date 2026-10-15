@@ -1,5 +1,5 @@
 ## Feeds real touch events through the input pipeline and checks the rider jumps,
-## that a short tap hops lower than a long hold, and that the pause button doesn't jump.
+## that a short tap hops lower than a long hold, and that the pause and "?" buttons don't jump.
 extends Node
 
 var main: Node
@@ -29,8 +29,17 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var paused := get_tree().paused
 	var queued: bool = w.press_queued
-	print("INPUT tap_peak=%.1f hold_peak=%.1f pause_opened=%s jump_leaked=%s" % [tap, hold, paused, queued])
-	var ok := tap > 10.0 and hold > tap + 15.0 and paused and not queued
+	gs.resume()
+	await get_tree().process_frame
+	# Same for the "?" hint button: opens the hint card, no jump.
+	_touch(Vector2(vs.x - 55, 16), true)
+	await get_tree().process_frame
+	_touch(Vector2(vs.x - 55, 16), false)
+	await get_tree().process_frame
+	var hint_open: bool = get_tree().paused and gs._overlay != null
+	var queued2: bool = w.press_queued
+	print("INPUT tap_peak=%.1f hold_peak=%.1f pause_opened=%s hint_opened=%s jump_leaked=%s" % [tap, hold, paused, hint_open, queued or queued2])
+	var ok := tap > 10.0 and hold > tap + 15.0 and paused and hint_open and not queued and not queued2
 	print("INPUT_RESULT ", "PASS" if ok else "FAIL")
 	get_tree().paused = false
 	get_tree().quit(0 if ok else 1)

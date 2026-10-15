@@ -24,6 +24,12 @@ func _ready() -> void:
 			d.spec = a.substr(7)
 			add_child(d)
 			return
+		if a == "--difficulty":
+			add_child(load("res://scripts/dev/difficulty.gd").new())
+			return
+		if a == "--probe":
+			add_child(load("res://scripts/dev/probe.gd").new())
+			return
 		if a == "--physics-report":
 			add_child(load("res://scripts/dev/physics_report.gd").new())
 			return

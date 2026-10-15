@@ -9,6 +9,7 @@ const Catalog := preload("res://scripts/catalog.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const Widgets := preload("res://scripts/ui/widgets.gd")
+const HintCard := preload("res://scripts/ui/hint_card.gd")
 
 const TIME_OPTS := [["day", "DAY"], ["dusk", "DUSK"], ["night", "NIGHT"]]
 const WEATHER_OPTS := [["clear", "CLEAR"], ["rain", "RAIN"], ["wind", "WIND"]]
@@ -21,6 +22,8 @@ var _row: HBoxContainer
 var _confirm := ""
 var _setup: Control
 var _setup_id := ""
+var _scroll: ScrollContainer
+var _hint: Control
 
 
 func _ready() -> void:
@@ -44,6 +47,7 @@ func _ready() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll = scroll
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -55,6 +59,18 @@ func _ready() -> void:
 	add_child(Kit.full_rect(Kit.margin(col, 8)))
 	_build_cards()
 	GameState.money_changed.connect(func(_m): _build_cards())
+	_scroll_to_current.call_deferred()
+
+
+## Start scrolled to the first unlocked trail you haven't cleared yet.
+func _scroll_to_current() -> void:
+	await get_tree().process_frame
+	var ls := Catalog.levels()
+	for i in ls.size():
+		if GameState.level_unlocked(ls[i].id) and not GameState.level_record(ls[i].id).cleared:
+			var card: Control = _row.get_child(i)
+			_scroll.scroll_horizontal = int(maxf(0.0, card.position.x - 40.0))
+			return
 
 
 func _build_cards() -> void:
@@ -80,6 +96,11 @@ func _card(i: int, meta: Dictionary) -> Control:
 	v.add_child(title_l)
 	v.add_child(Widgets.LevelThumb.new(int(meta.theme), not unlocked))
 	v.add_child(Widgets.GearRow.new(rec.gears))
+	var feat := String((Catalog.FEATURES.get(String(meta.get("feature", "")), [""]) as Array)[0])
+	var fl := Kit.label("NEW: " + feat, 8, UITheme.GOLD if unlocked and not rec.cleared else UITheme.DIM)
+	fl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	fl.custom_minimum_size = Vector2(92, 0)
+	v.add_child(fl)
 	var info := "BEST %d" % int(rec.best_coins) if rec.cleared else "UNCLEARED"
 	if not unlocked:
 		info = "COST %d" % int(meta.price)
@@ -142,11 +163,14 @@ func _show_setup(id: String) -> void:
 		8, UITheme.GOLD if pct > 0 else UITheme.DIM))
 	var btns := HBoxContainer.new()
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
-	var back := Kit.button("BACK", 80, 26)
+	var back := Kit.button("BACK", 64, 26)
 	back.pressed.connect(_close_setup)
-	var go := Kit.button("GO!", 80, 26)
+	var tips := Kit.button("? TIPS", 64, 26)
+	tips.pressed.connect(func(): _show_hint(id))
+	var go := Kit.button("GO!", 64, 26)
 	go.pressed.connect(func(): navigate.emit("game", id))
 	btns.add_child(back)
+	btns.add_child(tips)
 	btns.add_child(go)
 	v.add_child(btns)
 	panel.add_child(v)
@@ -178,6 +202,27 @@ func _pick(key: String, value: String) -> void:
 	_show_setup.call_deferred(_setup_id)
 
 
+func _show_hint(id: String) -> void:
+	_close_hint()
+	var root := Kit.full_rect(Control.new())
+	var dim := Kit.full_rect(ColorRect.new())
+	dim.color = Color(0.04, 0.02, 0.07, 0.7)
+	root.add_child(dim)
+	var center := Kit.full_rect(CenterContainer.new())
+	var card := HintCard.new(id)
+	card.closed.connect(_close_hint)
+	center.add_child(card)
+	root.add_child(center)
+	add_child(root)
+	_hint = root
+
+
+func _close_hint() -> void:
+	if _hint:
+		_hint.queue_free()
+		_hint = null
+
+
 func _close_setup() -> void:
 	if _setup:
 		_setup.queue_free()
@@ -185,6 +230,9 @@ func _close_setup() -> void:
 
 
 func on_back() -> void:
+	if _hint:
+		_close_hint()
+		return
 	if _setup:
 		_close_setup()
 		return

@@ -500,6 +500,39 @@ func _draw_front_prop(ci: CanvasItem, base: Vector2, s: float, col: Color, kind:
 				ci.draw_rect(Rect2(x - 12, y - 114, 30, 4), see)
 			else:
 				_bush(ci, Vector2(x, y), 20.0 * s, col)
+		"mesa":
+			var w := floorf(80.0 * s)
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(x, y), Vector2(x + 10, y - 36 * s),
+				Vector2(x + w - 10, y - 36 * s), Vector2(x + w, y)]), col)
+		"headframe":
+			if _h(c * 3.3) < 0.45:
+				var see := Color(col, 0.6)
+				ci.draw_line(Vector2(x, y), Vector2(x + 20, y - 110), see, 4.0)
+				ci.draw_line(Vector2(x + 40, y), Vector2(x + 20, y - 110), see, 4.0)
+				ci.draw_arc(Vector2(x + 20, y - 110), 9.0, 0.0, TAU, 14, see, 3.0)
+			else:
+				ci.draw_rect(Rect2(x, y - 22 * s, 40 * s, 22 * s), col)
+				ci.draw_circle(Vector2(x + 8 * s, y - 2), 6.0 * s, col)
+				ci.draw_circle(Vector2(x + 32 * s, y - 2), 6.0 * s, col)
+		"hoodoo":
+			var h := floorf(96.0 * s)
+			ci.draw_rect(Rect2(x + 4, y - h, 14, h), col)
+			ci.draw_rect(Rect2(x, y - h * 0.4, 22, h * 0.4), col)
+			ci.draw_rect(Rect2(x - 3, y - h - 6, 28, 8), col)
+		"crane":
+			if _h(c * 3.3) < 0.4:
+				var see := Color(col, 0.55)
+				ci.draw_rect(Rect2(x, y - 130, 6, 130), see)
+				ci.draw_rect(Rect2(x - 30, y - 130, 90, 4), see)
+				ci.draw_line(Vector2(x + 40, y - 126), Vector2(x + 40, y - 70), see, 2.0)
+			else:
+				ci.draw_rect(Rect2(x, y - 30 * s, 60 * s, 30 * s), col)
+				ci.draw_rect(Rect2(x + 4, y - 34 * s, 52 * s, 4), col)
+		"pines":
+			for k in 2:
+				var tx := x + k * 26.0 * s
+				var h := floorf((70.0 + 30.0 * _h(c * 4.0 + k)) * s)
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(tx - 16 * s, y), Vector2(tx, y - h), Vector2(tx + 16 * s, y)]), col)
 		_:
 			_bush(ci, Vector2(x, y), 20.0 * s, col)
 

@@ -9,6 +9,7 @@ Everything shipped in the game is cleared for commercial use, including a store 
 | Theme "Trestle Dreams" | `assets/audio/music/trestle_dreams.ogg` | Composed and rendered in code (`tools/audio/theme.py`). 78 BPM, D major, 32-bar seamless loop. No samples. |
 | Engines, 7 bikes x idle/cruise | `assets/audio/engines/*.ogg` | Physical models (`tools/audio/engines.py`): combustion pulses at each engine's real firing angles -> exhaust waveguide -> muffler/body EQ -> rasp and mechanicals. No recordings. |
 | Chimes, whooshes, splash, deck roll, finish jingle, distant train horn (D6 chord), thunder | `assets/audio/sfx/*.ogg` | Synthesized (`tools/audio/sfx.py`), tuned to D major pentatonic to sit inside the theme. |
+| Spring boing, head bonk, loop swoop, zipline clink and pulley loop, biplane engine loop, plane prize, air dash, wheelie whirr | `assets/audio/sfx/*.ogg` | Synthesized (`tools/audio/sfx.py`). The chopper's "smash" layers the Kenney impact and break sounds below (CC0). |
 
 Engine layouts: chopper 45-degree V-twin (fires 0/315), scrambler 270-degree parallel twin (0/270), dirt bike 4-stroke single, sportbike 180-degree inline-4 (0/180/360/540), cafe racer 240-degree inline triple (0/240/480), scooter 2-stroke single with expansion chamber, minibike OHV 212cc single. The analysis script (`tools/audio/check_engines.py`) recovers the firing intervals from the rendered audio (V-twin idle 55/71 ms, as the crank math predicts).
 

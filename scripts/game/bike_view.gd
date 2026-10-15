@@ -19,6 +19,8 @@ var squash := 0.0
 var lean := 0.0       # >0 leans back (rising), <0 forward
 var flutter := 0.4    # 0..1: how hard scarves/tails/flames stream
 var anim_t := 0.0
+var umbrella := 0.0   # 0..1: scooter's umbrella opening while gliding
+var hanging := false  # on a zipline
 
 
 func _draw() -> void:
@@ -26,14 +28,38 @@ func _draw() -> void:
 		return
 	if squash > 0.01:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 + 0.12 * squash, 1.0 - 0.14 * squash))
-	draw_rig(self, Vector2.ZERO, rig, wheel_angle, anim_t, lean, flutter)
+	var a := draw_rig(self, Vector2.ZERO, rig, wheel_angle, anim_t, lean, flutter)
+	if umbrella > 0.02:
+		draw_umbrella(self, Vector2.ZERO + a.grip, umbrella, Catalog.paint(String(rig.get("paint", "stock"))), anim_t)
 
 
 static func draw_rig(ci: CanvasItem, o: Vector2, r: Dictionary, wa: float, t: float,
-		lean := 0.0, flutter := 0.4) -> void:
+		lean := 0.0, flutter := 0.4) -> Dictionary:
 	var paint := Catalog.paint(String(r.get("paint", "stock")))
 	var a := draw_bike(ci, o, String(r.get("bike", "scrambler")), paint, wa)
 	draw_rider(ci, o, String(r.get("rider", "dusty")), a, t, lean, flutter)
+	return a
+
+
+## Striped umbrella held up from the handlebar; open 0..1.
+static func draw_umbrella(ci: CanvasItem, grip: Vector2, open: float, k: Dictionary, t: float) -> void:
+	var top := grip + Vector2(-2, -15)
+	ci.draw_line(grip, top, Color("3a3440"), line_w)
+	var w := 3.0 + 9.0 * open
+	var h := 2.0 + 4.0 * open
+	var sway := sin(t * 4.0) * 0.6
+	var pts := PackedVector2Array()
+	for i in 9:
+		var u := float(i) / 8.0
+		pts.append(top + Vector2((u - 0.5) * 2.0 * w + sway, -h * sin(u * PI)))
+	pts.append(top + Vector2(w + sway, 1))
+	pts.append(top + Vector2(-w + sway, 1))
+	ci.draw_colored_polygon(pts, k.body)
+	for i in 3:
+		var u := (float(i) + 0.5) / 3.0
+		var x := (u - 0.5) * 2.0 * w + sway
+		ci.draw_line(top + Vector2(x, 1), top + Vector2(x * 0.6, -h * sin(u * PI) + 1), k.accent, line_w)
+	ci.draw_rect(Rect2(top.x - 1 + sway, top.y - h - 1, 2, 1), k.accent)
 
 
 # --- helpers ---------------------------------------------------------------

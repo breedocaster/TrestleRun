@@ -117,9 +117,12 @@ def sparkle(dur=1.2, count=10, lo=2400, hi=5200):
 
 # --- finished sounds -------------------------------------------------------------
 
-def _finish(x, ir=IR_SHORT, wet=0.3, tail=0.8, lufs=-20.0, hp=90):
+def _finish(x, ir=IR_SHORT, wet=0.3, tail=0.8, lufs=-20.0, hp=90, fade=0.15):
     x = signal.sosfilt(sos_hp(hp), x)
     x = conv_reverb(pad_tail(x, tail), ir, wet)
+    # Fade the end so a reverb tail never stops abruptly.
+    n = min(x.shape[0], int(fade * SR))
+    x[-n:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, n)))[:, None] if x.ndim == 2 else 0.5 + 0.5 * np.cos(np.linspace(0, np.pi, n))
     x = norm_lufs(x, lufs)
     return norm_peak(x, -1.0) if np.max(np.abs(x)) > db1 else x
 
@@ -137,8 +140,9 @@ def build(kenney_dir):
     k_toggle = read_audio(f"{kenney_dir}/Starter-Kit-City-Builder/sounds/toggle.ogg", mono=True)
 
     out = {}
-    # Coin: A5; the game steps it up the pentatonic for coin streaks.
-    out["coin"] = _finish(chime(midi_hz(81), 0.9, bright=0.8, decay=0.6), wet=0.28, tail=0.6, lufs=-22)
+    # Coin: A5; the game steps it up the pentatonic for coin streaks. Short and dry
+    # (~0.2 s ring, light room) so a fast streak reads as separate notes, not a wash.
+    out["coin"] = _finish(chime(midi_hz(81), 0.3, bright=0.75, decay=0.15), wet=0.07, tail=0.12, lufs=-22, fade=0.2)
 
     b = np.zeros(int(1.4 * SR))
     for i, m in enumerate([74, 78, 81, 86]):
@@ -248,6 +252,79 @@ def build(kenney_dir):
     crack = signal.sosfilt(sos_bp(300, 1800), RNG.standard_normal(int(0.25 * SR))) * np.exp(-_t(0.25) / 0.06)
     place(thunder, 0.25 * crack / (np.abs(crack).max() + 1e-9), 0.02)
     out["thunder"] = _finish(thunder, IR_LONG, wet=0.4, tail=1.0, lufs=-24, hp=30)
+
+    # Spring pad: a springy "boing" that rises a fifth (D4 -> A4) with a decaying wobble.
+    t = _t(0.55)
+    f = midi_hz(62) * (1.0 + 0.5 * (1 - np.exp(-t / 0.05))) * (1 + 0.06 * np.sin(2 * np.pi * 15 * t) * np.exp(-t / 0.18))
+    boing = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.2)
+    boing += 0.25 * np.sin(2 * np.pi * np.cumsum(2 * f) / SR) * np.exp(-t / 0.1)
+    sp2 = np.zeros(int(0.7 * SR))
+    place(sp2, release(boing, 0.3), 0.0)
+    place(sp2, 0.5 * thock(0.25, 200), 0.0)
+    out["spring"] = _finish(sp2, wet=0.18, tail=0.3, lufs=-22)
+
+    # Head bonk on a tunnel roof: hollow wood knock, a thud and a falling "doink".
+    bk = np.zeros(int(0.6 * SR))
+    place(bk, 0.9 * wood(midi_hz(57), 0.3, decay=0.8), 0.0)
+    place(bk, 0.7 * thock(0.3, 170), 0.0)
+    tt = _t(0.3)
+    fd = midi_hz(74) * np.exp(-tt / 0.18)
+    place(bk, 0.35 * release(np.sin(2 * np.pi * np.cumsum(fd) / SR) * np.exp(-tt / 0.12), 0.3), 0.03)
+    out["bonk"] = _finish(bk, wet=0.15, tail=0.25, lufs=-21)
+
+    # Loop-the-loop: a long airy swoop that rises then falls back.
+    lp = whoosh(1.5, 260, 1300, 0.6) + 0.6 * whoosh(1.5, 1300, 380, 0.95)
+    out["loop"] = _finish(lp, wet=0.3, tail=0.5, lufs=-27, hp=140)
+
+    # Zipline: a clink as the trolley hooks on, then a seamless pulley whine loop.
+    zg = np.zeros(int(0.5 * SR))
+    tt = _t(0.25)
+    f0 = 2600.0
+    clink = sum(a * np.sin(2 * np.pi * f0 * r * tt) * np.exp(-tt / d) for r, a, d in ((1.0, 1.0, 0.05), (1.52, 0.6, 0.04), (2.4, 0.4, 0.02)))
+    place(zg, 0.4 * clink, 0.0)
+    place(zg, 0.5 * whoosh(0.3, 500, 2000, 0.05), 0.0)
+    out["zip_grab"] = _finish(zg, wet=0.2, tail=0.3, lufs=-24, hp=300)
+    n = int(1.0 * SR)
+    tt = np.arange(n) / SR
+    whine = (np.sin(2 * np.pi * 1320 * tt) + 0.5 * np.sin(2 * np.pi * 1980 * tt + 1.0)) * (0.6 + 0.4 * np.sin(2 * np.pi * 9 * tt))
+    hiss = sosc(sos_bp(1800, 5200), RNG.standard_normal(n))
+    rumble = sosc(sos_lp(180), RNG.standard_normal(n))
+    zl = 0.25 * whine + 0.8 * hiss / (np.abs(hiss).max() + 1e-9) + 0.4 * rumble / (np.abs(rumble).max() + 1e-9)
+    out["zipline"] = norm_lufs(zl, -30)
+
+    # Bonus biplane: a seamless loop of a small radial engine and propeller buzz
+    # (40 Hz blade rate, 40 whole cycles per second so it loops cleanly).
+    tt = np.arange(n) / SR
+    buzz = np.zeros(n)
+    for k, a in ((1, 1.0), (2, 0.7), (3, 0.5), (4, 0.35), (5, 0.25), (7, 0.15), (9, 0.1)):
+        buzz += a * np.sin(2 * np.pi * 40 * k * tt + RNG.random() * 6.28)
+    buzz *= 0.8 + 0.2 * np.sin(2 * np.pi * 4 * tt)
+    air = sosc(sos_bp(300, 1500), RNG.standard_normal(n))
+    pl = sosc(sos_lp(1800), buzz) + 0.3 * air / (np.abs(air).max() + 1e-9)
+    out["plane"] = norm_lufs(pl, -28)
+
+    # Plane prize: a rising D major arpeggio and sparkle.
+    pz = np.zeros(int(2.0 * SR))
+    for i, m in enumerate([74, 78, 81, 86, 90]):
+        place(pz, chime(midi_hz(m), 0.8, decay=0.5) * 0.75, i * 0.06)
+    place(pz, sparkle(1.2, 10), 0.2)
+    out["prize"] = _finish(pz, IR_LONG, wet=0.32, tail=0.8, lufs=-19)
+
+    # Chopper smashing through an enemy: a crunch, no sad chime.
+    sm = np.zeros(int(0.9 * SR))
+    place(sm, 0.8 * imp / (np.max(np.abs(imp)) + 1e-9), 0.0)
+    place(sm, 0.5 * brk / (np.max(np.abs(brk)) + 1e-9), 0.02)
+    place(sm, 0.6 * thock(0.3, 110), 0.0)
+    out["smash"] = _finish(sm, wet=0.2, tail=0.3, lufs=-21, hp=50)
+
+    # Air dash: a fast bright swish.
+    out["dash"] = _finish(whoosh(0.35, 900, 3200, 0.04), wet=0.15, tail=0.25, lufs=-25, hp=300)
+
+    # Wheelie: a little upward "whirr" of tyre and revs.
+    tt = _t(0.4)
+    fw = 140 + 160 * (tt / 0.4)
+    saw = signal.sawtooth(2 * np.pi * np.cumsum(fw) / SR) * np.minimum(1, tt / 0.03) * np.exp(-tt / 0.2)
+    out["wheelie"] = _finish(signal.sosfilt(sos_lp(1400), saw) + 0.3 * whoosh(0.4, 400, 900, 0.1), wet=0.1, tail=0.2, lufs=-26)
 
     # Rolling over deck plank joints: front then rear wheel, every 64 px at 128 px/s.
     period, wheelbase, n = 0.5, 0.125, int(4.0 * SR)

@@ -54,11 +54,11 @@ def main():
             y, meta = engines.render(name, state)
             save(f"engines/{name}_{state}.ogg", y, q=4, loop=True, meta=meta, manifest=manifest)
     for name, y in (sfx.build(SRC).items() if want("sfx") else []):
-        save(f"sfx/{name}.ogg", y, q=4, loop=name == "deck_roll", manifest=manifest)
+        save(f"sfx/{name}.ogg", y, q=4, loop=name in ("deck_roll", "zipline", "plane"), manifest=manifest)
     if want("ambience"):
         amb, info = ambience.build(f"{SRC}/blanket/data/resources/sounds")
         for name, y in amb.items():
-            save(f"ambience/{name}.ogg", y, q=3, loop=True, meta=info[name], manifest=manifest)
+            save(f"ambience/{name}.ogg", y, q=2, loop=True, meta=info[name], manifest=manifest)
     if want("music"):
         save("music/trestle_dreams.ogg", theme.render(), q=3, loop=True,
              meta={"bpm": theme.BPM, "bars": theme.BARS}, manifest=manifest)

@@ -81,7 +81,50 @@ static func _build() -> void:
 			"night": _t(["05060f", "0b1230", "16214a", "263266", "3a4680"], "e8edf7", 11.0, 0.25,
 				"1f2752", "141a3a", "0a0e20", "poles", true, "6a6f8a", "a9b4d6", "2e3350", "1c2036"),
 		},
+		{ # Mesa Springs: pink flat-top buttes and hot springs
+			"day": _t(["4a8fd6", "68a6e0", "8cbfe8", "b5d8f0", "e2f0f5"], "fffbe6", 13.0, 0.2,
+				"e0a080", "c97a63", "8e4a46", "mesa", false, "b88454", "f0c48a", "6b4030", "48281e"),
+			"dusk": _t(["241838", "4a2450", "8e3a63", "d9665a", "f5a96a"], "ffe0a8", 16.0, 0.4,
+				"9a5068", "6e3450", "3e1e33", "mesa", false, "b88454", "f0c48a", "6b4030", "48281e"),
+			"night": _t(["040410", "0a0a24", "141640", "1e2458", "2c3470"], "e8edf7", 10.0, 0.25,
+				"3a2c4c", "281e38", "140f20", "mesa", true, "6a5040", "a08468", "34262a", "1f171a"),
+		},
+		{ # Lantern Mine: ochre hills, mine headframes
+			"day": _t(["4f7fb8", "6c96c6", "8fb0d4", "b4c9de", "d9e2e8"], "fffbe6", 14.0, 0.22,
+				"a89a80", "857560", "4e4232", "headframe", false, "8a6a48", "c9a070", "4a3a2c", "2e241c"),
+			"dusk": _t(["1a1428", "33203a", "5e3444", "a0583e", "d9934c"], "ffd9a0", 15.0, 0.42,
+				"6a4a48", "4a3438", "261a1e", "headframe", false, "8a6a48", "c9a070", "4a3a2c", "2e241c"),
+			"night": _t(["030308", "080812", "10121e", "1a1e2e", "262c40"], "e8edf7", 10.0, 0.25,
+				"2c2a30", "1e1c22", "100e12", "headframe", true, "5a4636", "8a6e54", "2c221c", "1a1410"),
+		},
+		{ # Hoodoo Loops: red rock spires
+			"day": _t(["2d6cc0", "4a86d0", "6ea2dc", "9dc0e8", "d0e2f2"], "fffbe6", 13.0, 0.2,
+				"e08a50", "c2603a", "7a3220", "hoodoo", false, "b0703e", "eaa868", "5e3420", "3e2216"),
+			"dusk": _t(["2a1230", "55203e", "9a3442", "e0603a", "f8a048"], "ffe0a0", 16.0, 0.42,
+				"a8483a", "7a2e2e", "3e161a", "hoodoo", false, "b0703e", "eaa868", "5e3420", "3e2216"),
+			"night": _t(["05030a", "0e0818", "1a1030", "281a48", "382660"], "e8edf7", 10.0, 0.25,
+				"43263a", "2e1a2a", "180c16", "hoodoo", true, "6a4436", "9a6e56", "32201a", "1e1410"),
+		},
+		{ # Hoist Yard: gantry cranes over the freight yard
+			"day": _t(["6a8fb0", "86a6c2", "a4bed2", "c4d4e0", "e2e8ec"], "fffbe6", 14.0, 0.22,
+				"8c96a0", "6c7680", "3c444c", "crane", false, "9a6a46", "d29a66", "4a4048", "2e2a30"),
+			"dusk": _t(["161c2c", "262e44", "464a5e", "8a6a62", "d0906a"], "e8d9a0", 18.0, 0.42,
+				"4a4c5e", "34364a", "1c1e2a", "crane", false, "9a6a46", "d29a66", "4a4048", "2e2a30"),
+			"night": _t(["020306", "06080e", "0c1018", "141a26", "1e2636"], "e8edf7", 10.0, 0.25,
+				"22262e", "181a22", "0c0e14", "crane", true, "5a4034", "8a6650", "2a262c", "18161a"),
+		},
+		{ # Skyline Pass: alpine pines under snowy peaks
+			"day": _t(["2f6ad0", "4c85dc", "70a2e6", "9cc2ee", "d4e6f6"], "fffbe6", 12.0, 0.18,
+				"8fa8c8", "4e7a5e", "2a4a36", "pines", false, "a07a50", "dcb07a", "50402e", "32281e"),
+			"dusk": _t(["1c1838", "342a5a", "5a3a72", "a05a78", "e8907a"], "ffd9b0", 15.0, 0.42,
+				"5a5a8a", "34465a", "1a2630", "pines", false, "a07a50", "dcb07a", "50402e", "32281e"),
+			"night": _t(["03040c", "070c20", "0e1838", "182650", "243468"], "e8edf7", 10.0, 0.25,
+				"2e3a5a", "1a2a34", "0c161c", "pines", true, "5e4a38", "8e745a", "2e261e", "1c1812"),
+		},
 	]
+	for i in [8]:
+		for k in TIMES:
+			_base[i][k].snow = true
 
 
 static func _t(sky: Array, sun: String, sun_r: float, sun_y: float, far: String, mid: String,
@@ -144,7 +187,8 @@ static func draw_scene(ci: CanvasItem, vs: Vector2, cam: Vector2, th: Dictionary
 	if float(th.clouds) > 0.0:
 		_clouds(ci, vs, cam.x * 0.05 + t * (14.0 if th.weather == "wind" else 4.0), horizon, th)
 
-	_ridge(ci, vs, cam.x * 0.12, horizon - 8.0 + vy * 0.08, 46.0, 70.0, th.far, 3.0, 6.0)
+	_ridge(ci, vs, cam.x * 0.12, horizon - 8.0 + vy * 0.08, 46.0, 70.0, th.far, 3.0, 6.0,
+		(th.far as Color).lerp(Color.WHITE, 0.55) if th.get("snow", false) else Color(0, 0, 0, 0))
 	if hooks:
 		hooks.draw_far(ci, vs, cam, th, horizon, vy)
 	_ridge(ci, vs, cam.x * 0.3, horizon + 26.0 + vy * 0.18, 34.0, 44.0, th.mid, 11.0, 2.0)
@@ -177,7 +221,7 @@ static func _clouds(ci: CanvasItem, vs: Vector2, off: float, horizon: float, th:
 
 
 static func _ridge(ci: CanvasItem, vs: Vector2, off: float, base: float, amp: float,
-		scale: float, col: Color, seed: float, quant: float) -> void:
+		scale: float, col: Color, seed: float, quant: float, cap := Color(0, 0, 0, 0)) -> void:
 	var step := 4.0
 	var sx := -fposmod(off, step)
 	while sx < vs.x + step:
@@ -185,6 +229,8 @@ static func _ridge(ci: CanvasItem, vs: Vector2, off: float, base: float, amp: fl
 		h = roundf(h / quant) * quant
 		var top := floorf(base - h)
 		ci.draw_rect(Rect2(sx, top, step, vs.y - top), col)
+		if cap.a > 0.0 and h > amp * 0.55:
+			ci.draw_rect(Rect2(sx, top, step, floorf((h - amp * 0.55) * 0.5) + 2.0), cap)
 		sx += step
 
 
@@ -216,6 +262,47 @@ static func _props(ci: CanvasItem, vs: Vector2, off: float, base: float, th: Dic
 				ci.draw_rect(Rect2(px + 4, base - 16, 12, 6), col)
 				ci.draw_rect(Rect2(px + 18, base - 26 * sz, 2, 26 * sz), col)
 				ci.draw_rect(Rect2(px + 12, base - 26 * sz, 14, 2), col)
+			"mesa":
+				var w := floorf(46.0 * sz)
+				var h := floorf(16.0 * sz + 6.0)
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(px, base), Vector2(px + 6, base - h),
+					Vector2(px + w - 6, base - h), Vector2(px + w, base)]), col)
+				ci.draw_rect(Rect2(px + 4, base - h - 2, w - 8, 2), col)
+			"headframe":
+				if _hash(c * 3.7) < 0.5:
+					var h := floorf(30.0 * sz + 8.0)
+					ci.draw_line(Vector2(px, base), Vector2(px + 8, base - h), col, 2.0)
+					ci.draw_line(Vector2(px + 16, base), Vector2(px + 8, base - h), col, 2.0)
+					ci.draw_line(Vector2(px + 3, base - h * 0.5), Vector2(px + 13, base - h * 0.5), col, -1.0)
+					ci.draw_arc(Vector2(px + 8, base - h), 4.0, 0.0, TAU, 10, col, 1.0)
+					ci.draw_rect(Rect2(px + 18, base - 10, 14, 10), col)
+				else:
+					ci.draw_rect(Rect2(px, base - 8 * sz, 20 * sz, 8 * sz + 1), col)
+			"hoodoo":
+				var h := floorf(26.0 * sz + 10.0)
+				ci.draw_rect(Rect2(px + 2, base - h, 6, h), col)
+				ci.draw_rect(Rect2(px, base - h * 0.45, 10, h * 0.45), col)
+				ci.draw_rect(Rect2(px - 1, base - h - 3, 12, 4), col)
+				if _hash(c * 8.1) < 0.5:
+					ci.draw_rect(Rect2(px + 16, base - h * 0.6, 5, h * 0.6), col)
+					ci.draw_rect(Rect2(px + 15, base - h * 0.6 - 2, 7, 3), col)
+			"crane":
+				if _hash(c * 3.7) < 0.55:
+					var h := floorf(34.0 * sz + 6.0)
+					ci.draw_rect(Rect2(px, base - h, 3, h), col)
+					ci.draw_rect(Rect2(px - 10, base - h, 34, 2), col)
+					ci.draw_line(Vector2(px + 1, base - h - 6), Vector2(px + 24, base - h), col, -1.0)
+					ci.draw_line(Vector2(px + 1, base - h - 6), Vector2(px - 10, base - h), col, -1.0)
+					ci.draw_line(Vector2(px + 18, base - h), Vector2(px + 18, base - h * 0.45), col, -1.0)
+					ci.draw_rect(Rect2(px + 15, base - h * 0.45, 7, 4), col)
+				else:
+					ci.draw_rect(Rect2(px, base - 9, 26, 9), col)
+					ci.draw_rect(Rect2(px + 28, base - 9, 22, 9), col)
+			"pines":
+				for k in 3:
+					var tx := px + k * 9.0 * sz
+					var h := floorf((18.0 + 8.0 * _hash(c * 2.0 + k)) * sz)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(tx - 5, base), Vector2(tx, base - h), Vector2(tx + 5, base)]), col)
 			"poles":
 				ci.draw_rect(Rect2(px, base - 34, 2, 34), col)
 				ci.draw_rect(Rect2(px - 5, base - 32, 12, 2), col)

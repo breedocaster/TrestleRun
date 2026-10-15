@@ -1,6 +1,6 @@
 {
  "ambience/creek.ogg": {
-  "kb": 363.7,
+  "kb": 332.3,
   "loop": true,
   "lufs": -36.0,
   "peak_db": -13.3,
@@ -9,7 +9,7 @@
   "start": 42.5
  },
  "ambience/day_birds.ogg": {
-  "kb": 395.4,
+  "kb": 374.7,
   "loop": true,
   "lufs": -33.0,
   "peak_db": -17.0,
@@ -18,7 +18,7 @@
   "start": 58.0
  },
  "ambience/night_crickets.ogg": {
-  "kb": 305.2,
+  "kb": 285.0,
   "loop": true,
   "lufs": -34.0,
   "peak_db": -20.5,
@@ -27,7 +27,7 @@
   "start": 3.5
  },
  "ambience/rain.ogg": {
-  "kb": 380.7,
+  "kb": 360.2,
   "loop": true,
   "lufs": -28.0,
   "peak_db": -3.5,
@@ -36,7 +36,7 @@
   "start": 41.0
  },
  "ambience/wind.ogg": {
-  "kb": 85.8,
+  "kb": 82.5,
   "loop": true,
   "lufs": -30.0,
   "peak_db": -13.7,
@@ -194,42 +194,56 @@
   "seconds": 98.462
  },
  "sfx/bag.ogg": {
-  "kb": 28.0,
+  "kb": 27.5,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -9.2,
   "seconds": 2.2
  },
+ "sfx/bonk.ogg": {
+  "kb": 14.2,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -3.8,
+  "seconds": 0.85
+ },
  "sfx/checkpoint.ogg": {
-  "kb": 25.7,
+  "kb": 25.4,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -12.9,
   "seconds": 2.4
  },
  "sfx/coin.ogg": {
-  "kb": 15.5,
+  "kb": 7.8,
   "loop": false,
   "lufs": -22.0,
-  "peak_db": -14.6,
-  "seconds": 1.5
+  "peak_db": -13.1,
+  "seconds": 0.42
  },
  "sfx/crash.ogg": {
-  "kb": 40.8,
+  "kb": 40.5,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -7.4,
   "seconds": 3.4
  },
+ "sfx/dash.ogg": {
+  "kb": 10.7,
+  "loop": false,
+  "lufs": -25.0,
+  "peak_db": -10.8,
+  "seconds": 0.6
+ },
  "sfx/deck_roll.ogg": {
-  "kb": 32.0,
+  "kb": 31.7,
   "loop": true,
   "lufs": -30.0,
-  "peak_db": -11.8,
+  "peak_db": -11.0,
   "seconds": 4.0
  },
  "sfx/deny.ogg": {
-  "kb": 13.7,
+  "kb": 13.4,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -11.4,
@@ -243,42 +257,77 @@
   "seconds": 5.5
  },
  "sfx/gear.ogg": {
-  "kb": 49.8,
+  "kb": 49.4,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -8.3,
   "seconds": 3.6
  },
  "sfx/jump.ogg": {
-  "kb": 11.7,
+  "kb": 11.6,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -14.7,
   "seconds": 0.75
  },
  "sfx/land.ogg": {
-  "kb": 13.7,
+  "kb": 13.5,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -6.5,
   "seconds": 0.8
  },
+ "sfx/loop.ogg": {
+  "kb": 25.3,
+  "loop": false,
+  "lufs": -27.0,
+  "peak_db": -15.4,
+  "seconds": 2.0
+ },
+ "sfx/plane.ogg": {
+  "kb": 11.1,
+  "loop": true,
+  "lufs": -28.0,
+  "peak_db": -14.8,
+  "seconds": 1.0
+ },
+ "sfx/prize.ogg": {
+  "kb": 40.3,
+  "loop": false,
+  "lufs": -19.0,
+  "peak_db": -6.5,
+  "seconds": 2.8
+ },
  "sfx/purchase.ogg": {
-  "kb": 31.0,
+  "kb": 30.6,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -8.9,
   "seconds": 2.2
  },
+ "sfx/smash.ogg": {
+  "kb": 18.3,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -1.8,
+  "seconds": 1.2
+ },
  "sfx/splash.ogg": {
-  "kb": 17.2,
+  "kb": 16.9,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -15.9,
   "seconds": 1.0
  },
+ "sfx/spring.ogg": {
+  "kb": 15.6,
+  "loop": false,
+  "lufs": -22.0,
+  "peak_db": -7.6,
+  "seconds": 1.0
+ },
  "sfx/stomp.ogg": {
-  "kb": 17.0,
+  "kb": 16.7,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -5.2,
@@ -288,21 +337,21 @@
   "kb": 7.5,
   "loop": false,
   "lufs": -26.0,
-  "peak_db": -3.4,
+  "peak_db": -3.3,
   "seconds": 0.247
  },
  "sfx/thunder.ogg": {
-  "kb": 61.5,
+  "kb": 61.2,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -7.3,
   "seconds": 5.5
  },
  "sfx/toggle.ogg": {
-  "kb": 6.8,
+  "kb": 6.6,
   "loop": false,
   "lufs": -28.0,
-  "peak_db": -9.3,
+  "peak_db": -9.1,
   "seconds": 0.168
  },
  "sfx/train_horn.ogg": {
@@ -311,5 +360,26 @@
   "lufs": -24.9,
   "peak_db": -15.2,
   "seconds": 6.2
+ },
+ "sfx/wheelie.ogg": {
+  "kb": 13.1,
+  "loop": false,
+  "lufs": -26.0,
+  "peak_db": -11.7,
+  "seconds": 0.6
+ },
+ "sfx/zip_grab.ogg": {
+  "kb": 14.9,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -8.2,
+  "seconds": 0.8
+ },
+ "sfx/zipline.ogg": {
+  "kb": 12.4,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -19.6,
+  "seconds": 1.0
  }
 }

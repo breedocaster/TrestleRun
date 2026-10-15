@@ -98,6 +98,15 @@ func _build() -> void:
 		_preview_box.add_child(Kit.label(it.name, 8, UITheme.CREAM if kind == tab else UITheme.DIM))
 	var blurb: String = Catalog.item("rider", GameState.equipped("rider")).get("blurb", "")
 	_preview_box.add_child(Kit.label(blurb.to_upper(), 8, UITheme.GOLD))
+	# The equipped bike's specialty and how to use it.
+	var ab := Catalog.ability_text(GameState.equipped("bike"))
+	if String(ab[0]) != "":
+		_preview_box.add_child(Kit.label(String(ab[0]), 8, UITheme.GOLD if tab == "bike" else UITheme.DIM))
+		if tab == "bike":
+			var how := Kit.label(String(ab[1]), 8, UITheme.CREAM)
+			how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			how.custom_minimum_size = Vector2(128, 0)
+			_preview_box.add_child(how)
 
 	for c in _grid.get_children():
 		c.queue_free()
@@ -123,6 +132,10 @@ func _tile(it: Dictionary) -> Control:
 	var name_l := Kit.label(it.name, 8, UITheme.CREAM)
 	name_l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(name_l)
+	if tab == "bike":
+		var ab_l := Kit.label(String(Catalog.ability_text(id)[0]), 8, UITheme.GOLD)
+		ab_l.autowrap_mode = TextServer.AUTOWRAP_WORD
+		v.add_child(ab_l)
 	var b: Button
 	if equipped:
 		b = Kit.button("RIDING", 0, 22)

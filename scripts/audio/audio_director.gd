@@ -22,12 +22,16 @@ const TIME_LAYERS := {
 	"dusk": {"night_crickets": -3.0, "day_birds": -12.0},
 	"night": {"night_crickets": 0.0},
 }
-const LEVEL_LAYERS := {"copper_canyon": {"creek": -2.0}}
+const LEVEL_LAYERS := {"copper_canyon": {"creek": -2.0}, "mesa_springs": {"creek": -7.0}}
 
 var music: AudioStreamPlayer
 var eng_idle: AudioStreamPlayer
 var eng_cruise: AudioStreamPlayer
 var deck: AudioStreamPlayer
+var zip: AudioStreamPlayer
+var plane: AudioStreamPlayer
+var coin_voices: Array = []
+var _coin_voice := 0
 var amb := {}
 var pool: Array = []
 var _next := 0
@@ -56,8 +60,16 @@ func _ready() -> void:
 	eng_cruise = _player("Engine")
 	deck = _player("SFX")
 	deck.stream = _stream("sfx/deck_roll.ogg", true)
+	zip = _player("SFX")
+	zip.stream = _stream("sfx/zipline.ogg", true)
+	plane = _player("SFX")
+	plane.stream = _stream("sfx/plane.ogg", true)
 	for i in 10:
 		pool.append(_player("SFX"))
+	for i in 2:
+		var cp := _player("SFX")
+		cp.stream = _stream("sfx/coin.ogg")
+		coin_voices.append(cp)
 	apply_settings()
 	set_context("menu")
 	if not _is_headless():
@@ -181,12 +193,57 @@ func play(sfx_name: String, pitch := 1.0, vol_db := 0.0) -> void:
 	p.play()
 
 
-## Coins inside a streak climb the pentatonic; a pause resets the ladder.
+## Coins inside a streak climb the pentatonic; a pause resets the ladder. Two
+## dedicated voices alternate and each new coin damps the last one, so a fast
+## streak stays a clear run of notes instead of smearing together.
 func coin() -> void:
+	if _is_headless():
+		return
 	var now := Time.get_ticks_msec() / 1000.0
 	_coin_step = mini(_coin_step + 1, COIN_STEPS.size() - 1) if now - _coin_time < 0.75 else 0
 	_coin_time = now
-	play("coin", pow(2.0, COIN_STEPS[_coin_step] / 12.0), -4.0)
+	var prev: AudioStreamPlayer = coin_voices[_coin_voice]
+	if prev.playing:
+		_fade(prev, -40.0, 0.06, true)
+	_coin_voice = 1 - _coin_voice
+	var p: AudioStreamPlayer = coin_voices[_coin_voice]
+	_kill_tween(p)
+	p.pitch_scale = pow(2.0, COIN_STEPS[_coin_step] / 12.0)
+	p.volume_db = -4.0
+	p.play()
+
+
+## Bonus biplane drone. near: 0 (off-screen) .. 1 (overhead). behind: +1 while it is
+## still catching up (pitch a touch high), -1 once it has passed (Doppler drop).
+func plane_set(on: bool, near := 0.0, behind := 0.0) -> void:
+	if _is_headless():
+		return
+	if not on:
+		if plane.playing and not (_tweens.has(str(plane.get_instance_id())) and _tweens[str(plane.get_instance_id())].is_running()):
+			_fade(plane, -60.0, 0.6, true)
+		return
+	if not plane.playing:
+		_kill_tween(plane)
+		plane.volume_db = -40.0
+		plane.play()
+	_kill_tween(plane)
+	plane.volume_db = lerpf(-34.0, -9.0, clampf(near, 0.0, 1.0))
+	plane.pitch_scale = 1.0 + 0.05 * clampf(behind, -1.0, 1.0)
+
+
+## Pulley whine while hanging from a zipline.
+func zip_on(on: bool) -> void:
+	if _is_headless():
+		return
+	if on:
+		_kill_tween(zip)
+		zip.volume_db = -14.0
+		zip.pitch_scale = 1.0
+		if not zip.playing:
+			zip.play()
+		_fade(zip, -3.0, 0.15)
+	elif zip.playing:
+		_fade(zip, -60.0, 0.25, true)
 
 
 # --- engine ----------------------------------------------------------------------
@@ -235,6 +292,9 @@ func engine_stop(secs := 0.6) -> void:
 	_fade(eng_idle, -60.0, secs, true)
 	_fade(eng_cruise, -60.0, secs, true)
 	_fade(deck, -60.0, secs, true)
+	for p in [zip, plane]:
+		if p.playing:
+			_fade(p, -60.0, secs, true)
 
 
 ## Called every frame by the world while a run is live.
