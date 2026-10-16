@@ -254,6 +254,24 @@ func story_current() -> String:
 	return Catalog.story_levels()[Catalog.story_levels().size() - 1].id
 
 
+## Where CONTINUE on the title goes: the trail you last rode, or, once that's cleared,
+## the next one if it's open. "" before your first ride.
+func continue_target() -> String:
+	var last := String(data.get("last_level", ""))
+	if last == "" or Catalog.level(last).is_empty():
+		return ""
+	if bool(level_record(last).cleared):
+		var nxt := next_level_id(last)
+		if nxt != "" and level_unlocked(nxt):
+			return nxt
+	return last
+
+
+func set_last_level(id: String) -> void:
+	data.last_level = id
+	save_game()
+
+
 func next_level_id(id: String) -> String:
 	var ls := Catalog.story_levels() if Catalog.is_story(id) else Catalog.levels()
 	var i := -1

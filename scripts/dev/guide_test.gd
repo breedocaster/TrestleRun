@@ -8,6 +8,9 @@
 ##            next 60 frames from where the bot is at x
 ##        --guide-test --boss-trace=<level>:<weather>: catches, let-gos and hits in a boss arena
 ##        --guide-test --ride-trace=<level>:<weather>:<bike>:<x0>:<x1>: the bot's ride, frame by frame
+##        --guide-test --rope-windows[=<level>]: catch and let-go windows for every rope
+##        --guide-test --pacing: checkpoint stretches, forced jumps and quiet stretches per trail
+##        --guide-test --wheelie-probe: re-press timing before touchdown -> wheelie or jump
 extends Node
 
 const World := preload("res://scripts/game/world.gd")
@@ -29,6 +32,15 @@ func _ready() -> void:
 			return
 		if a.begins_with("--ride-trace="):
 			_ride_trace(a.substr(13))
+			return
+		if a.begins_with("--rope-windows"):
+			_rope_windows(a.substr(15))
+			return
+		if a == "--pacing":
+			_pacing()
+			return
+		if a == "--wheelie-probe":
+			_wheelie_probe()
 			return
 	var only := ""
 	var weathers := ["clear", "rain", "wind"]
@@ -95,7 +107,24 @@ func _run(id: String, weather: String) -> Vector2:
 
 
 ## Nobody pressing: wreck after wreck at the first trouble, and when the hint comes on.
+## Also: a tap during the wreck skips it, but only after CRASH_SKIP_TICKS.
 func _flow() -> void:
+	var w0 = World.new()
+	w0.headless = true
+	w0.setup("dusty_trail", {"bike": "scrambler", "ability": {}}, [], {"time": "dusk", "weather": "clear"})
+	while w0.crashes == 0 and w0.ticks < 60 * 60:
+		w0.tick()
+	var tap := InputEventAction.new()
+	tap.action = "jump"
+	tap.pressed = true
+	w0._unhandled_input(tap)
+	var early: String = w0.phase
+	for i in w0.CRASH_SKIP_TICKS:
+		w0.tick()
+	w0._unhandled_input(tap)
+	print("SKIP tap at once -> %s, tap after %d ticks -> %s (x=%.0f)" % [early, w0.CRASH_SKIP_TICKS, w0.phase, w0.state.x])
+	w0.free()
+	Guide._wrecks = {}  # that wreck shouldn't count towards the hint check below
 	for id in ["dusty_trail", "night_trestle", "rocket_ridge", "s1_clothesline", "s2_siding", "s4_drome"]:
 		var w = World.new()
 		w.headless = true
@@ -191,4 +220,201 @@ func _ride_trace(spec: String) -> void:
 			print("  x=%.1f y=%.1f vx=%.0f vy=%.0f g=%s tr=%d att=%s held=%s whl=%s boost=%.1f" % [s.x, s.y, s.vx, s.vy, s.grounded, s.track,
 				Phys.attachment(w.level, s), w.held_now, s.wheelie, s.boost])
 	print("RIDE_TRACE crashes=%d %s" % [w.crashes, str(w.death_log)])
+	get_tree().quit()
+
+
+## Dev (--guide-test --rope-windows[=<level>]): for every rope, the catch window (press
+## and keep holding, frames that catch it) and the let-go window (frames on the swing
+## where letting go ends on a deck or on the next rope). Both in ms of the longest run.
+func _rope_windows(only: String) -> void:
+	var Phys = load("res://scripts/game/bike_physics.gd")
+	for meta in Catalog.all_levels():
+		if only != "" and String(meta.id) != only:
+			continue
+		var lv0: Dictionary = load("res://scripts/game/level_library.gd").build(String(meta.id))
+		if (lv0.get("ropes", []) as Array).is_empty():
+			continue
+		for weather in ["clear", "rain", "wind"]:
+			var w = World.new()
+			w.headless = true
+			w.setup(String(meta.id), {"bike": "scrambler", "ability": {}}, [], {"time": "dusk", "weather": weather})
+			w.bot = Bot.new(w.level)
+			w.bot.collect = false
+			var lv: Dictionary = w.level
+			var line := []
+			for ri in lv.ropes.size():
+				var rp: Dictionary = lv.ropes[ri]
+				# Ride with the bot to well before this rope; skip ropes it reaches on a swing.
+				# (the rope's own run-up deck is the 70 px ending 40 px before it)
+				while (float(w.state.x) < float(rp.ax) - 108.0 or not w.state.grounded) and float(w.state.x) < float(rp.ax) - 44.0 \
+						and w.result.is_empty() and w.crashes == 0:
+					w.tick()
+				if not w.result.is_empty() or w.crashes > 0:
+					break
+				var st0: Dictionary = Phys.copy_state(w.state)
+				if not st0.grounded:
+					line.append("r%d:air" % ri)
+					continue
+				# Catch: ride on k frames, then press and hold until caught.
+				var st: Dictionary = Phys.copy_state(st0)
+				var oks := []
+				var catch_state := {}
+				for k in 90:
+					var s: Dictionary = Phys.copy_state(st)
+					var got := false
+					var late_mode := "--late" in OS.get_cmdline_user_args()
+					for i in 200:
+						# --late: a medium jump (14 frames held), then the button again only once the hands are
+						# 10 px past the rope (catching it late).
+						var hold: bool = (i < 14 or float(s.x) + 4.0 > float(rp.ax) + 10.0) if late_mode else true
+						Phys.step(lv, s, i == 0, hold)
+						if int(s.rope) == ri:
+							got = true
+							if catch_state.is_empty() or k == 45:
+								catch_state = Phys.copy_state(s)
+							break
+						if not s.alive or (i > 2 and s.grounded):
+							break
+					oks.append(got)
+					Phys.step(lv, st, false, false)
+					if not st.alive or not st.grounded:
+						break
+				var cw := _longest(oks)
+				# Let go: from the middle catch, hold k frames then release.
+				var rel := []
+				if not catch_state.is_empty():
+					for k in 150:
+						var s: Dictionary = Phys.copy_state(catch_state)
+						var fine := false
+						for i in 600:
+							var h: bool = i < k or (i > k and Phys.auto_hold(lv, s))
+							Phys.step(lv, s, false, h)
+							if not s.alive:
+								break
+							if i >= k and (int(s.rope) > ri or (s.grounded and Phys.attachment(lv, s) == "")):
+								fine = float(s.x) > float(rp.ax)
+								break
+						rel.append(fine)
+						if int(Phys.copy_state(catch_state).rope) < 0:
+							break
+				line.append("r%d@%d catch %dms let-go %dms" % [ri, int(rp.ax), int(cw * 1000.0 / 60.0), int(_longest(rel) * 1000.0 / 60.0)])
+			print("ROPES %-15s %-5s %s" % [String(meta.id), weather, " | ".join(line)])
+			w.free()
+	get_tree().quit()
+
+
+static func _longest(a: Array) -> int:
+	var best := 0
+	var run := 0
+	for v in a:
+		run = run + 1 if v else 0
+		best = maxi(best, run)
+	return best
+
+
+## Dev (--guide-test --pacing): per trail, how the ride is spread out: seconds between
+## checkpoints, the forced jumps (the careful rider's), the longest stretch with nothing
+## to do, and how many stretches go 6 s or more without a forced jump.
+func _pacing() -> void:
+	var Careful = load("res://scripts/dev/careful.gd")
+	for meta in Catalog.all_levels():
+		if meta.get("boss", false):
+			continue
+		var w = World.new()
+		w.headless = true
+		var wx := String(meta.cond.weather) if meta.has("cond") else "clear"
+		w.setup(String(meta.id), {"bike": "scrambler", "ability": {}}, [], {"time": "dusk", "weather": wx})
+		var bot = Bot.new(w.level)
+		bot.collect = false
+		var c = Careful.new()
+		c.level = w.level
+		c.bot = bot
+		w.bot = c
+		var ride := 0
+		var xs := PackedFloat32Array()
+		while w.result.is_empty() and w.ticks < 60 * 400 and w.crashes < 3:
+			if w.phase == "ride":
+				ride += 1
+				xs.append(float(w.state.x))
+			w.tick()
+		var t_at := func(x: float) -> float:
+			for i in xs.size():
+				if xs[i] >= x:
+					return i / 60.0
+			return xs.size() / 60.0
+		var cps := [0.0]
+		for cp in w.level.checkpoints:
+			cps.append(float(t_at.call(float(cp.x))))
+		cps.append(ride / 60.0)
+		var segs := []
+		for i in cps.size() - 1:
+			segs.append("%.0f" % (float(cps[i + 1]) - float(cps[i])))
+		var ft := []
+		for e in c.windows:
+			ft.append(float(t_at.call(float(e.x))))
+		ft.sort()
+		var gaps := []
+		var prev := 0.0
+		var longest := 0.0
+		var long_at := 0.0
+		var n6 := 0
+		for t in ft + [ride / 60.0]:
+			var g: float = float(t) - prev
+			if g >= 6.0:
+				n6 += 1
+			if g > longest:
+				longest = g
+				long_at = prev
+			prev = float(t)
+		print("PACE %-15s %-5s %4.1fs  checkpoint stretches %s s  forced %d  longest quiet %.1fs at %.0fs  quiet>=6s x%d  crashes %d" % [
+			String(meta.id), wx, ride / 60.0, "/".join(segs), ft.size(), longest, long_at, n6, w.crashes])
+		# What the quiet stretches (>= 7 s) are made of.
+		prev = 0.0
+		for t in ft + [ride / 60.0]:
+			if float(t) - prev >= 7.0:
+				var x0: float = xs[mini(int(prev * 60.0), xs.size() - 1)]
+				var x1: float = xs[mini(int(float(t) * 60.0), xs.size() - 1)]
+				var names := []
+				for m in w.level.marks:
+					if float(m[1]) >= x0 - 60.0 and float(m[1]) < x1:
+						names.append(String(m[0]))
+				print("   quiet %.1fs %.0f-%.0fs x%d-%d: %s" % [float(t) - prev, prev, float(t), int(x0), int(x1), " ".join(names)])
+			prev = float(t)
+		w.free()
+	get_tree().quit()
+
+
+## Dev (--guide-test --wheelie-probe): on a flat deck, jump, let go, then press again d
+## frames before touchdown and keep holding: does it wheelie or jump again?
+func _wheelie_probe() -> void:
+	var Phys = load("res://scripts/game/bike_physics.gd")
+	var w = World.new()
+	w.headless = true
+	w.setup("dusty_trail", {"bike": "scrambler"}, [], {"time": "dusk", "weather": "clear"})
+	w.phase = "ride"
+	var s0: Dictionary = Phys.copy_state(w.state)
+	# Where a 14-frame jump lands (frames from the press).
+	var s: Dictionary = Phys.copy_state(s0)
+	var land := -1
+	for i in 120:
+		Phys.step(w.level, s, i == 0, i < 14)
+		if i > 1 and s.grounded:
+			land = i
+			break
+	var out := []
+	for d in range(-3, 12):
+		s = Phys.copy_state(s0)
+		var res := "-"
+		var p := land - d
+		for i in 160:
+			var held: bool = i < 14 or i >= p
+			var ev: int = Phys.step(w.level, s, i == 0 or i == p, held)
+			if i > land and (ev & Phys.EV_JUMP):
+				res = "JUMP"
+				break
+			if i > land + 4 and s.wheelie:
+				res = "WHEELIE"
+				break
+		out.append("%+d:%s" % [d, res])
+	print("WHEELIE_PROBE land@%d  (frames the re-press came before touchdown: result)  %s" % [land, " ".join(out)])
 	get_tree().quit()

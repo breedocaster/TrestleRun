@@ -42,6 +42,7 @@ const LOOP_SLOW := 0.14    # loop speed dips by this share at the top
 
 # Bike specialties (see Catalog.bikes()).
 const WHEELIE_RISE := 1.4  # per second: how fast a wheelie builds to its boost
+const WHEELIE_COMMIT := 0.045 # s: pressed 3+ frames before touchdown and still held = wheelie, not a jump
 const BOOST_DECAY := 0.8   # per second: boost bleeds off once the front wheel drops
 const HOP_V := 285.0       # minibike second hop
 const GLIDE_G := 260.0     # scooter umbrella: gravity while gliding
@@ -91,6 +92,12 @@ const ROPE_KICK := 1.3      # ...plus a push off the grab
 const ROPE_MAX_A := 1.3     # rad: the swing never goes past this
 ## Dev bot (simulations only): let go of a rope on the forward swing past this angle.
 const ROPE_REL := 0.6
+const ROPE_REACH_TOP := 0.08  # hands this far down the rope (share of its length) or lower catch it...
+const ROPE_REACH_LOW := 28.0  # ...down to this far below its end (px)
+const ROPE_LATE := 0.12       # s: holding this soon after the hands went past the rope still catches it
+const ROPE_LATE_DX := 24.0    # ...if they're no farther past than this (px)
+const ROPE_FLING_VX := 1.0    # letting go on the forward swing: at least this share of trail speed forward
+const ROPE_FLING_VY := 150.0  # ...and at least this fast upward
 # Bosses: land on the glowing weak spot to hit it; bumping the rest of it is a bonk.
 const BOSS_BOUNCE := 1.0
 const RAIL_POP := 110.0     # holding off the end of a rail pops you up (to catch the next one)
@@ -139,7 +146,8 @@ static func new_state(level: Dictionary, x: float, track: int, t: float = 0.0, a
 		"sticky_t": 0.0, "rocket_t": 0.0, "magnet_t": 0.0, "hat": 0, "got": {}, "last_power": "",
 		"climb": -1, "crumb": {},
 		"chase_x": x - CHASE_GAP if level.has("chase") else -INF,
-		"rope": -1, "rope_a": 0.0, "rope_w": 0.0, "rope_r": 0.0, "rope_last": -1, "zip_pop": false,
+		"rope": -1, "rope_a": 0.0, "rope_w": 0.0, "rope_r": 0.0, "rope_last": -1, "rope_miss": -1, "rope_miss_t": 0.0,
+		"zip_pop": false,
 		"boss_hp": int((level.get("boss", {}) as Dictionary).get("hp", 0)), "boss_used": {}, "boss_loops": 0, "boss_hits": 0, "boss_bounce": false,
 	}
 
@@ -527,6 +535,11 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 		ev |= _zip_step(level, s, held, cruise)
 		return _finish_step(level, s, ev, oy, false, held)
 
+	# Wheelie bikes: a press made in the air and still held at touchdown is a wheelie,
+	# not another jump, unless it came in the last moment before the wheels hit (a
+	# "jump again as I land" press). A tap let go of before touchdown still jumps.
+	if s.ab == "wheelie" and s.wheelie and held and s.buffer > 0.0 and BUFFER - float(s.buffer) >= WHEELIE_COMMIT:
+		s.buffer = 0.0
 	if s.buffer > 0.0 and s.coyote > 0.0:
 		var boost := minf(0.0, s.slope * s.vx) * RAMP_BOOST if s.grounded else 0.0
 		s.vy = -JUMP_V * (RAIN_TAKEOFF if rain else 1.0) * (ROCKET_JUMP if float(s.rocket_t) > 0.0 else 1.0) + boost
@@ -706,25 +719,34 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 				s.death = "wall"
 				return ev | EV_DEAD
 
-		# Rope swing: holding as your hands pass the rope grabs it.
-		if held and level.has("rope_buckets"):
+		# Rope swing: holding as your hands pass the rope grabs it. Pressing a moment
+		# after they've gone past still does (ROPE_LATE), and the reach is generous.
+		if level.has("rope_buckets"):
 			for ri in _near(level, "rope_buckets", nx, int(s.lane)):
 				if ri == int(s.rope_last):
 					continue
 				var rp: Dictionary = level.ropes[ri]
 				var hy := ny - HEIGHT - 2.0
-				if ox + 4.0 <= float(rp.ax) and nx + 4.0 > float(rp.ax) \
-						and hy >= float(rp.ay) + float(rp.len) * 0.15 and hy <= float(rp.ay) + float(rp.len) + 20.0:
+				var reach: bool = hy >= float(rp.ay) + float(rp.len) * ROPE_REACH_TOP \
+						and hy <= float(rp.ay) + float(rp.len) + ROPE_REACH_LOW
+				var passing: bool = ox + 4.0 <= float(rp.ax) and nx + 4.0 > float(rp.ax)
+				var late: bool = int(s.rope_miss) == ri and float(s.t) - float(s.rope_miss_t) <= ROPE_LATE \
+						and nx + 4.0 - float(rp.ax) <= ROPE_LATE_DX
+				if reach and passing and not held:
+					s.rope_miss = ri  # not holding as the hands went by: a late press still counts
+					s.rope_miss_t = s.t
+				if held and reach and (passing or late):
 					ev |= _end_tricks(s, false)
 					s.rope = ri
 					s.rope_r = clampf(hy - float(rp.ay), float(rp.len) * 0.75, float(rp.len))
-					s.rope_a = asin(clampf((nx + 4.0 - float(rp.ax)) / float(s.rope_r), -0.5, 0.5))
+					s.rope_a = asin(clampf((nx + 4.0 - float(rp.ax)) / float(s.rope_r), -0.5, 0.5))  # (a late catch starts a little way into the swing)
 					s.rope_w = maxf(float(s.vx), ROPE_MIN_V) * ROPE_KICK / float(s.rope_r)
 					s.jumping = false
 					s.cut = false
 					s.dash_t = 0.0
 					s.coyote = 0.0
 					s.wheelie = false
+					s.rope_miss = -1
 					var hand := Vector2(rp.ax, rp.ay) + float(s.rope_r) * Vector2(sin(s.rope_a), cos(s.rope_a))
 					s.x = hand.x - 4.0
 					s.y = hand.y + HEIGHT + 2.0
@@ -806,6 +828,7 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 					s.vx += base * RAIN_SLIDE * clampf(impact / MAX_FALL, 0.35, 1.0)
 				landed = true
 				s.rope_last = -1
+				s.rope_miss = -1
 				s.zip_pop = false
 				s.boss_bounce = false
 				ev |= EV_LAND
@@ -1067,6 +1090,11 @@ static func _rope_step(level: Dictionary, s: Dictionary, held: bool) -> int:
 	s.vx = r * w * cos(a)
 	s.vy = -r * w * sin(a)
 	if not held:
+		if w > 0.0 and a > -0.35:
+			# Letting go on the forward swing always flings you forward and a little up,
+			# so the let-go doesn't have to be pinpoint: early is a lower, flatter fling.
+			s.vx = maxf(float(s.vx), float(level.speed) * ROPE_FLING_VX)
+			s.vy = minf(float(s.vy), -ROPE_FLING_VY)
 		s.rope_last = s.rope
 		s.rope = -1
 		s.grounded = false

@@ -135,7 +135,14 @@ func _ready() -> void:
 				else:
 					for i in int(parts[2]):
 						w.tick()
-				if parts.size() > 3 and parts[3] == "guidethread":
+				if parts.size() > 3 and parts[3] == "crash":
+					# Mid-wreck, past the point where a tap skips it (the HUD says so).
+					w.bot = null
+					w.state.death = "hit"
+					w._crash()
+					for i in w.CRASH_SKIP_TICKS + 6:
+						w.tick()
+				elif parts.size() > 3 and parts[3] == "guidethread":
 					# The real thing: wreck here (counted as the 99th time), then let the
 					# game run on its own clock with the hint worked out on the worker.
 					var G2 = load("res://scripts/game/guide.gd")

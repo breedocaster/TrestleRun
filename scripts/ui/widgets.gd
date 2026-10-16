@@ -263,6 +263,20 @@ class VolumeSlider extends Control:
 			UITheme.DIM if value <= 0.001 else UITheme.CREAM)
 
 
+## An ON/OFF setting as a button ("CRASH HINTS: ON"). on_change gets the new value.
+static func flag_button(title: String, key: String, width := 160, on_change := Callable()) -> Button:
+	const KitC := preload("res://scripts/ui/kit.gd")
+	var b: Button = KitC.button("%s: %s" % [title, "ON" if GameState.flag(key) else "OFF"], width, 22)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(func():
+		var v := not GameState.flag(key)
+		GameState.set_flag(key, v)
+		b.text = "%s: %s" % [title, "ON" if v else "OFF"]
+		if on_change.is_valid():
+			on_change.call(v))
+	return b
+
+
 ## MUSIC + SOUND + ENGINE sliders, saved on release. SOUND chimes so you can hear
 ## it; ENGINE revs your bike (menus only: in a paused run the engine is paused too).
 static func audio_sliders(rev_engine := true) -> VBoxContainer:

@@ -63,7 +63,7 @@ static func ability_text(bike_id: String) -> Array:
 		"wheelie":
 			var pct := int(round(float(b.get("k", 0.1)) * 100.0))
 			var title := "WHEELIE" if pct <= 10 else ("BIG WHEELIE" if pct <= 14 else "POWER WHEELIE")
-			return ["%s +%d%%" % [title, pct], "KEEP HOLDING AS YOU LAND: FRONT WHEEL UP, SPEED BUILDS WHILE YOU HOLD"]
+			return ["%s +%d%%" % [title, pct], "HOLD THE BUTTON AS YOU LAND: FRONT WHEEL UP, SPEED BUILDS WHILE YOU HOLD"]
 		"hop":
 			return ["DOUBLE HOP", "TAP AGAIN IN THE AIR FOR ONE MORE HOP"]
 		"glide":
@@ -233,28 +233,28 @@ const PARS := {
 	"night_trestle": 53.5,
 	"mesa_springs": 61.0,
 	"lantern_mine": 62.0,
-	"hoodoo_loops": 66.5,
-	"hoist_yard": 55.5,
-	"skyline_pass": 77.0,
+	"hoodoo_loops": 67.0,
+	"hoist_yard": 56.0,
+	"skyline_pass": 77.5,
 	"quarry_cliffs": 53.5,
-	"rocket_ridge": 51.0,
+	"rocket_ridge": 51.5,
 	"last_trestle": 40.5,
 	"s1_hayfield": 47.5,
 	"s1_clothesline": 50.0,
 	"s1_powerlines": 50.5,
-	"s1_boss": 18.5,
+	"s1_boss": 18.0,
 	"s2_siding": 46.5,
 	"s2_chutes": 46.5,
 	"s2_roundhouse": 44.0,
-	"s2_boss": 17.5,
-	"s3_apple_row": 42.5,
+	"s2_boss": 17.0,
+	"s3_apple_row": 42.0,
 	"s3_creek": 39.5,
-	"s3_hollow_oak": 46.0,
-	"s3_boss": 16.5,
+	"s3_hollow_oak": 45.5,
+	"s3_boss": 16.0,
 	"s4_fairgrounds": 44.0,
-	"s4_drome": 42.0,
+	"s4_drome": 41.5,
 	"s4_grandstand": 47.0,
-	"s4_boss": 17.5,
+	"s4_boss": 17.0,
 }
 
 
@@ -321,7 +321,7 @@ const FEATURES := {
 	"rail2": ["RAIL HOPS", "RAILS IN A ROW, AND RAILS THAT RUN DOWNHILL.",
 		"KEEP HOLDING OFF THE END OF A RAIL: YOU POP UP AND LAND ON THE NEXT ONE. SOME RAILS HAVE A LOWER ROAD UNDER THEM IF YOU LET GO.", "RAIL HOPS"],
 	"rope": ["ROPE SWINGS", "ROPES HANGING OVER GAPS TOO WIDE TO JUMP.",
-		"JUMP AND HOLD TO CATCH THE ROPE, KEEP HOLDING AS IT SWINGS YOU FORWARD, THEN LET GO ON THE WAY UP TO FLY ACROSS. YOU CAN SWING BACK AND TRY AGAIN.", "ROPES"],
+		"JUMP AND HOLD TO CATCH THE ROPE (PRESSING JUST AFTER YOU PASS IT STILL CATCHES IT). KEEP HOLDING, THEN LET GO WHILE IT SWINGS YOU FORWARD TO FLY ACROSS.", "ROPES"],
 	"wallride": ["WALL-RIDES", "CURVED BOARD WALLS THAT ARC UP OVER A PIT.",
 		"JUMP ON AND HOLD ALL THE WAY ROUND. LET GO AND YOU FALL OFF. A WALL THAT ENDS GOING UP THROWS YOU INTO THE AIR.", "WALL-RIDES"],
 	"wallride2": ["WALL OF DEATH", "BIG WALLS, STEEP LIPS, AND RAILS AND ROPES MIXED IN.",

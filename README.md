@@ -23,7 +23,9 @@ Two ways to play from the title screen: **STORY** (win back the parts of Grandpa
 - **T-R-E-S-T-L-E letters:** seven per trail, shown in the HUD as you find them. All seven in one run pays +50. They roll back with coins if you crash past a checkpoint.
 - **Medals per trail:** bronze for a clear, silver for all seven letters in one run, gold for a run under par with no crashes (par is the dev bot's clean time + about a second; +18% in wind). Shown on the trail cards and the results screen.
 - **Ghost:** your best-time run rides alongside you as a see-through rider. GHOST RUN on/off in Settings.
-- Checkpoints mid-trail; crashes respawn you there. Coins only bank when you finish.
+- Checkpoints mid-trail; crashes respawn you there about 1.6 s later, or tap once the wreck has played for 0.4 s ("TAP TO GO AGAIN") to come straight back. Coins only bank when you finish.
+- **CONTINUE** on the title screen takes you straight into the trail you last rode, or the next one once that's cleared (Free Ride trails keep your last time and weather).
+- **Settings** (title screen): GHOST RUN, CRASH HINTS and VIBRATION on/off; CRASH HINTS is in the pause menu too.
 - **Payout** per clear = coins + conditions bonus + new gears + clear bonus + no-crash bonus. Results also show your time and best time.
 
 ### Story mode
@@ -63,11 +65,11 @@ The carburetor, top end, bottom end and frame are still out there (shown as "com
 | Rail Yard | Switchback Siding | 126 | clear | 133 ms | 166 ms | 2.9 | 0 |
 | Rail Yard | Coal Chutes | 130 | rain | 150 ms | 150 ms | 2.8 | 0 |
 | Rail Yard | Roundhouse | 134 | clear | 133 ms | 250 ms | 2.8 | 0 |
-| Orchard | Apple Row | 132 | clear | 150 ms | 183 ms | 3.9 | 0 |
+| Orchard | Apple Row | 132 | clear | 166 ms | 183 ms | 3.9 | 0 |
 | Orchard | Creek Crossing | 136 | clear | 133 ms | 166 ms | 3.3 | 0 |
 | Orchard | Hollow Oak | 140 | wind | 166 ms | 166 ms | 4.0 | 0 |
 | Speedway | Fairgrounds | 140 | clear | 133 ms | 166 ms | 4.0 | 0 |
-| Speedway | Wall of Death | 144 | wind | 250 ms | 250 ms | 3.6 | 0 |
+| Speedway | Wall of Death | 144 | wind | 250 ms | 266 ms | 3.6 | 0 |
 | Speedway | Grandstand | 148 | clear | 150 ms | 183 ms | 3.0 | 0 |
 
 The story is gentler on timing than late Free Ride (its tightest spot anywhere is 133 ms, eight frames, and those are all ordinary hazards: a flyer over a gap, a spiker under a flyer; Free Ride's tightest is 83 ms). Its step up from area to area is the new hold move, plus speed. Measuring it turned up wall-rides that could only be caught by coming down onto the steep face, a one-frame window on the speedway; now holding as you rise into the face sticks you to it too, and no hold move is in the tightest spots any more.
@@ -77,7 +79,7 @@ The story is gentler on timing than late Free Ride (its tightest spot anywhere i
 Ziplines were the one place the button meant "keep holding". Story trails add three more, and they only carry you **while you hold**: let go and you drop.
 
 - **Grind rails:** steel rails over gaps. Jump onto one and keep holding; sparks and a grind sound while you're on it. Hold off the end and you pop up (onto the next rail in a chain); some rails run downhill or have a lower road under them for letting go early.
-- **Rope swings:** ropes hanging from beams, branches and cranes. Jump and hold to catch one; the swing builds as you hang, and letting go on the forward upswing flings you across. Let go too early and you can swing back and try again.
+- **Rope swings:** ropes hanging from beams, branches and cranes. Jump and hold to catch one; you can catch it a long way down its length, and pressing up to 0.12 s after your hands go past it still catches it. Letting go any time it's swinging you forward flings you forward and a little up (early is a flatter fling), so the let-go window is about half a second. Hold too long and it swings you back; keep holding and it swings forward again.
 - **Wall-rides:** curved board walls that arc up over a pit. Jump at the face and hold: you stick to it whether you come down onto it or are still rising into it (like catching a cable), so the timing is forgiving. Hold all the way round; a wall that ends going up (a lip) throws you into the air.
 - **More zipline variants:** cables that haul you uphill, chains where you pop off one cable onto the next, and cables over little islands with a prize and a spring.
 
@@ -89,7 +91,7 @@ Each boss is an alien machine that moves between fixed spots in its arena: the S
 
 Wreck a few times in the same stretch of trail and your next try shows the way through it: a tip at the top of the screen for that kind of stretch, and a dotted line from the checkpoint to past the trouble, with **TAP**, **HOLD** and **LET GO** marks (the dots turn blue while the button should be down). The line is the real physics played forward from the exact spot you respawn at, ridden by the autopilot, with each plain jump moved to the middle of its timing window (where a person has the most room either side). It's worked out on a background thread while the crash plays, so the run never stutters. It disappears once you're through.
 
-How many wrecks it takes rises as the game goes on: 2 on Free Ride trails 1-3 and on the farm, 3 on trails 4-6 and in the rail yard, 4 on trails 7-9 and in the orchard, 5 on trails 10-12 and at the speedway. Cables, rails, ropes, wall-rides and boss arenas always hint after 2, since those are the ones you can't solve by jumping harder. The count is per stretch and survives RESTART until you close the app.
+How many wrecks it takes rises as the game goes on: 2 on Free Ride trails 1-3 and on the farm, 3 on trails 4-6 and in the rail yard, 4 on trails 7-9 and in the orchard, 5 on trails 10-12 and at the speedway. Cables, rails, ropes, wall-rides and boss arenas always hint after 2, since those are the ones you can't solve by jumping harder. The count is per stretch and survives RESTART until you close the app. CRASH HINTS in Settings or the pause menu turns them off.
 
 ### Achievements
 
@@ -160,7 +162,7 @@ Every bike keeps the same one-button control and hitbox; each adds one move.
 
 | Bike | Specialty | How |
 |---|---|---|
-| Scrambler | Wheelie +10% | Keep holding as you land: front wheel up, speed builds while you hold, then bleeds off |
+| Scrambler | Wheelie +10% | Hold the button as you land: front wheel up, speed builds while you hold, then bleeds off |
 | Dirt bike | Big wheelie +14% | Same, stronger |
 | Sportbike | Power wheelie +18% | Same, strongest |
 | Minibike | Double hop | Tap again in the air for one more hop |
@@ -168,7 +170,7 @@ Every bike keeps the same one-button control and hitbox; each adds one move.
 | Cafe racer | Air dash | Tap in the air to dash forward |
 | Chopper | Iron hide | Smash through one enemy per checkpoint (falls still count) |
 
-An air press within a few pixels of landing still counts as a buffered jump rather than a specialty move. On story trails the scooter's umbrella stays shut when a rail, wall-ride or rope is just ahead: holding there means "grab", and a floating scooter would drift over the top of them. The garage shows each bike's specialty; the HUD names it bottom left and lights it while it's active.
+Wheelie or jump again: on the wheelie bikes, a press in the air that you're still holding when the wheels touch is a wheelie, unless it came on the very last frame before touchdown or on touchdown itself (a "jump again as I land" press). A tap you let go of before touchdown still jumps again on landing, and a press after touchdown always jumps. (Before 0.8.1 any press in the last 0.12 s before touchdown jumped again, which is what kept turning wheelies into jumps.) An air press within a few pixels of landing still counts as a buffered jump rather than a specialty move. On story trails the scooter's umbrella stays shut when a rail, wall-ride or rope is just ahead: holding there means "grab", and a floating scooter would drift over the top of them. The garage shows each bike's specialty; the HUD names it bottom left and lights it while it's active.
 
 ### Bonus plane
 
@@ -329,13 +331,16 @@ xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2
 - `--probe` rides Last Trestle in each weather and prints how close the collapse came
 - `--par` prints each trail's par time (the bot's clean clear-weather time + 1 s, rounded up to the half second) for `Catalog.PARS`
 - `--set=story|free` limits `--verify` to the story or Free Ride trails; `--test=` runs the short test strips in `level_layouts.gd` (`TESTS`) instead, each at the given speed
-- `--guide-test` rides every trail in every weather and, at each checkpoint, works out the crash-hint line from there to the next checkpoint exactly as a wreck would; it reports any line that doesn't get through and how long the work took
+- `--guide-test` rides every trail in every weather and, at each checkpoint, works out the crash-hint line from there to the next checkpoint exactly as a wreck would; it reports any line that doesn't get through and how long the work took. Its other modes (listed at the top of `scripts/dev/guide_test.gd`): `--flow` (when hints switch on, and the crash skip), `--rope-windows` (catch and let-go windows per rope; add `--late` for a press after the hands pass), `--wheelie-probe`, `--pacing` (checkpoint stretches and quiet stretches), and probes for a single spot
 - `--ach-export=` writes the store kit for achievements (needs a display, so `xvfb-run` on a server; see ACHIEVEMENTS.md)
 
-Current result (v0.8.0):
-- Plain bike: all 84 runs (12 Free Ride trails + 16 story trails, x 3 weathers) cleared with 0 crashes and 3/3 gears; every boss knocked out 3/3 without circling round, in every weather. Letters 7/7 in 68 of 72 trail runs (bosses have none); each miss is a single letter that the bot picks up in the other weathers.
-- Every bike with its specialty active: all 588 runs cleared with 0 crashes, and no boss circles round on any bike. (The first pass had the scooter falling on rail-yard trails: holding to grind also opened its umbrella, which floated it over the rails. The umbrella now stays shut with a rail, wall-ride or rope just ahead.) Gears 3/3 in all but eight runs, all of them the scooter floating past one. Letters 7/7 in 466 of 504 trail runs.
-- `--guide-test`: from every checkpoint of every trail in every weather, the crash-hint line gets through to the next checkpoint (240 lines, 0 failures). Working it out takes at most 1.4-2.7 ms per frame of line on this machine, depending on the trail, against 16.7 ms per frame of riding, so the line runs well ahead of you on the worker thread.
+Current result (v0.8.1):
+- Plain bike: all 84 runs (12 Free Ride trails + 16 story trails, x 3 weathers) cleared with 0 crashes and 3/3 gears; every boss knocked out 3/3 without circling round, in every weather. Letters 7/7 in 67 of 72 trail runs (bosses have none); the misses are single letters except Hollow Oak in wind (two), all picked up by the bot in the other weathers.
+- Every bike with its specialty active: all 588 runs cleared with 0 crashes, and no boss circles round on any bike. (In 0.8.0's first pass the scooter fell on rail-yard trails: holding to grind also opened its umbrella, which floated it over the rails. The umbrella now stays shut with a rail, wall-ride or rope just ahead.) Gears 3/3 in all but twelve runs, all of them the scooter floating past one. Letters 7/7 in 462 of 504 trail runs.
+- `--guide-test`: from every checkpoint of every trail in every weather, the crash-hint line gets through to the next checkpoint (252 lines, 0 failures). Working it out took 2.0-4.2 ms per frame of line on this machine with another test running alongside (about 2.1-3.2 ms with a core to itself), against 16.7 ms per frame of riding, so the line runs well ahead of you on the worker thread.
+- `--guide-test --rope-windows`: every rope that's caught from a deck has a let-go window of 416-500 ms (466 ms median), up from 266-383 ms before 0.8.1's fling. A press that comes 10 px after the hands pass the rope now catches it.
+- `--guide-test --wheelie-probe`: on the scrambler, a press made 2 or more frames before touchdown and held through it wheelies; one in the last frame before, or after, jumps again.
+- `--guide-test --pacing`: the longest stretch between checkpoints is now 24 s (Skyline Pass's middle one); 0.8.0 had 34, 28, 24 and 23 s final stretches on Skyline Pass, Hoodoo Loops, Rocket Ridge and Hoist Yard, which now have a third checkpoint.
 - `--guide-test --flow` (nobody pressing): the hint comes on after the 2nd wreck at the first gap of Trail 1, the 3rd on Trail 4, the 5th on Trail 11, and the 2nd at a rail or wall-ride in any area.
 - `--input-test`: taps and holds jump through the real touch pipeline; the pause and **?** buttons never leak a jump.
 - `--demo=scroll` (add `--touch` to send screen-touch events instead of emulated mouse): finger drags that start anywhere on a trail card (panel, text, thumbnail, button) scroll the trail picker, a drag across a button doesn't press it, and a plain tap on RIDE still opens the picker. Same fix in the garage and credits lists.

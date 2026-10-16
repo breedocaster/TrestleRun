@@ -41,6 +41,8 @@ func _ready() -> void:
 	var cond: Dictionary = (meta0.cond as Dictionary).duplicate() if meta0.has("cond") else GameState.conditions().duplicate()
 	world = World.new()
 	world.setup(level_id, GameState.loadout(), GameState.level_record(level_id).gears, cond)
+	world.hints = GameState.flag("hints")
+	GameState.set_last_level(level_id)
 	if GameState.flag("ghost"):
 		world.ghost = GameState.load_ghost(level_id)
 	world.run_finished.connect(_on_finished)
@@ -148,6 +150,10 @@ func pause() -> void:
 	for b in [r, rs, q]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(b)
+	col.add_child(Widgets.flag_button("CRASH HINTS", "hints", 150, func(on: bool):
+		world.hints = on
+		if not on:
+			world.guide_on = false))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 2)
 	col.add_child(gap)

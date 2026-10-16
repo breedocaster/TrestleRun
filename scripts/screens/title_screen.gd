@@ -9,6 +9,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const MoneyBadge := preload("res://scripts/ui/money_badge.gd")
 const Widgets := preload("res://scripts/ui/widgets.gd")
+const Catalog := preload("res://scripts/catalog.gd")
 
 
 class TitleRide extends Node2D:
@@ -93,13 +94,24 @@ func _ready() -> void:
 	col.add_child(Kit.label("RUN", 32, UITheme.CREAM))
 	col.add_child(Kit.label("ONE-BUTTON CANYON RIDER", 8, UITheme.DIM))
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 8)
+	gap.custom_minimum_size = Vector2(0, 2)
 	col.add_child(gap)
-	var story := Kit.button("STORY", 150, 26)
+	# Straight back into the trail you were on (or the next one, once it's cleared).
+	var cont_id := GameState.continue_target()
+	if cont_id != "":
+		var cont := Kit.button("CONTINUE: %s >" % Catalog.level_label(cont_id), 150, 22)
+		cont.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		cont.pressed.connect(func(): navigate.emit("game", cont_id))
+		col.add_child(cont)
+	# With CONTINUE showing, the rest get a little slimmer so the title still clears the top bar.
+	var bh := 22 if cont_id != "" else 26
+	if cont_id != "":
+		col.add_theme_constant_override("separation", 4)
+	var story := Kit.button("STORY", 150, bh)
 	story.pressed.connect(func(): navigate.emit("story" if GameState.story().intro_seen else "story_intro", ""))
-	var ride := Kit.button("FREE RIDE", 150, 26)
+	var ride := Kit.button("FREE RIDE", 150, bh)
 	ride.pressed.connect(func(): navigate.emit("levels", ""))
-	var garage := Kit.button("GARAGE", 150, 26)
+	var garage := Kit.button("GARAGE", 150, bh)
 	garage.pressed.connect(func(): navigate.emit("garage", ""))
 	for b in [story, ride, garage]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -164,12 +176,15 @@ func _open_settings() -> void:
 	v.add_theme_constant_override("separation", 8)
 	v.add_child(Kit.label("SETTINGS", 16, UITheme.GOLD))
 	v.add_child(Widgets.audio_sliders())
-	var gb := Kit.button("GHOST RUN: %s" % ("ON" if GameState.flag("ghost") else "OFF"), 160, 22)
-	gb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	gb.pressed.connect(func():
-		GameState.set_flag("ghost", not GameState.flag("ghost"))
-		gb.text = "GHOST RUN: %s" % ("ON" if GameState.flag("ghost") else "OFF"))
-	v.add_child(gb)
+	var flags := GridContainer.new()
+	flags.columns = 2
+	flags.add_theme_constant_override("h_separation", 6)
+	flags.add_theme_constant_override("v_separation", 4)
+	flags.add_child(Widgets.flag_button("GHOST RUN", "ghost", 150))
+	flags.add_child(Widgets.flag_button("CRASH HINTS", "hints", 150))
+	flags.add_child(Widgets.flag_button("VIBRATION", "vibrate", 150))
+	flags.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(flags)
 	var done := Kit.button("DONE", 100, 26)
 	done.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	done.pressed.connect(_close_settings)

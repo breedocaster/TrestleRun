@@ -82,7 +82,9 @@ const LAYOUTS := {
 		["tunnel", ["gap", "spiker", "gap"]], ["loop", 40.0, "gap", 56.0], ["kicker", 76.0, 40.0],
 		["flat", 40.0], ["drone_gap", 56.0, 60.0], ["spring_up", 1, "d"], ["double_spiker", 86.0], ["secret_low", 1],
 		["checkpoint"],
-		["drone_gap", 56.0, 60.0], ["loop", 38.0, "gap", 58.0], ["tri_ramp", 0, "c"], ["hills", 2, 16.0], ["crawler_chain", 3, 72.0],
+		["drone_gap", 56.0, 60.0], ["loop", 38.0, "gap", 58.0], ["tri_ramp", 0, "c"], ["hills", 2, 16.0],
+		["checkpoint", 70.0],  # v0.8.1: the last stretch was 28 s
+		["crawler_chain", 3, 72.0],
 		["perch", 0], ["stairs_up", 3], ["loop"], ["gap", 62.0], ["spiker_drone"], ["finish"],
 	],
 	# 8: stacked yard: lifts, gantries in the back, catwalk in front.
@@ -97,7 +99,9 @@ const LAYOUTS := {
 		["checkpoint"],
 		["power", "hat"], ["drone_row", 3], ["lifts", [[50.0, 22.0, 1.8, 0.0], [50.0, 22.0, 1.8, PI], [50.0, 22.0, 1.8, 0.0]], 52.0],
 		["fork", -1, [["crawler_chain", 3, 84.0]], [], 0, 1],
-		["loop", 40.0, "gap", 58.0], ["flat", 50.0], ["perch", 1], ["spring_gap", 88.0],
+		["loop", 40.0, "gap", 58.0],
+		["checkpoint", 70.0],  # v0.8.1: the last stretch was 23 s
+		["flat", 50.0], ["perch", 1], ["spring_gap", 88.0],
 		["gap", 66.0], ["finish"],
 	],
 	# 9: mountain descent with big airs, ziplines, and everything before.
@@ -112,6 +116,7 @@ const LAYOUTS := {
 		["zip", 320.0, 62.0, 34.0, 0, "s"],
 		["checkpoint"],
 		["double_spiker", 94.0], ["descent", 3, 16.0], ["tri_ramp", 0, "c"], ["flat", 80.0], ["crawler_chain", 3, 74.0], ["loop", 40.0, "gap", 60.0],
+		["checkpoint", 70.0],  # v0.8.1: the last stretch was 34 s
 		["branch_upper", 1, "sc"], ["flat", 50.0], ["drone_gap", 58.0, 60.0], ["kicker", 84.0, 48.0], ["spring_trap"], ["perch", 1],
 		["zip", 280.0, 60.0, 26.0], ["descent", 2, 18.0], ["stairs_down", 3], ["gap", 70.0], ["finish"],
 	],
@@ -134,6 +139,7 @@ const LAYOUTS := {
 		["lifts", [[60.0, 18.0, 2.0, 0.0], [60.0, 18.0, 2.0, 2.6]], 48.0], ["crawler_chain", 3, 80.0],
 		["checkpoint"],
 		["kicker", 84.0, 46.0], ["flat", 100.0], ["tri_ramp", 1, "d"], ["spring_gap", 90.0], ["power", "hat"], ["double_spiker", 106.0],
+		["checkpoint", 70.0],  # v0.8.1: the last stretch was 24 s
 		["perch", 1], ["flat", 60.0], ["tri_ramp", 0, ""], ["zip", 300.0, 62.0, 30.0], ["gap", 64.0], ["finish"],
 	],
 	# 12: the last trestle, collapsing behind you, its old planks crumbling underfoot.

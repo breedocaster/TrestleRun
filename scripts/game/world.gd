@@ -18,9 +18,11 @@ const Guide := preload("res://scripts/game/guide.gd")
 const SWOOP_SETTLE := 190.0
 const SWOOP_RANGE := 170.0
 const READY_TICKS := 54
-const RESPAWN_TICKS := 36
-const CRASH_TICKS := 80
-const FINISH_TICKS := 80
+const RESPAWN_TICKS := 30
+const CRASH_TICKS := 66
+## A tap this long into a crash skips the rest of it (back to the checkpoint now).
+const CRASH_SKIP_TICKS := 24
+const FINISH_TICKS := 60
 # Bonus biplane: overtakes from behind with a prize sack you can jump for.
 const PLANE_REL := 75.0      # px/s faster than the trail's cruise speed
 const PLANE_PRIZE_H := 68.0  # sack height above the deck where it meets you
@@ -130,7 +132,7 @@ var _guide_serial := -1
 var _guide_jobs: Array = []
 ## Where the wheels last touched a deck (a fall is blamed on the stretch you left).
 var _air_x := 0.0
-const BOSS_FINISH_TICKS := 150
+const BOSS_FINISH_TICKS := 120
 const LETTER_BONUS := 50
 const MAGNET_R := 60.0
 const POWER_NAMES := {
@@ -233,7 +235,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("jump"):
 		press_queued = true
 		held = true
-		get_viewport().set_input_as_handled()
+		if phase == "crash" and phase_ticks >= CRASH_SKIP_TICKS:
+			_respawn()  # impatient: straight back to the checkpoint
+		if is_inside_tree():
+			get_viewport().set_input_as_handled()
 
 
 func _input(event: InputEvent) -> void:
@@ -763,7 +768,7 @@ func _sfx(sfx_name: String, pitch := 1.0, vol_db := 0.0) -> void:
 
 
 func _vibrate(ms: int) -> void:
-	if not headless and OS.has_feature("mobile"):
+	if not headless and OS.has_feature("mobile") and GameState.flag("vibrate"):
 		Input.vibrate_handheld(ms)
 
 

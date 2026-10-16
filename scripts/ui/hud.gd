@@ -140,6 +140,9 @@ func _draw() -> void:
 	# Crash hint: after a few wrecks in one stretch, a tip (and the dotted line in the world).
 	if world.guide_on and world.guide_tip != "" and world.phase != "crash":
 		_hint_banner(font)
+	if world.phase == "crash" and world.bot == null and world.phase_ticks >= world.CRASH_SKIP_TICKS:
+		var a := 0.55 + 0.45 * sin(_t * 6.0)
+		_center_text(font, size.y - 22.0, "TAP TO GO AGAIN", 8, Color(UITheme.CREAM, a))
 	if world.phase == "ready" and world.first_ready:
 		var msg := "READY" if world.phase_ticks < 36 else "GO!"
 		_center_text(font, size.y * 0.38, msg, 16, UITheme.GOLD)
