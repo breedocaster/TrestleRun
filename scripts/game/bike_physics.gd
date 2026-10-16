@@ -46,6 +46,8 @@ const BOOST_DECAY := 0.8   # per second: boost bleeds off once the front wheel d
 const HOP_V := 285.0       # minibike second hop
 const GLIDE_G := 260.0     # scooter umbrella: gravity while gliding
 const GLIDE_MAX := 64.0    # ...and terminal fall speed
+const WALL_GRAB := 5.0       # px: rising this close under a wall-ride's face while holding sticks you to it
+const GLIDE_GRAB_LOOK := 1.2  # s of travel ahead: a rail, wall or rope there keeps it shut
 const DASH_T := 0.22       # cafe racer air dash: seconds of flat flight
 const DASH_K := 0.6        # ...at this much extra speed
 const SMASH_INV := 0.5     # chopper: brief invulnerability after smashing through
@@ -81,6 +83,19 @@ const CHASE_K := 0.99
 const CHASE_K_WIND := 0.84
 const CHASE_SURGE := 0.04
 
+# Hold moves: rails and wall-rides only hold you while the button is held; ropes swing.
+const GRIND_K := 1.06       # rail grind speed vs cruise
+const ROPE_G := 900.0       # pendulum gravity on a rope swing
+const ROPE_MIN_V := 200.0   # a grab always swings you forward at least this fast
+const ROPE_KICK := 1.3      # ...plus a push off the grab
+const ROPE_MAX_A := 1.3     # rad: the swing never goes past this
+## Dev bot (simulations only): let go of a rope on the forward swing past this angle.
+const ROPE_REL := 0.6
+# Bosses: land on the glowing weak spot to hit it; bumping the rest of it is a bonk.
+const BOSS_BOUNCE := 1.0
+const RAIL_POP := 110.0     # holding off the end of a rail pops you up (to catch the next one)
+const BOSS_INV := 0.4
+
 # Rider hitbox, relative to the contact point under the bike.
 const HALF_W := 9.0
 const HEIGHT := 16.0
@@ -93,8 +108,11 @@ enum {
 	EV_AIR = 2048, EV_SMASH = 4096, EV_WHEELIE = 8192, EV_ARMOR = 16384,
 	EV_FLIP = 32768, EV_TRICK = 65536, EV_SKETCHY = 131072, EV_SWITCH = 262144, EV_SWITCH_OUT = 524288,
 	EV_POWER = 1048576, EV_CLIMB = 2097152, EV_CLIMB_OUT = 4194304, EV_WALL = 8388608, EV_HAT = 16777216,
-	EV_CRUMBLE = 33554432,
+	EV_CRUMBLE = 33554432, EV_GRIND = 67108864, EV_GRIND_OFF = 134217728, EV_ROPE = 268435456,
+	EV_ROPE_OFF = 536870912, EV_BOSS_HIT = 1073741824,
 }
+const EV_BOSS_DOWN := 1 << 31
+const EV_BOSS_LOOP := 1 << 32
 enum { CRAWLER, SPIKER, DRONE }
 
 static var _EMPTY := PackedInt32Array()
@@ -117,10 +135,12 @@ static func new_state(level: Dictionary, x: float, track: int, t: float = 0.0, a
 		"loop": -1, "loop_a": 0.0, "zip": -1, "spring": -1,
 		"lane": lane, "lane_z": float(lane), "sw": -1, "sw_u": 0.0, "sw_x0": 0.0,
 		"flip_dir": 0, "flip_a": 0.0, "flip_target": 0.0, "tb": 0, "tf": 0,
-		"trick_coins": 0, "trick_name": "",
+		"trick_coins": 0, "trick_name": "", "trick_n": 0,
 		"sticky_t": 0.0, "rocket_t": 0.0, "magnet_t": 0.0, "hat": 0, "got": {}, "last_power": "",
 		"climb": -1, "crumb": {},
 		"chase_x": x - CHASE_GAP if level.has("chase") else -INF,
+		"rope": -1, "rope_a": 0.0, "rope_w": 0.0, "rope_r": 0.0, "rope_last": -1, "zip_pop": false,
+		"boss_hp": int((level.get("boss", {}) as Dictionary).get("hp", 0)), "boss_used": {}, "boss_loops": 0, "boss_hits": 0, "boss_bounce": false,
 	}
 
 
@@ -130,6 +150,7 @@ static func copy_state(s0: Dictionary) -> Dictionary:
 	s.stomped = (s0.stomped as Dictionary).duplicate()
 	s.got = (s0.got as Dictionary).duplicate()
 	s.crumb = (s0.crumb as Dictionary).duplicate()
+	s.boss_used = (s0.boss_used as Dictionary).duplicate()
 	return s
 
 
@@ -225,6 +246,24 @@ static func _near(level: Dictionary, key: String, x: float, lane := 0) -> Packed
 	return b.get(bucket_key(x, lane), _EMPTY)
 
 
+## The scooter's umbrella stays shut where holding means "grab": with a rail, wall-ride
+## or rope just ahead it would float you over the top of them. (Ziplines are left as
+## they always were.)
+static func umbrella_ok(level: Dictionary, s: Dictionary) -> bool:
+	var x0 := float(s.x)
+	var x1 := x0 + maxf(float(s.vx), 1.0) * GLIDE_GRAB_LOOK
+	var lane := int(s.lane)
+	for px in [x0, x1]:
+		for ti in tracks_near(level, px, lane):
+			var tr: Dictionary = level.tracks[ti]
+			if tr.has("hold") and float(tr.x1) >= x0 and float(tr.x0) <= x1:
+				return false
+	for rp in level.get("ropes", []):
+		if int(rp.lane) == lane and float(rp.ax) + float(rp.len) >= x0 and float(rp.ax) - float(rp.len) <= x1:
+			return false
+	return true
+
+
 static func tracks_near(level: Dictionary, x: float, lane := 0) -> PackedInt32Array:
 	return level.track_buckets.get(bucket_key(x, lane), _EMPTY)
 
@@ -314,13 +353,15 @@ static func bike_rect(s: Dictionary, level: Dictionary = {}) -> Rect2:
 
 
 static func find_continuation(level: Dictionary, x: float, y: float, cur: int, t: float, lane := 0,
-		s: Dictionary = {}) -> int:
+		s: Dictionary = {}, held := true) -> int:
 	var best := -1
 	var best_d := CONT_TOL
 	for ti in tracks_near(level, x, lane):
 		if ti == cur or (not s.is_empty() and track_gone(level, s, ti)):
 			continue
 		var tr: Dictionary = level.tracks[ti]
+		if not held and tr.has("hold"):
+			continue
 		if x < tr.x0 or x > tr.x1:
 			continue
 		var d := absf(deck_y(tr, x, t) - y)
@@ -341,6 +382,90 @@ static func deck_below(level: Dictionary, s: Dictionary, dist: float) -> bool:
 		if d >= -1.0 and d <= dist:
 			return true
 	return false
+
+
+# --- hold moves: what the dev bot holds for ----------------------------------
+
+## "zip", "rope", "rail"/"wall" (a hold track you're on), or "" if nothing holds you.
+static func attachment(level: Dictionary, s: Dictionary) -> String:
+	if int(s.zip) >= 0:
+		return "zip"
+	if int(s.rope) >= 0:
+		return "rope"
+	if s.grounded and int(s.track) >= 0:
+		return String(level.tracks[s.track].get("hold", ""))
+	return ""
+
+
+## Would holding now catch a rail, wall-ride or rope in the next few frames (or the
+## next cable after popping off the end of one)? The dev bot always grabs these.
+static func grab_near(level: Dictionary, s: Dictionary) -> bool:
+	var lane := int(s.lane)
+	var vx := maxf(float(s.vx), 1.0)
+	if s.grounded:
+		if int(s.track) < 0:
+			return false
+		var tr: Dictionary = level.tracks[s.track]
+		if tr.has("hold") or float(tr.x1) - float(s.x) > 14.0:
+			return false
+		var c := find_continuation(level, float(tr.x1) + 1.0, height_at(tr, float(tr.x1)), int(s.track), float(s.t), lane, s, true)
+		return c >= 0 and level.tracks[c].has("hold")
+	if int(s.zip) >= 0 or int(s.rope) >= 0:
+		return false
+	var look := vx * DT * 5.0
+	for ti in tracks_near(level, float(s.x) + look, lane):
+		var tr: Dictionary = level.tracks[ti]
+		if not tr.has("hold"):
+			continue
+		for k in [1.0, 3.0, 5.0]:
+			var px: float = float(s.x) + vx * DT * k
+			if px < float(tr.x0) or px > float(tr.x1):
+				continue
+			var ty := height_at(tr, px)
+			var py: float = float(s.y) + maxf(float(s.vy), 0.0) * DT * k + 4.0
+			if float(s.y) <= ty - 0.5 and py >= ty:
+				return true
+			# A wall-ride's rising face can be caught from below too: hold while you're
+			# under its lower part and closing in (jumping at it from the deck; higher up,
+			# being under the wall means you've just let go of it).
+			if String(tr.hold) == "wall" and slope_at(tr, px) < -0.05 and float(s.y) > ty + 0.5 \
+					and px < float(tr.x0) + (float(tr.x1) - float(tr.x0)) * 0.3 \
+					and float(s.y) + float(s.vy) * DT * k - ty <= 10.0:
+				return true
+	if level.has("rope_buckets"):
+		for ri in _near(level, "rope_buckets", float(s.x) + look, lane):
+			if ri == int(s.rope_last):
+				continue
+			var rp: Dictionary = level.ropes[ri]
+			var hx := float(s.x) + 4.0
+			var hy := float(s.y) - HEIGHT - 2.0
+			if hx <= float(rp.ax) and hx + look + 2.0 > float(rp.ax) \
+					and hy >= float(rp.ay) + float(rp.len) * 0.15 - 12.0 and hy <= float(rp.ay) + float(rp.len) + 24.0:
+				return true
+	if bool(s.zip_pop):
+		for zi in _near(level, "zip_buckets", float(s.x) + look, lane):
+			var z: Dictionary = level.zips[zi]
+			if float(s.x) + look < float(z.x0) or float(s.x) > float(z.x1) - 14.0:
+				continue
+			if absf(float(s.y) - HEIGHT - 2.0 - cable_y(z, float(s.x) + look)) < 16.0:
+				return true
+	return false
+
+
+## The dev bot's button in simulations when it isn't pressing for a jump: keep holding
+## along a rail or wall-ride, swing a rope and let go on the forward swing past ROPE_REL,
+## and grab whatever is about to come into reach.
+static func auto_hold(level: Dictionary, s: Dictionary) -> bool:
+	var att := attachment(level, s)
+	if bool(s.boss_bounce) and float(s.vy) < 0.0 and att == "":
+		return true  # ride a boss hit's bounce as high as it goes
+	if att == "rope":
+		return not (float(s.rope_w) > 0.0 and float(s.rope_a) >= ROPE_REL)
+	if att == "rail" or att == "wall":
+		return true
+	if att == "zip":
+		return false
+	return grab_near(level, s)
 
 
 # --- step --------------------------------------------------------------------
@@ -389,6 +514,8 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 
 	if s.loop >= 0:
 		return _loop_step(level, s, cruise)
+	if int(s.rope) >= 0:
+		return _rope_step(level, s, held)
 	if s.sw >= 0:
 		return _switch_step(level, s, cruise)
 	if int(s.climb) >= 0:
@@ -444,9 +571,21 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 	if s.jumping and not held and s.vy < 0.0:
 		s.cut = true
 
+	# Rails and wall-rides only carry you while you hold: let go and you drop off.
+	if s.grounded and level.tracks[s.track].has("hold") and not held:
+		s.grounded = false
+		s.track = -1
+		s.jumping = false
+		s.cut = false
+		s.wheelie = false
+		s.air_used = false
+		s.vy = s.slope * s.vx
+		ev |= EV_LEAVE | EV_GRIND_OFF
+
 	if s.grounded:
 		var grip := GRIP_WET if rain else GRIP_DRY
-		s.vx += (cruise - s.vx) * minf(1.0, grip * DT)
+		var want := cruise * (GRIND_K if String(level.tracks[s.track].get("hold", "")) == "rail" else 1.0)
+		s.vx += (want - s.vx) * minf(1.0, grip * DT)
 	elif s.dash_t > 0.0:
 		s.vx = base * (1.0 + DASH_K) + s.boost
 	else:
@@ -463,9 +602,15 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 			s.slope = slope_at(tr, nx)
 			ev |= _touch(level, s, int(s.track))
 		else:
-			var c := -1 if gone else find_continuation(level, nx, oy, s.track, s.t, int(s.lane), s)
+			var c := -1 if gone else find_continuation(level, nx, oy, s.track, s.t, int(s.lane), s, held)
 			if c >= 0:
 				ev |= _touch(level, s, c)
+				var was_hold: bool = tr.has("hold")
+				var now_hold: bool = level.tracks[c].has("hold")
+				if now_hold and not was_hold:
+					ev |= EV_GRIND
+				elif was_hold and not now_hold:
+					ev |= EV_GRIND_OFF
 				s.track = c
 				s.y = deck_y(level.tracks[c], nx, s.t)
 				s.slope = slope_at(level.tracks[c], nx)
@@ -478,8 +623,12 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 				s.wheelie = false
 				s.air_used = false
 				s.vy = 0.0 if gone else s.slope * s.vx
+				if String(tr.get("hold", "")) == "rail":
+					s.vy = minf(s.vy, -RAIL_POP)  # off the end of a rail you pop up
 				s.y = oy + s.vy * DT
 				ev |= EV_LEAVE
+				if tr.has("hold"):
+					ev |= EV_GRIND_OFF
 		s.x = nx
 		if s.grounded:
 			ev |= _deck_features(level, s, ox)
@@ -499,7 +648,7 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 		if s.dash_t > 0.0:
 			s.dash_t = maxf(0.0, s.dash_t - DT)
 			s.vy = 0.0
-		elif s.ab == "glide" and held and s.vy > 0.0:
+		elif s.ab == "glide" and held and s.vy > 0.0 and umbrella_ok(level, s):
 			# Umbrella: fall slows toward a gentle drift.
 			s.vy = minf(s.vy + GLIDE_G * DT, maxf(GLIDE_MAX, s.vy - 900.0 * DT))
 		else:
@@ -557,6 +706,31 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 				s.death = "wall"
 				return ev | EV_DEAD
 
+		# Rope swing: holding as your hands pass the rope grabs it.
+		if held and level.has("rope_buckets"):
+			for ri in _near(level, "rope_buckets", nx, int(s.lane)):
+				if ri == int(s.rope_last):
+					continue
+				var rp: Dictionary = level.ropes[ri]
+				var hy := ny - HEIGHT - 2.0
+				if ox + 4.0 <= float(rp.ax) and nx + 4.0 > float(rp.ax) \
+						and hy >= float(rp.ay) + float(rp.len) * 0.15 and hy <= float(rp.ay) + float(rp.len) + 20.0:
+					ev |= _end_tricks(s, false)
+					s.rope = ri
+					s.rope_r = clampf(hy - float(rp.ay), float(rp.len) * 0.75, float(rp.len))
+					s.rope_a = asin(clampf((nx + 4.0 - float(rp.ax)) / float(s.rope_r), -0.5, 0.5))
+					s.rope_w = maxf(float(s.vx), ROPE_MIN_V) * ROPE_KICK / float(s.rope_r)
+					s.jumping = false
+					s.cut = false
+					s.dash_t = 0.0
+					s.coyote = 0.0
+					s.wheelie = false
+					var hand := Vector2(rp.ax, rp.ay) + float(s.rope_r) * Vector2(sin(s.rope_a), cos(s.rope_a))
+					s.x = hand.x - 4.0
+					s.y = hand.y + HEIGHT + 2.0
+					s.vy = 0.0
+					return _finish_step(level, s, ev | EV_ROPE, oy, false, held)
+
 		# Zipline: holding as your hands pass the cable grabs it.
 		if held:
 			for zi in _near(level, "zip_buckets", nx, int(s.lane)):
@@ -578,13 +752,40 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 					return _finish_step(level, s, ev | EV_ZIP, oy, false, held)
 
 		var landed := false
+		# Wall-rides: holding as you rise into the face sticks you to it (like catching a
+		# cable), so you don't have to come down onto a steep curve. Coming down onto it
+		# is the ordinary landing below; above it (say, just let go off it) never sticks.
+		if held:
+			for ti in tracks_near(level, nx, int(s.lane)):
+				var tr: Dictionary = level.tracks[ti]
+				if String(tr.get("hold", "")) != "wall" or nx < tr.x0 or nx > tr.x1 or slope_at(tr, nx) >= -0.05:
+					continue
+				var ty_new := deck_y(tr, nx, s.t)
+				var ty_old := deck_y(tr, ox, t_old) if ox >= tr.x0 else ty_new
+				var from_below := oy >= ty_old - 0.5
+				if from_below and (ny <= ty_new + 0.5 or (float(s.vy) < 0.0 and ny - ty_new <= WALL_GRAB)):
+					s.y = ty_new
+					s.vy = 0.0
+					s.grounded = true
+					s.track = ti
+					s.jumping = false
+					s.cut = false
+					s.air_used = false
+					s.dash_t = 0.0
+					s.slope = slope_at(tr, nx)
+					s.x = nx
+					s.rope_last = -1
+					s.zip_pop = false
+					s.boss_bounce = false
+					ev |= EV_LAND | EV_GRIND | _end_tricks(s, true) | _touch(level, s, ti)
+					return _finish_step(level, s, ev, oy, descending, held)
 		if descending:
 			# One-way decks: land only when crossing a deck from above.
 			var best := -1
 			var best_y := INF
 			for ti in tracks_near(level, nx, int(s.lane)):
 				var tr: Dictionary = level.tracks[ti]
-				if nx < tr.x0 or nx > tr.x1 or track_gone(level, s, ti):
+				if nx < tr.x0 or nx > tr.x1 or track_gone(level, s, ti) or (tr.has("hold") and not held):
 					continue
 				var ty_new := deck_y(tr, nx, s.t)
 				var ty_old := deck_y(tr, ox, t_old) if ox >= tr.x0 else ty_new
@@ -604,7 +805,12 @@ static func step(level: Dictionary, s: Dictionary, pressed: bool, held: bool) ->
 				if rain:
 					s.vx += base * RAIN_SLIDE * clampf(impact / MAX_FALL, 0.35, 1.0)
 				landed = true
+				s.rope_last = -1
+				s.zip_pop = false
+				s.boss_bounce = false
 				ev |= EV_LAND
+				if level.tracks[best].has("hold"):
+					ev |= EV_GRIND
 				ev |= _end_tricks(s, true)
 				ev |= _touch(level, s, best)
 				if s.ab == "wheelie" and held:
@@ -686,6 +892,7 @@ static func _end_tricks(s: Dictionary, landing: bool) -> int:
 	if n > 0 and ev == 0:
 		# Coins: 2 per backflip, 3 per front flip, times the number of flips.
 		s.trick_coins = (2 * int(s.tb) + 3 * int(s.tf)) * n
+		s.trick_n = n
 		s.trick_name = trick_name(int(s.tb), int(s.tf))
 		ev |= EV_TRICK
 	s.flip_dir = 0
@@ -704,7 +911,7 @@ static func air_frames(level: Dictionary, s0: Dictionary, limit := 240) -> int:
 		step(level, s, false, false)
 		if not s.alive:
 			return 0
-		if s.grounded or int(s.loop) >= 0 or int(s.zip) >= 0:
+		if s.grounded or int(s.loop) >= 0 or int(s.zip) >= 0 or int(s.rope) >= 0:
 			return i + 1
 	return 0
 
@@ -835,9 +1042,108 @@ static func _zip_step(level: Dictionary, s: Dictionary, held: bool, cruise: floa
 		s.coyote = 0.0
 		s.air_used = false
 		s.vy = -70.0 if at_end else 20.0
+		s.zip_pop = at_end
 		return EV_UNZIP
 	s.vy = 0.0
 	return 0
+
+
+## Hanging on a rope: a pendulum from the anchor. Let go to fly off along the swing
+## (forward and up on the way up, straight down at the top of the arc).
+static func _rope_step(level: Dictionary, s: Dictionary, held: bool) -> int:
+	var rp: Dictionary = level.ropes[s.rope]
+	var r := float(s.rope_r)
+	var w := float(s.rope_w) - (ROPE_G / r) * sin(float(s.rope_a)) * DT
+	var a := float(s.rope_a) + w * DT
+	if absf(a) > ROPE_MAX_A:
+		a = clampf(a, -ROPE_MAX_A, ROPE_MAX_A)
+		w = 0.0
+	s.rope_a = a
+	s.rope_w = w
+	var oy: float = s.y
+	var hand := Vector2(rp.ax, rp.ay) + r * Vector2(sin(a), cos(a))
+	s.x = hand.x - 4.0
+	s.y = hand.y + HEIGHT + 2.0
+	s.vx = r * w * cos(a)
+	s.vy = -r * w * sin(a)
+	if not held:
+		s.rope_last = s.rope
+		s.rope = -1
+		s.grounded = false
+		s.track = -1
+		s.jumping = false
+		s.cut = false
+		s.coyote = 0.0
+		s.air_used = false
+		return _finish_step(level, s, EV_ROPE_OFF, oy, s.vy > 0.0, held)
+	return _finish_step(level, s, 0, oy, false, held)
+
+
+## Boss weak spot and body this frame (they bob a little).
+static func boss_rects(level: Dictionary, wi: int, t: float) -> Array:
+	var w: Dictionary = level.boss.windows[wi]
+	var bob := Vector2(0.0, sin(t * 2.4 + float(w.x) * 0.01) * float(w.get("bob", 2.0)))
+	var spot: Rect2 = w.spot
+	var body: Rect2 = w.get("body", Rect2())
+	return [Rect2(spot.position + bob, spot.size), Rect2(body.position + bob, body.size) if body.size.x > 0.0 else Rect2()]
+
+
+## Boss: land on a window's weak spot (descending, from above) for a hit and a bounce.
+## Running into the rest of it is a bonk. Reach the arena's end with hits still to go
+## and it circles round: you're carried back to the arena start (hits kept).
+static func _boss_step(level: Dictionary, s: Dictionary, oy: float, descending: bool, held: bool) -> int:
+	var b: Dictionary = level.boss
+	var ev := 0
+	if int(s.boss_hp) > 0 and float(s.x) > float(b.x0) - 40.0:
+		var bike := bike_rect(s, level)
+		for wi in b.windows.size():
+			if (s.boss_used as Dictionary).has(wi):
+				continue
+			var w: Dictionary = b.windows[wi]
+			if absf(float(w.x) - float(s.x)) > 120.0:
+				continue
+			var rr := boss_rects(level, wi, s.t)
+			var spot: Rect2 = rr[0]
+			if bike.intersects(spot):
+				var tol := maxf(6.0, absf(float(s.vy)) * DT + 3.0)
+				if descending and oy <= spot.position.y + tol:
+					s.boss_used[wi] = true
+					s.boss_hp = int(s.boss_hp) - 1
+					s.boss_hits = int(s.boss_hits) + 1
+					s.vy = -(STOMP_V_HELD if held else STOMP_V) * BOSS_BOUNCE
+					s.y = minf(float(s.y), spot.position.y)
+					s.grounded = false
+					s.track = -1
+					s.jumping = true
+					s.cut = false
+					s.coyote = 0.0
+					s.air_used = false
+					s.zip = -1
+					s.boss_bounce = true
+					ev |= EV_BOSS_HIT | (EV_BOSS_DOWN if int(s.boss_hp) <= 0 else 0)
+					return ev
+			var body: Rect2 = rr[1]
+			if (bike.intersects(spot) or (body.size.x > 0.0 and bike.intersects(body))) and float(s.inv_t) <= 0.0:
+				s.vy = maxf(float(s.vy), BONK_VY)
+				s.vx = float(s.vx) * BONK_SLOW
+				s.inv_t = BOSS_INV
+				s.jumping = false
+				s.cut = false
+				if s.grounded:
+					s.vy = 0.0
+				ev |= EV_BONK
+	if int(s.boss_hp) > 0 and float(s.x) >= float(b.x1):
+		var keep_hp := int(s.boss_hp)
+		var keep_hits := int(s.boss_hits)
+		var loops := int(s.boss_loops) + 1
+		var ns := new_state(level, float(b.x0), int(b.track0), float(s.t), {"id": s.ab, "k": s.ab_k})
+		for k in ns:
+			s[k] = ns[k]
+		s.boss_hp = keep_hp
+		s.boss_hits = keep_hits
+		s.boss_loops = loops
+		ev |= EV_BOSS_LOOP
+	return ev
 
 
 ## Enemies, checkpoint armour refresh and falling out of the world.
@@ -887,6 +1193,10 @@ static func _finish_step(level: Dictionary, s: Dictionary, ev: int, oy: float, d
 			s.death = "hit"
 			return ev | EV_DEAD
 
+	if level.has("boss"):
+		ev |= _boss_step(level, s, oy, descending, held)
+		if ev & EV_BOSS_LOOP:
+			return ev
 	if s.y > level.kill_y:
 		s.alive = false
 		s.death = "fall"

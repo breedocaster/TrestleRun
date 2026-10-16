@@ -10,7 +10,9 @@ const Library := preload("res://scripts/game/level_library.gd")
 
 func _ready() -> void:
 	var lines := []
-	for meta in Catalog.levels():
+	for meta in Catalog.all_levels():
+		if meta.get("boss", false):
+			continue  # boss arenas have no letters
 		Library.no_letters = true
 		var got := {}
 		for weather in ["clear", "rain"]:
@@ -31,7 +33,8 @@ func _ready() -> void:
 				both.append(i)
 		var b = load("res://scripts/game/level_library.gd").new()
 		b.level_id = String(meta.id)
-		for chunk in Library.Layouts.LAYOUTS[meta.id]:
+		var layout: Array = Library.Layouts.LAYOUTS[meta.id] if Library.Layouts.LAYOUTS.has(meta.id) else Library.Layouts.STORY[meta.id]
+		for chunk in layout:
 			b.marks.append([String(chunk[0]), snappedf(b.x, 1.0)])
 			b.callv("c_" + String(chunk[0]), chunk.slice(1))
 		var picks: Array = b.choose_letters(both)

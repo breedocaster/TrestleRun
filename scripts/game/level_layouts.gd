@@ -149,6 +149,143 @@ const LAYOUTS := {
 	],
 }
 
+## Story mode: Grandma's county, area by area (3 trails, then the boss's arena).
+const STORY := {
+	# Area 1, Grandma's Farm: first jumps and critters, then clotheslines and power lines.
+	"s1_hayfield": [
+		["start"], ["flat", 100.0], ["hills", 1, 12.0], ["gap", 30.0], ["flat", 60.0], ["crawler", 170.0], ["hops", 2, 26.0],
+		["high_coins"], ["gap", 36.0], ["branch_upper", 1, "g"],
+		["checkpoint"],
+		["hills", 2, 12.0], ["crawler", 170.0], ["gap", 40.0], ["stairs_down", 2], ["kicker", 52.0, 34.0],
+		["crawler_chain", 2, 100.0], ["secret_low", 1],
+		["checkpoint"],
+		["hills", 2, 14.0], ["hops", 3, 28.0], ["crawler", 200.0, 2], ["perch", 1], ["gap", 44.0], ["finish"],
+	],
+	"s1_clothesline": [
+		["start"], ["flat", 100.0], ["crawler", 170.0], ["gap", 36.0], ["zip", 220.0, 56.0, 20.0], ["flat", 60.0], ["spiker"],
+		["crawler", 170.0], ["zip", 260.0, 58.0, 24.0, 1],
+		["checkpoint"],
+		["spiker"], ["gap", 42.0], ["zip", 240.0, 58.0, 22.0], ["hills", 2, 12.0], ["double_spiker", 100.0],
+		["branch_upper", 1, "s"],
+		["checkpoint"],
+		["zip", 280.0, 60.0, 26.0], ["crawler_chain", 2, 90.0], ["spiker"], ["perch", 1], ["zip", 260.0, 58.0, 24.0],
+		["gap", 46.0], ["finish"],
+	],
+	"s1_powerlines": [
+		["start"], ["flat", 100.0], ["zip_up", 260.0, 50.0, 50.0, 1], ["descent", 3, 16.0], ["crawler", 170.0],
+		["zip_chain", [200.0, 200.0]], ["flat", 60.0], ["spiker"],
+		["checkpoint"],
+		["zip_drops", 340.0, 62.0, 20.0, 1], ["double_spiker", 96.0], ["hills", 2, 14.0], ["zip_up", 240.0, 48.0, 40.0, 0],
+		["descent", 2, 18.0], ["crawler_chain", 3, 80.0],
+		["checkpoint"],
+		["zip_chain", [180.0, 180.0, 180.0]], ["kicker", 60.0, 36.0], ["spiker"], ["perch", 1], ["gap", 48.0], ["finish"],
+	],
+	"s1_boss": [
+		["start"], ["flat", 100.0], ["boss", "scooper"], ["bw_low"], ["flat", 60.0], ["spiker"], ["bw_gap"], ["crawler", 170.0],
+		["bw_zip"], ["double_spiker", 96.0], ["bw_low"], ["crawler", 170.0], ["bw_gap"], ["boss_end"],
+	],
+	# Area 2, the Rail Yard: grind rails, probes overhead, switch tracks between sidings.
+	"s2_siding": [
+		["start"], ["flat", 100.0], ["drone"], ["flat", 60.0], ["rail", 160.0], ["crawler", 170.0], ["drone_gap", 50.0, 62.0],
+		["rail", 200.0, 30.0], ["flat", 60.0], ["branch_upper", 1, "d"],
+		["checkpoint"],
+		["rail", 180.0, 0.0, 18.0, "low", 1], ["spiker_drone"], ["drone_row", 2], ["rail", 200.0], ["gap", 50.0], ["crawler", 170.0],
+		["checkpoint"],
+		["rail_chain", 2, 120.0], ["drone"], ["double_spiker", 96.0], ["rail", 220.0, 40.0], ["perch", 1], ["gap", 50.0], ["finish"],
+	],
+	"s2_chutes": [
+		["start"], ["flat", 100.0], ["rail_chain", 2, 120.0], ["flat", 40.0],
+		["fork", 1, [["rail", 160.0], ["flat", 60.0]], [["spiker_drone"], ["flat", 60.0]], 1],
+		["checkpoint"],
+		["rail", 200.0, 50.0], ["drone_gap", 52.0, 62.0], ["rail_chain", 3, 110.0], ["crawler_chain", 2, 90.0],
+		["fork", -1, [["drone_row", 2]], [], 0, 1],
+		["checkpoint"],
+		["rail", 180.0, 0.0, 18.0, "low", 1], ["double_spiker", 96.0], ["rail_chain", 2, 130.0, 26.0, 20.0], ["spiker"],
+		["perch", 1], ["gap", 54.0], ["finish"],
+	],
+	"s2_roundhouse": [
+		["start"], ["flat", 100.0], ["spring_up", 1, "d"], ["rail", 200.0], ["spring_gap", 84.0], ["crawler", 170.0],
+		["rail_chain", 2, 120.0],
+		["checkpoint"],
+		["lifts", [[56.0, 18.0, 2.2, 0.0], [56.0, 18.0, 2.2, PI]], 50.0], ["rail", 220.0, 40.0], ["spring_trap"],
+		["drone_gap", 52.0, 62.0], ["rail", 160.0, 0.0, 18.0, "low", 1],
+		["checkpoint"],
+		["spring_chain", 78.0], ["rail_chain", 3, 110.0], ["double_spiker", 96.0], ["perch", 1], ["gap", 56.0], ["finish"],
+	],
+	"s2_boss": [
+		["start"], ["flat", 100.0], ["boss", "hog"], ["bw_rail"], ["flat", 60.0], ["spiker"], ["bw_gap", 72.0, 24.0], ["drone"],
+		["bw_rail"], ["double_spiker", 96.0], ["bw_rail", 250.0], ["crawler", 170.0], ["bw_gap", 72.0, 24.0], ["boss_end"],
+	],
+	# Area 3, the Old Orchard: rope swings in the apple trees, loops by the creek.
+	"s3_apple_row": [
+		["start"], ["flat", 100.0], ["crawler", 170.0], ["rope"], ["flat", 60.0], ["spiker"], ["drone"],
+		["rope", 84.0, 72.0, 1, 86.0, 0.0, 1], ["hills", 2, 14.0], ["branch_upper", 1, "sc"],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 2], ["double_spiker", 96.0], ["drone_gap", 52.0, 62.0], ["rope"], ["crawler_chain", 2, 90.0],
+		["secret_low", 1],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 2], ["spiker_drone"], ["rope", 70.0, 72.0, 1, 86.0, -30.0], ["flat", 60.0], ["gap", 54.0], ["finish"],
+	],
+	"s3_creek": [
+		["start"], ["flat", 100.0], ["loop"], ["rope", 84.0, 72.0, 2], ["drone_gap", 52.0, 62.0], ["loop", 38.0, "gap", 50.0],
+		["rope", 84.0, 72.0, 1, 86.0, 0.0, 1],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 3], ["crawler_chain", 3, 80.0], ["loop", 40.0, "gap", 54.0], ["spiker_drone"],
+		["branch_upper", 1, "d"],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 2], ["double_spiker", 96.0], ["loop"], ["rope", 70.0, 72.0, 1, 86.0, -30.0], ["perch", 1],
+		["gap", 56.0], ["finish"],
+	],
+	"s3_hollow_oak": [
+		["start"], ["flat", 100.0], ["tunnel", ["gap", "crawler", "gap"]], ["rope", 84.0, 72.0, 2], ["drone_row", 2],
+		["rope", 84.0, 72.0, 1, 86.0, 0.0, 1],
+		["checkpoint"],
+		["tunnel", ["spiker", "gap", "spiker"]], ["rope", 84.0, 72.0, 3], ["spring_gap", 86.0], ["crawler_chain", 2, 90.0],
+		["secret_low", 1],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 2], ["tunnel", ["gap", "gap", "bag"]], ["double_spiker", 96.0], ["rope", 70.0, 72.0, 1, 86.0, -30.0],
+		["perch", 1], ["gap", 58.0], ["finish"],
+	],
+	"s3_boss": [
+		["start"], ["flat", 100.0], ["boss", "harvester"], ["bw_rope"], ["flat", 60.0], ["spiker"], ["bw_low", 40.0], ["crawler", 170.0],
+		["bw_rope"], ["double_spiker", 96.0], ["bw_rope"], ["drone"], ["bw_low", 40.0], ["boss_end"],
+	],
+	# Area 4, the County Speedway: wall-rides round the motordrome, then everything at once.
+	"s4_fairgrounds": [
+		["start"], ["flat", 100.0], ["crawler", 170.0], ["wall", 180.0, 70.0], ["flat", 60.0], ["spiker_drone"],
+		["wall", 200.0, 80.0, 14.0, 0, 1], ["hills", 2, 14.0], ["branch_upper", 1, "sc"],
+		["checkpoint"],
+		["wall", 160.0, 70.0, 14.0, 1], ["drone_gap", 54.0, 62.0], ["double_spiker", 96.0], ["wall", 200.0, 80.0],
+		["crawler_chain", 3, 80.0], ["secret_low", 1],
+		["checkpoint"],
+		["wall", 220.0, 90.0], ["spiker_drone"], ["wall", 160.0, 70.0, 14.0, 1], ["perch", 0], ["gap", 56.0], ["finish"],
+	],
+	"s4_drome": [
+		["start"], ["flat", 100.0], ["wall", 200.0, 80.0], ["rail", 180.0], ["power", "magnet"], ["wall", 160.0, 70.0, 14.0, 1],
+		["rope"], ["flat", 40.0],
+		["checkpoint"],
+		["wall", 220.0, 90.0, 14.0, 0, 1], ["rail_chain", 2, 120.0], ["drone_row", 2], ["wall", 160.0, 70.0, 14.0, 1],
+		["lifts", [[54.0, 20.0, 2.0, 0.0], [54.0, 20.0, 2.0, 2.6]], 50.0],
+		["checkpoint"],
+		["rope", 84.0, 72.0, 2], ["wall", 200.0, 80.0], ["double_spiker", 96.0], ["rail", 180.0, 0.0, 18.0, "low", 1],
+		["perch", 1], ["gap", 58.0], ["finish"],
+	],
+	"s4_grandstand": [
+		["start"], ["flat", 100.0], ["tri_ramp", 1, "c"], ["flat", 60.0], ["wall", 200.0, 80.0], ["rope", 84.0, 72.0, 2],
+		["zip", 280.0, 60.0, 26.0],
+		["checkpoint"],
+		["cliff", 300.0, 110.0, 1, 1], ["flat", 40.0], ["rail_chain", 2, 120.0], ["loop", 40.0, "gap", 54.0],
+		["wall", 160.0, 70.0, 14.0, 1], ["drone_gap", 54.0, 62.0],
+		["checkpoint"],
+		["zip_chain", [180.0, 180.0]], ["rope", 84.0, 72.0, 2], ["double_spiker", 96.0], ["wall", 220.0, 90.0],
+		["perch", 1], ["gap", 60.0], ["finish"],
+	],
+	"s4_boss": [
+		["start"], ["flat", 100.0], ["boss", "spinner"], ["bw_wall"], ["flat", 60.0], ["spiker"], ["bw_lip"], ["crawler", 170.0],
+		["bw_wall", 220.0, 80.0], ["double_spiker", 96.0], ["bw_lip"], ["drone"], ["bw_wall"], ["boss_end"],
+	],
+}
+
 ## Short loops of one feature for the hint card's live demo (the bot rides them).
 const DEMOS := {
 	"jump": [["start", 120.0], ["gap", 36.0], ["flat", 60.0], ["hops", 2, 28.0], ["high_coins"], ["gap", 44.0], ["finish"]],
@@ -169,4 +306,34 @@ const DEMOS := {
 	"rocket": [["start", 40.0], ["tri_ramp", 0, ""], ["finish"]],
 	"crumble": [["start", 120.0], ["crumble", [44.0, 44.0, 88.0, 44.0]], ["flat", 60.0], ["crumble", [44.0, 96.0, 44.0]], ["finish"]],
 	"chase": [["chase"], ["start", 120.0], ["flat", 160.0], ["gap", 40.0], ["flat", 160.0], ["finish"]],
+	"zip2": [["start", 60.0], ["zip_chain", [160.0, 160.0]], ["flat", 40.0], ["finish"]],
+	"rail": [["start", 100.0], ["rail", 160.0], ["flat", 40.0], ["finish"]],
+	"rail2": [["start", 60.0], ["rail_chain", 3, 100.0], ["flat", 40.0], ["finish"]],
+	"rope": [["start", 100.0], ["rope"], ["flat", 40.0], ["finish"]],
+	"wallride": [["start", 100.0], ["wall", 180.0, 70.0], ["flat", 40.0], ["finish"]],
+	"wallride2": [["start", 60.0], ["wall", 160.0, 70.0, 14.0, 1], ["flat", 40.0], ["finish"]],
+	"boss": [["start", 60.0], ["boss", "scooper", 1], ["bw_low"], ["bw_low"], ["boss_end"]],
+}
+
+## Dev test strips for new chunks (verify --test=<name>[:speed]).
+const TESTS := {
+	"rail": [["start"], ["flat", 100.0], ["rail", 160.0], ["flat", 80.0], ["rail", 200.0, 40.0], ["flat", 60.0],
+		["rail", 160.0, 0.0, 18.0, "low", 1], ["flat", 80.0], ["rail_chain", 3, 110.0], ["flat", 100.0], ["finish"]],
+	"wall": [["start"], ["flat", 100.0], ["wall", 180.0, 70.0], ["flat", 100.0], ["wall", 220.0, 90.0, 14.0, 0, 1],
+		["flat", 80.0], ["wall", 160.0, 70.0, 14.0, 1], ["flat", 60.0], ["finish"]],
+	"rope": [["start"], ["flat", 100.0], ["rope"], ["flat", 80.0], ["rope", 84.0, 72.0, 2], ["flat", 80.0],
+		["rope", 70.0, 72.0, 1, 86.0, -30.0, 1], ["flat", 80.0], ["rope", 84.0, 72.0, 3], ["flat", 60.0], ["finish"]],
+	"rope2": [["start"], ["flat", 100.0], ["rope", 84.0, 72.0, 2], ["flat", 80.0], ["finish"]],
+	"scooper": [["start"], ["flat", 100.0], ["boss", "scooper"], ["bw_low"], ["flat", 60.0], ["spiker"], ["bw_gap"], ["crawler", 170.0],
+		["bw_zip"], ["double_spiker", 96.0], ["bw_low"], ["drone"], ["bw_gap"], ["boss_end"]],
+	"hog": [["start"], ["flat", 100.0], ["boss", "hog"], ["bw_rail"], ["flat", 60.0], ["spiker"], ["bw_gap", 72.0, 24.0], ["crawler", 170.0],
+		["bw_rail"], ["double_spiker", 96.0], ["bw_rail", 250.0], ["drone"], ["bw_gap", 72.0, 24.0], ["boss_end"]],
+	"harvester": [["start"], ["flat", 100.0], ["boss", "harvester"], ["bw_rope"], ["flat", 60.0], ["spiker"], ["bw_low", 40.0], ["crawler", 170.0],
+		["bw_rope"], ["double_spiker", 96.0], ["bw_rope"], ["drone"], ["bw_low", 40.0], ["boss_end"]],
+	"spinner": [["start"], ["flat", 100.0], ["boss", "spinner"], ["bw_wall"], ["flat", 60.0], ["spiker"], ["bw_lip"], ["crawler", 170.0],
+		["bw_wall", 220.0, 80.0], ["double_spiker", 96.0], ["bw_lip"], ["drone"], ["bw_wall"], ["boss_end"]],
+	"bloop": [["start"], ["flat", 100.0], ["boss", "scooper", 1], ["bw_low"], ["bw_low"], ["boss_end"]],
+	"bgap": [["start"], ["flat", 100.0], ["boss", "scooper", 1], ["bw_gap"], ["boss_end"]],
+	"zipv": [["start"], ["flat", 100.0], ["zip_up", 260.0, 50.0, 50.0, 1], ["descent", 3, 16.0], ["zip_chain", [200.0, 200.0]],
+		["flat", 80.0], ["zip_drops"], ["flat", 60.0], ["finish"]],
 }

@@ -17,6 +17,7 @@ static var _riders: Array = []
 static var _bikes: Array = []
 static var _paints: Array = []
 static var _levels: Array = []
+static var _story: Array = []
 
 
 static func riders() -> Array:
@@ -145,6 +146,84 @@ static func _lv(id: String, name: String, price: int, speed: float, bonus: int, 
 		"features": [feature] + extra, "music": MUSIC_BY_THEME[theme], "par": float(PARS.get(id, 0.0))}
 
 
+# --- story mode ----------------------------------------------------------------
+## Grandpa's old bike was beamed up by a saucer; Grandma peppered it with birdshot and
+## its capture pod spilled the bike's parts all over the county. Each area: three
+## trails and a boss machine holding one part. 8 parts; areas 5-8 come later.
+const PARTS := ["headlight", "kickstart", "seat", "wheels", "carb", "top_end", "bottom_end", "frame"]
+const STORY_AREAS := [
+	{"id": "farm", "name": "GRANDMA'S FARM", "part": "headlight", "theme": 12, "boss": "s1_boss",
+		"trails": ["s1_hayfield", "s1_clothesline", "s1_powerlines"],
+		"blurb": "THE HEADLIGHT CAME DOWN OUT PAST THE HAYFIELD. SOMETHING HUMMING IS GUARDING IT."},
+	{"id": "railyard", "name": "THE RAIL YARD", "part": "kickstart", "theme": 13, "boss": "s2_boss",
+		"trails": ["s2_siding", "s2_chutes", "s2_roundhouse"],
+		"blurb": "THE KICKSTART LANDED IN THE OLD YARD. GRIND THE RAILS TO REACH IT."},
+	{"id": "orchard", "name": "OLD ORCHARD", "part": "seat", "theme": 14, "boss": "s3_boss",
+		"trails": ["s3_apple_row", "s3_creek", "s3_hollow_oak"],
+		"blurb": "GRANDPA'S SEAT IS UP IN THE APPLE TREES. SWING ON THE ROPES."},
+	{"id": "speedway", "name": "COUNTY SPEEDWAY", "part": "wheels", "theme": 15, "boss": "s4_boss",
+		"trails": ["s4_fairgrounds", "s4_drome", "s4_grandstand"],
+		"blurb": "BOTH WHEELS ROLLED INTO THE FAIRGROUNDS. RIDE THE WALL OF DEATH."},
+]
+## Parts still out there (story areas still to come).
+const PARTS_COMING := ["carb", "top_end", "bottom_end", "frame"]
+
+
+## Story trails, in order (area by area, boss last). Each has a fixed time and weather.
+static func story_levels() -> Array:
+	if _story.is_empty():
+		_story = [
+			_slv("s1_hayfield", "HAYFIELD RUN", 0, 116.0, 30, 12, ["jump", "crawler"], "day", "clear"),
+			_slv("s1_clothesline", "CLOTHESLINE", 0, 120.0, 35, 12, ["zip", "spiker"], "day", "clear"),
+			_slv("s1_powerlines", "POWER LINES", 0, 124.0, 40, 12, ["zip2"], "dusk", "clear"),
+			_slv("s1_boss", "THE SCOOPER", 0, 120.0, 80, 12, ["boss"], "dusk", "clear", "headlight"),
+			_slv("s2_siding", "SWITCHBACK SIDING", 1, 126.0, 45, 13, ["rail", "drone"], "dusk", "clear"),
+			_slv("s2_chutes", "COAL CHUTES", 1, 130.0, 50, 13, ["rail2", "switch"], "dusk", "rain"),
+			_slv("s2_roundhouse", "ROUNDHOUSE", 1, 134.0, 55, 13, ["spring", "lift"], "night", "clear"),
+			_slv("s2_boss", "RAIL HOG", 1, 128.0, 100, 13, ["boss"], "night", "clear", "kickstart"),
+			_slv("s3_apple_row", "APPLE ROW", 2, 132.0, 60, 14, ["rope"], "dusk", "clear"),
+			_slv("s3_creek", "CREEK CROSSING", 2, 136.0, 65, 14, ["loop"], "night", "clear"),
+			_slv("s3_hollow_oak", "HOLLOW OAK", 2, 140.0, 70, 14, ["tunnel"], "night", "wind"),
+			_slv("s3_boss", "THE HARVESTER", 2, 134.0, 120, 14, ["boss"], "night", "clear", "seat"),
+			_slv("s4_fairgrounds", "FAIRGROUNDS", 3, 140.0, 75, 15, ["wallride"], "day", "clear"),
+			_slv("s4_drome", "WALL OF DEATH", 3, 144.0, 80, 15, ["wallride2", "magnet"], "dusk", "wind"),
+			_slv("s4_grandstand", "GRANDSTAND", 3, 148.0, 90, 15, ["rocket", "sticky"], "night", "clear"),
+			_slv("s4_boss", "THE SPINNER", 3, 142.0, 140, 15, ["boss"], "night", "clear", "wheels"),
+		]
+	return _story
+
+
+static func _slv(id: String, name: String, area: int, speed: float, bonus: int, theme: int, feats: Array,
+		time: String, weather: String, part := "") -> Dictionary:
+	var lv := _lv(id, name, 0, speed, bonus, theme, String(feats[0]), feats.slice(1))
+	lv.story = area
+	lv.cond = {"time": time, "weather": weather}
+	lv.music = "saucer_stomp" if part != "" else String(MUSIC_BY_THEME[theme])
+	if part != "":
+		lv.part = part
+		lv.boss = true
+	return lv
+
+
+static func all_levels() -> Array:
+	return levels() + story_levels()
+
+
+static func is_story(id: String) -> bool:
+	return level(id).has("story")
+
+
+## "TRAIL 3", or for story trails "FARM 2" / "FARM BOSS".
+static func level_label(id: String) -> String:
+	var meta := level(id)
+	if meta.has("story"):
+		var area: Dictionary = STORY_AREAS[int(meta.story)]
+		if meta.get("boss", false):
+			return "%s: BOSS" % String(area.name)
+		return "%s %d" % [String(area.name), (area.trails as Array).find(id) + 1]
+	return "TRAIL %d" % (level_index(id) + 1)
+
+
 ## Gold-medal par times (seconds of riding): the dev bot's clean run plus a second,
 ## rounded up to the half second. Regenerate with --par after changing a layout.
 const PARS := {
@@ -156,16 +235,33 @@ const PARS := {
 	"lantern_mine": 62.0,
 	"hoodoo_loops": 66.5,
 	"hoist_yard": 55.5,
-	"skyline_pass": 77.5,
+	"skyline_pass": 77.0,
 	"quarry_cliffs": 53.5,
 	"rocket_ridge": 51.0,
 	"last_trestle": 40.5,
+	"s1_hayfield": 47.5,
+	"s1_clothesline": 50.0,
+	"s1_powerlines": 50.5,
+	"s1_boss": 18.5,
+	"s2_siding": 46.5,
+	"s2_chutes": 46.5,
+	"s2_roundhouse": 44.0,
+	"s2_boss": 17.5,
+	"s3_apple_row": 42.5,
+	"s3_creek": 39.5,
+	"s3_hollow_oak": 46.0,
+	"s3_boss": 16.5,
+	"s4_fairgrounds": 44.0,
+	"s4_drome": 42.0,
+	"s4_grandstand": 47.0,
+	"s4_boss": 17.5,
 }
 
 
 ## Music loop per trail: the theme, a slow minor one for dark trails, a quick one up high.
 const MUSIC_BY_THEME := ["trestle_dreams", "trestle_dreams", "ridge_runner", "lantern_low", "trestle_dreams",
-	"lantern_low", "trestle_dreams", "ridge_runner", "ridge_runner", "trestle_dreams", "ridge_runner", "ridge_runner"]
+	"lantern_low", "trestle_dreams", "ridge_runner", "ridge_runner", "trestle_dreams", "ridge_runner", "ridge_runner",
+	"trestle_dreams", "ridge_runner", "lantern_low", "ridge_runner"]
 
 
 ## Everything a trail introduces (main feature first), e.g. ["spiker", "switch"].
@@ -218,11 +314,28 @@ const FEATURES := {
 		"WATCH THE RHYTHM. JUMP SO YOU COME DOWN ON THE NEXT LIFT, EASIEST WHILE IT'S LOW. DON'T ROLL OFF THE END: HOP ACROSS."],
 	"zip": ["ZIPLINES", "CABLES STRUNG OVER CANYONS TOO WIDE TO JUMP.",
 		"JUMP WITH A LONG HOLD TO GRAB THE CABLE AND KEEP HOLDING TO RIDE IT. LET GO OVER THE FAR DECK, OR RIDE TO THE END AND IT DROPS YOU OFF."],
+	"zip2": ["ZIPLINE TRICKS", "CABLES THAT HAUL YOU UP, CABLES IN A CHAIN, AND CABLES OVER LITTLE ISLANDS.",
+		"KEEP HOLDING: OFF THE END OF ONE CABLE YOU POP UP AND CATCH THE NEXT. LET GO OVER AN ISLAND FOR ITS PRIZE: ITS SPRING SENDS YOU ON.", "ZIP TRICKS"],
+	"rail": ["GRIND RAILS", "STEEL RAILS OVER GAPS. THEY ONLY HOLD YOU WHILE YOU HOLD THE BUTTON.",
+		"JUMP ONTO THE RAIL AND KEEP HOLDING ALL THE WAY ACROSS. LET GO AND YOU DROP. SPARKS MEAN YOU'RE GRINDING.", "RAILS"],
+	"rail2": ["RAIL HOPS", "RAILS IN A ROW, AND RAILS THAT RUN DOWNHILL.",
+		"KEEP HOLDING OFF THE END OF A RAIL: YOU POP UP AND LAND ON THE NEXT ONE. SOME RAILS HAVE A LOWER ROAD UNDER THEM IF YOU LET GO.", "RAIL HOPS"],
+	"rope": ["ROPE SWINGS", "ROPES HANGING OVER GAPS TOO WIDE TO JUMP.",
+		"JUMP AND HOLD TO CATCH THE ROPE, KEEP HOLDING AS IT SWINGS YOU FORWARD, THEN LET GO ON THE WAY UP TO FLY ACROSS. YOU CAN SWING BACK AND TRY AGAIN.", "ROPES"],
+	"wallride": ["WALL-RIDES", "CURVED BOARD WALLS THAT ARC UP OVER A PIT.",
+		"JUMP ON AND HOLD ALL THE WAY ROUND. LET GO AND YOU FALL OFF. A WALL THAT ENDS GOING UP THROWS YOU INTO THE AIR.", "WALL-RIDES"],
+	"wallride2": ["WALL OF DEATH", "BIG WALLS, STEEP LIPS, AND RAILS AND ROPES MIXED IN.",
+		"HOLD THROUGH EVERY WALL. ON A LIP, HOLD TO THE TOP AND IT LAUNCHES YOU. BETWEEN THEM, LET GO TO LAND.", "WALL OF DEATH"],
+	"boss": ["BOSS FIGHT", "AN ALIEN MACHINE HOLDING A PART OF GRANDPA'S BIKE.",
+		"LAND ON ITS GLOWING GLASS TOP THREE TIMES. GET ABOVE IT WITH THE TRAIL'S CABLES, RAILS, ROPES OR WALLS, THEN LET GO. MISS AND IT CIRCLES ROUND FOR ANOTHER GO.", "BOSS"],
 }
 
 
 static func level(id: String) -> Dictionary:
 	for l in levels():
+		if l.id == id:
+			return l
+	for l in story_levels():
 		if l.id == id:
 			return l
 	return {}

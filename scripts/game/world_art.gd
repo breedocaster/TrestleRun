@@ -22,6 +22,11 @@ const STYLES := [
 	{"track": "scaffold", "crawler": "mole", "spiker": "tnt", "drone": "vulture"},      # Quarry Cliffs
 	{"track": "launch", "crawler": "rustbot", "spiker": "mine", "drone": "drone"},      # Rocket Ridge
 	{"track": "wood", "crawler": "beetle", "spiker": "urchin", "drone": "bat"},         # Last Trestle
+	# Story mode: the aliens' critters (gloops, spore pods, probes) all over the county.
+	{"track": "farm", "crawler": "gloop", "spiker": "thistle", "drone": "probe", "rope": "beam"},       # Grandma's Farm
+	{"track": "railbed", "crawler": "gloop", "spiker": "spore", "drone": "probe", "rope": "crane"},     # Rail Yard
+	{"track": "stump", "crawler": "gloop", "spiker": "spore", "drone": "probe", "rope": "branch"},      # Old Orchard
+	{"track": "bleacher", "crawler": "gloop", "spiker": "spore", "drone": "probe", "rope": "crane", "wall": "drome"},  # Speedway
 ]
 
 
@@ -46,12 +51,92 @@ static func draw_tracks(ci: CanvasItem, tracks: Array, lane: int, left: float, r
 			continue
 		_supports(ci, tr, left, right, bottom, th, kind)
 	for tr in tracks:
-		if int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right or tr.has("crumble"):
+		if int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right or tr.has("crumble") or tr.has("hold"):
 			continue
 		if tr.has("lift"):
 			_lift(ci, tr, Phys.lift_dy(tr, sim_t), th, bottom, t)
 			continue
 		_deck(ci, tr, left, right, th, kind, t, night)
+
+
+## Grind rails (a steel pipe on posts) and wall-rides (a curved board wall). The one
+## you're on glows, so you can see it only holds while you hold.
+static func draw_holds(ci: CanvasItem, tracks: Array, lane: int, left: float, right: float, bottom: float,
+		th: Dictionary, st: Dictionary, t: float, active: int) -> void:
+	for ti in tracks.size():
+		var tr: Dictionary = tracks[ti]
+		if not tr.has("hold") or int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right:
+			continue
+		var on := ti == active
+		if String(tr.hold) == "wall":
+			_wall_ride(ci, tr, bottom, th, st, t, on)
+		else:
+			_rail(ci, tr, bottom, th, t, on)
+
+
+static func _rail(ci: CanvasItem, tr: Dictionary, bottom: float, th: Dictionary, t: float, on: bool) -> void:
+	var pts: PackedVector2Array = tr.pts
+	var a := pts[0]
+	var b := pts[pts.size() - 1]
+	# Posts every 40 px down out of sight, angled braces.
+	var px := ceilf((a.x + 6.0) / 40.0) * 40.0
+	while px < b.x - 4.0:
+		var py := Phys.height_at(tr, px)
+		ci.draw_rect(Rect2(px - 1, py + 2, 2, bottom - py), STEEL)
+		ci.draw_rect(Rect2(px - 1, py + 2, 1, bottom - py), STEEL_HI.darkened(0.3))
+		px += 40.0
+	ci.draw_rect(Rect2(a.x - 2, a.y - 1, 3, bottom - a.y), STEEL)
+	ci.draw_rect(Rect2(b.x - 1, b.y - 1, 3, bottom - b.y), STEEL)
+	# The pipe: dark underside, bright top, end caps.
+	var glow := 0.5 + 0.5 * sin(t * 6.0)
+	ci.draw_line(a + Vector2(0, 2), b + Vector2(0, 2), Color("2a2d36"), 2.0)
+	ci.draw_line(a, b, Color("c9d1d9"), 2.0)
+	ci.draw_line(a + Vector2(0, -1), b + Vector2(0, -1), Color(1, 1, 1, 0.8), -1.0)
+	# Chevrons along the rail mark it as a grind rail (hold to ride).
+	var n := int((b.x - a.x) / 24.0)
+	for i in n:
+		var u := (i + 0.5) / float(n)
+		var c := a.lerp(b, u)
+		var col := Color(0.55, 0.9, 1.0, (0.9 if on else 0.35 + 0.25 * glow))
+		ci.draw_line(c + Vector2(-2, 3), c + Vector2(0, 5), col, -1.0)
+		ci.draw_line(c + Vector2(0, 5), c + Vector2(2, 3), col, -1.0)
+	for e in [a, b]:
+		ci.draw_rect(Rect2(e.x - 2, e.y - 2, 4, 4), Color("e04848"))
+	if on:
+		ci.draw_line(a + Vector2(0, -2), b + Vector2(0, -2), Color(0.6, 0.95, 1.0, 0.35), 3.0)
+
+
+static func _wall_ride(ci: CanvasItem, tr: Dictionary, bottom: float, th: Dictionary, st: Dictionary, t: float, on: bool) -> void:
+	var pts: PackedVector2Array = tr.pts
+	var drome := String(st.get("wall", "boards")) == "drome"
+	var board: Color = Color("c08a4a") if drome else th.deck
+	var dark: Color = Color("6b3f2a") if drome else th.beam_dark
+	var hi: Color = Color("f0c27a") if drome else th.deck_hi
+	# A curved wall of boards: the riding band, then the wall face falling away under it
+	# and posts holding it up.
+	var depth := 12.0
+	for i in pts.size() - 1:
+		var p0 := pts[i]
+		var p1 := pts[i + 1]
+		ci.draw_colored_polygon(PackedVector2Array([p0, p1, p1 + Vector2(0, depth), p0 + Vector2(0, depth)]), board.darkened(0.15))
+		ci.draw_colored_polygon(PackedVector2Array([p0, p1, p1 + Vector2(0, 6), p0 + Vector2(0, 6)]), board)
+		ci.draw_line(p0, p1, hi, -1.0)
+		ci.draw_line(p0 + Vector2(0, depth), p1 + Vector2(0, depth), dark, -1.0)
+		if i % 2 == 0:
+			ci.draw_line(p0 + Vector2(0, 6), p0 + Vector2(0, depth), dark, -1.0)
+		if i % 3 == 0:
+			ci.draw_rect(Rect2(p0.x - 1, p0.y + depth, 3, bottom - p0.y - depth), Color(th.beam, 0.9))
+	if drome:
+		# Motordrome stripe and a row of bulbs along the top.
+		for i in pts.size() - 1:
+			ci.draw_line(pts[i] + Vector2(0, 12), pts[i + 1] + Vector2(0, 12), Color("c8323c"), 2.0)
+			if i % 2 == 0:
+				var lit := int(t * 6.0 + i) % 3 == 0
+				ci.draw_rect(Rect2(pts[i].x, pts[i].y + 16, 2, 2), Color("fff1a8") if lit else Color("7a6a4a"))
+	var glow := 0.5 + 0.5 * sin(t * 6.0)
+	var band := Color(0.55, 0.9, 1.0, 0.85 if on else 0.3 + 0.25 * glow)
+	for i in range(0, pts.size() - 1, 2):
+		ci.draw_line(pts[i] + Vector2(0, 3), pts[i + 1] + Vector2(0, 3), band, -1.0)
 
 
 static func _span(tr: Dictionary, left: float, right: float, step: float, inset := 4.0) -> Array:
@@ -184,6 +269,50 @@ static func _supports(ci: CanvasItem, tr: Dictionary, left: float, right: float,
 						yy += 22.0
 					if int(px / 30.0) % 2 == 0:
 						ci.draw_line(Vector2(px, ty + 18), Vector2(px + 30, ty2 + 40), Color(brace, 0.8), -1.0)
+		"farm":
+			# Square timber posts with knee braces, every 48 px.
+			for px: float in _span(tr, left, right, 48.0):
+				var ty := Phys.height_at(tr, px)
+				ci.draw_rect(Rect2(px - 2, ty + 4, 4, bottom - ty), beam)
+				ci.draw_rect(Rect2(px - 2, ty + 4, 1, bottom - ty), beam.lightened(0.15))
+				ci.draw_line(Vector2(px - 12, ty + 5), Vector2(px - 2, ty + 15), brace, 2.0)
+				ci.draw_line(Vector2(px + 12, ty + 5), Vector2(px + 2, ty + 15), brace, 2.0)
+		"railbed":
+			# Concrete piers under a plate girder.
+			for px: float in _span(tr, left - 80.0, right, 80.0, 10.0):
+				var ty := Phys.height_at(tr, px)
+				var pier := Color("8a8a84").lerp(th.mid, 0.35)
+				ci.draw_rect(Rect2(px - 7, ty + 14, 14, bottom - ty), pier)
+				ci.draw_rect(Rect2(px - 7, ty + 14, 2, bottom - ty), pier.darkened(0.25))
+				ci.draw_rect(Rect2(px - 9, ty + 12, 18, 3), pier.lightened(0.1))
+			for px: float in _span(tr, left, right, 8.0, 2.0):
+				var ty := Phys.height_at(tr, px)
+				ci.draw_rect(Rect2(px, ty + 6, 8, 7), beam)
+				ci.draw_rect(Rect2(px, ty + 12, 8, 1), brace)
+				if int(px / 8.0) % 3 == 0:
+					ci.draw_rect(Rect2(px + 3, ty + 8, 1, 1), STEEL_HI)
+		"stump":
+			# Old log posts and a split-rail brace.
+			for px: float in _span(tr, left, right, 44.0):
+				var ty := Phys.height_at(tr, px)
+				ci.draw_rect(Rect2(px - 3, ty + 4, 6, bottom - ty), beam)
+				ci.draw_rect(Rect2(px - 3, ty + 4, 2, bottom - ty), brace)
+				var yy := ty + 16.0
+				while yy < bottom:
+					ci.draw_line(Vector2(px - 3, yy), Vector2(px + 3, yy + 2), brace, -1.0)
+					yy += 14.0
+				if px + 44.0 <= tr.x1:
+					var ty2 := Phys.height_at(tr, px + 44.0)
+					ci.draw_line(Vector2(px, ty + 24), Vector2(px + 44, ty2 + 24), beam, 2.0)
+		"bleacher":
+			# Red steel bleacher frame: verticals and stepped diagonals.
+			for px: float in _span(tr, left, right, 36.0):
+				var ty := Phys.height_at(tr, px)
+				ci.draw_rect(Rect2(px - 1, ty + 5, 3, bottom - ty), beam)
+				if px + 36.0 <= tr.x1:
+					var ty2 := Phys.height_at(tr, px + 36.0)
+					ci.draw_line(Vector2(px, ty + 8), Vector2(px + 36, ty2 + 40), brace, 2.0)
+					ci.draw_line(Vector2(px, ty + 22), Vector2(px + 36, ty2 + 22), Color(brace, 0.8), -1.0)
 		"launch":
 			# White lattice towers, two legs with X bracing, every 64 px.
 			for px: float in _span(tr, left, right, 64.0):
@@ -293,6 +422,46 @@ static func _deck(ci: CanvasItem, tr: Dictionary, left: float, right: float, th:
 						ci.draw_rect(Rect2(rx, ry - 9, 1, 9), th.beam)
 					rx += 10.0
 				ci.draw_line(a + Vector2(0, -9), b + Vector2(0, -9), Color(th.beam, 0.8), -1.0)
+			"farm":
+				# Planks with a white rail fence along the far edge.
+				ci.draw_line(a, b, hi, -1.0)
+				var rx := ceilf(x0 / 9.0) * 9.0
+				while rx < x1:
+					var ry := a.y + k * (rx - a.x)
+					ci.draw_rect(Rect2(rx, ry + 1, 1, 3), brace)
+					if int(rx) % 36 == 0:
+						ci.draw_rect(Rect2(rx, ry - 9, 2, 9), Color("ece6d6"))
+					rx += 9.0
+				ci.draw_line(a + Vector2(0, -8), b + Vector2(0, -8), Color("ece6d6"), -1.0)
+				ci.draw_line(a + Vector2(0, -4), b + Vector2(0, -4), Color(Color("ece6d6"), 0.8), -1.0)
+			"railbed":
+				# Ties with two steel rails on top.
+				var rx := ceilf(x0 / 5.0) * 5.0
+				while rx < x1:
+					var ry := a.y + k * (rx - a.x)
+					ci.draw_rect(Rect2(rx, ry + 1, 3, 4), th.deck)
+					ci.draw_rect(Rect2(rx, ry + 1, 3, 1), hi.darkened(0.2))
+					rx += 5.0
+				ci.draw_line(a + Vector2(0, -1), b + Vector2(0, -1), STEEL_HI, -1.0)
+				ci.draw_line(a, b, STEEL, -1.0)
+			"stump":
+				# Rough boardwalk planks of uneven tone.
+				var rx := ceilf(x0 / 7.0) * 7.0
+				while rx < x1:
+					var ry := a.y + k * (rx - a.x)
+					var tone := 0.08 * _h(rx * 0.21)
+					ci.draw_rect(Rect2(rx, ry, 6, 4), (th.deck as Color).darkened(tone))
+					ci.draw_rect(Rect2(rx, ry, 6, 1), hi.darkened(tone))
+					rx += 7.0
+			"bleacher":
+				# White boards with a red kick plate.
+				ci.draw_line(a, b, hi, -1.0)
+				ci.draw_line(a + Vector2(0, 3), b + Vector2(0, 3), Color("c8323c"), 2.0)
+				var rx := ceilf(x0 / 12.0) * 12.0
+				while rx < x1:
+					var ry := a.y + k * (rx - a.x)
+					ci.draw_rect(Rect2(rx, ry + 1, 1, 2), (th.deck as Color).darkened(0.25))
+					rx += 12.0
 			"launch":
 				# Steel grating with a red and white edge.
 				ci.draw_line(a, b, Color("f4f6f8"), -1.0)
@@ -448,6 +617,20 @@ static func crawler(ci: CanvasItem, p: Vector2, face: float, skin: String, t: fl
 			for i in 2:
 				ci.draw_rect(Rect2(p.x - 3 + i * 5 + step, p.y - 1, 2, 1), fur.darkened(0.4))
 			return p + Vector2(face * 5.0, -8)
+	if skin == "gloop":
+		# A green alien blob that wobbles along on its own goo; eye stalks wave.
+		var wob := sin(t * 6.0) * 1.0
+		var body := Color("62c24a")
+		ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, 0), p + Vector2(-6 - wob, -6), p + Vector2(-2, -9 + wob * 0.5),
+			p + Vector2(3, -9 - wob * 0.5), p + Vector2(6 + wob, -6), p + Vector2(7, 0)]), body)
+		ci.draw_rect(Rect2(p.x - 7, p.y - 1, 14, 1), Color("3a8a2a"))
+		ci.draw_rect(Rect2(p.x - 4, p.y - 7, 3, 2), body.lightened(0.35))
+		for sx in [-2.0, 3.0]:
+			var tip := Vector2(p.x + sx + face * 1.0 + sin(t * 4.0 + sx) * 1.0, p.y - 13.0)
+			ci.draw_line(Vector2(p.x + sx, p.y - 8), tip, body, -1.0)
+			ci.draw_rect(Rect2(tip.x - 1, tip.y - 1, 3, 3), Color("f4f4f4"))
+			ci.draw_rect(Rect2(tip.x + (0 if face > 0 else -1), tip.y, 1, 1), Color("111111"))
+		return Vector2(p.x + face * 3.0, p.y - 12)
 	# Beetle (default).
 	for i in 3:
 		var lx := p.x - 5 + i * 5
@@ -515,6 +698,33 @@ static func spiker(ci: CanvasItem, p: Vector2, skin: String, t: float) -> Vector
 				var a := t * 9.0 + i * 2.1
 				ci.draw_rect(Rect2(fz.x + 2 + cos(a) * 3.0, fz.y - 5 + sin(a) * 3.0, 1, 1), Color("fff1a8"))
 			return c
+		"thistle":
+			# A spiky weed with a purple flower head (can't be stomped: prickly).
+			ci.draw_line(Vector2(c.x, p.y), Vector2(c.x, c.y - 2), Color("4e7a3a"), 2.0)
+			for sd in [-1.0, 1.0]:
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(c.x, p.y - 3), Vector2(c.x + sd * 6.0, p.y - 6),
+					Vector2(c.x + sd * 2.0, p.y - 1)]), Color("5a8a3a"))
+			ci.draw_circle(c + Vector2(0, -3), 4.0, Color("6a9a4a"))
+			for i in 7:
+				var a := -PI + i * PI / 6.0
+				ci.draw_line(c + Vector2(0, -3) + Vector2(cos(a), sin(a)) * 3.0, c + Vector2(0, -3) + Vector2(cos(a), sin(a)) * 6.5,
+					Color("e8e2d0"), -1.0)
+			ci.draw_rect(Rect2(c.x - 3, c.y - 9, 6, 3), Color("b05ad0"))
+			ci.draw_rect(Rect2(c.x - 2, c.y - 10, 4, 1), Color("d890f0"))
+			return c
+		"spore":
+			# An alien spore pod: glowing core, spines that pulse.
+			var pulse := 0.5 + 0.5 * sin(t * 4.0)
+			ci.draw_circle(c, 9.0, Color(0.7, 0.3, 1.0, 0.08 + 0.08 * pulse))
+			for i in 9:
+				var a := i * TAU / 9.0 + 0.2
+				var d := Vector2(cos(a), sin(a))
+				var n := Vector2(-d.y, d.x)
+				ci.draw_colored_polygon(PackedVector2Array([c + d * 3.5 + n * 1.4, c + d * (7.5 + pulse), c + d * 3.5 - n * 1.4]), Color("c8a0f0"))
+			ci.draw_circle(c, 5.0, Color("5a2a7a"))
+			ci.draw_circle(c, 3.0, Color(0.85, 0.5, 1.0, 0.7 + 0.3 * pulse))
+			ci.draw_rect(Rect2(c.x - 1, c.y - 1, 1, 1), Color.WHITE)
+			return c
 		"ice":
 			for i in 8:
 				var a := i * TAU / 8.0
@@ -570,6 +780,19 @@ static func drone(ci: CanvasItem, p: Vector2, skin: String, t: float, haze := 0.
 			if not owl:
 				ci.draw_rect(Rect2(p.x - 3, p.y - 5, 3, 1), Color("c06060").lerp(hz, haze))
 			return p + Vector2(-2, -2)
+	if skin == "probe":
+		# A little alien probe: a mini saucer with one red eye on a stalk.
+		var hull := Color("a8b0bc").lerp(hz, haze)
+		ci.draw_rect(Rect2(p.x - 8, p.y - 1, 16, 3), hull)
+		ci.draw_rect(Rect2(p.x - 6, p.y + 2, 12, 2), Color("4a4f5c").lerp(hz, haze))
+		ci.draw_circle(p + Vector2(0, -2), 4.0, Color(0.55, 1.0, 0.72, 0.6).lerp(hz, haze))
+		var blink := 1.0 if int(t * 3.0) % 4 != 0 else 0.3
+		ci.draw_rect(Rect2(p.x - 1, p.y - 3, 2, 2), Color(1.0, 0.25, 0.2, blink).lerp(hz, haze))
+		for i in 3:
+			var lit := int(t * 8.0 + i) % 3 == 0
+			ci.draw_rect(Rect2(p.x - 6 + i * 5, p.y, 2, 1), (Color("fff1a8") if lit else Color("e04848")).lerp(hz, haze))
+		ci.draw_rect(Rect2(p.x - 1, p.y + 4, 2, 2), Color(0.6, 1.0, 0.7, 0.6).lerp(hz, haze))
+		return p + Vector2(0, -2)
 	# Drone (default).
 	var w := roundf(9.0 * absf(cos(t * 30.0))) + 1.0
 	ci.draw_line(Vector2(p.x, p.y - 4), Vector2(p.x, p.y - 7), Color("4a4f5c").lerp(hz, haze), -1.0)

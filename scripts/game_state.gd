@@ -32,6 +32,7 @@ func add_money(amount: int) -> void:
 	data.money = money() + amount
 	save_game()
 	money_changed.emit(money())
+	Achievements.on_wallet()
 
 
 func spend(amount: int) -> bool:
@@ -61,6 +62,7 @@ func buy(kind: String, id: String) -> bool:
 	data[kind + "_owned"].append(id)
 	data[kind] = id
 	save_game()
+	Achievements.on_wallet()
 	return true
 
 
@@ -77,7 +79,7 @@ func loadout() -> Dictionary:
 
 # --- settings --------------------------------------------------------------
 
-## "music" / "sound" volume, 0..1.
+## "music" / "sound" / "engine" volume, 0..1.
 func volume(key: String) -> float:
 	var dflt := DEFAULT_MUSIC if key == "music" else 1.0
 	return clampf(float((data.get("settings", {}) as Dictionary).get(key, dflt)), 0.0, 1.0)
@@ -130,7 +132,8 @@ func load_ghost(id: String) -> Dictionary:
 	return v if v is Dictionary and (v as Dictionary).has("frames") else {}
 
 
-## Bronze: cleared. Silver: all T-R-E-S-T-L-E letters in one run. Gold: par time, no crashes.
+## Bronze: cleared. Silver: all T-R-E-S-T-L-E letters in one run (bosses: won without
+## a crash). Gold: par time, no crashes.
 func medals(id: String) -> Array:
 	var rec := level_record(id)
 	return [bool(rec.cleared), bool(rec.get("letters", false)), bool(rec.get("gold", false))]
@@ -189,7 +192,7 @@ func record_result(r: Dictionary) -> Dictionary:
 	if new_best:
 		rec.best_time = snappedf(t, 0.1)
 	var old_medals := medals(id)
-	if r.get("letters_all", false):
+	if r.get("letters_all", false) or (bool(r.get("boss", false)) and int(r.crashes) == 0):
 		rec.letters = true
 	var par := float(meta.get("par", 0.0))
 	if String((r.get("conditions", {}) as Dictionary).get("weather", "clear")) == "wind":
@@ -212,13 +215,51 @@ func record_result(r: Dictionary) -> Dictionary:
 		"new_best": new_best and not first_clear,
 	}
 	payout.total = payout.coins + payout.cond_pay + payout.gear_pay + payout.bonus + payout.perfect
+	# Story: clearing a trail opens the next; a boss gives back its part of Grandpa's bike.
+	if meta.has("story"):
+		var nxt := next_level_id(id)
+		if nxt != "" and not nxt in data.levels_unlocked:
+			data.levels_unlocked.append(nxt)
+			payout.unlocked = nxt
+		var part := String(r.get("part", ""))
+		if bool(r.get("boss_down", false)) and part != "" and not part in story().parts:
+			story().parts.append(part)
+			payout.new_part = part
 	add_money(payout.total)
 	return payout
 
 
+# --- story ---------------------------------------------------------------------
+
+func story() -> Dictionary:
+	if not data.has("story"):
+		data.story = {"intro_seen": false, "parts": []}
+	return data.story
+
+
+func story_parts() -> Array:
+	return story().parts
+
+
+func set_intro_seen() -> void:
+	story().intro_seen = true
+	save_game()
+
+
+## The story trail to pick up from: the first unlocked one you haven't cleared.
+func story_current() -> String:
+	for l in Catalog.story_levels():
+		if level_unlocked(l.id) and not level_record(l.id).cleared:
+			return l.id
+	return Catalog.story_levels()[Catalog.story_levels().size() - 1].id
+
+
 func next_level_id(id: String) -> String:
-	var i := Catalog.level_index(id)
-	var ls := Catalog.levels()
+	var ls := Catalog.story_levels() if Catalog.is_story(id) else Catalog.levels()
+	var i := -1
+	for k in ls.size():
+		if ls[k].id == id:
+			i = k
 	if i >= 0 and i + 1 < ls.size():
 		return ls[i + 1].id
 	return ""
@@ -236,10 +277,11 @@ func _defaults() -> Dictionary:
 		"bike": "scrambler",
 		"paint_owned": ["stock"],
 		"paint": "stock",
-		"levels_unlocked": [Catalog.levels()[0].id],
+		"levels_unlocked": [Catalog.levels()[0].id, Catalog.story_levels()[0].id],
 		"levels": {},
 		"conditions": {"time": "dusk", "weather": "clear"},
 		"settings": {"music": DEFAULT_MUSIC, "sound": 1.0},
+		"story": {"intro_seen": false, "parts": []},
 	}
 
 
@@ -271,6 +313,11 @@ func load_game() -> void:
 	# never moved off 100% get the new default once.
 	if int(parsed.get("version", 1)) < 3 and float((data.settings as Dictionary).get("music", 1.0)) >= 0.999:
 		data.settings.music = DEFAULT_MUSIC
+	# 0.8.0: story mode; its first trail is always open.
+	var first: String = Catalog.story_levels()[0].id
+	if not first in data.levels_unlocked:
+		data.levels_unlocked.append(first)
+	story()
 	data.version = SAVE_VERSION
 	data.money = int(data.money)
 

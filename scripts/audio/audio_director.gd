@@ -45,6 +45,8 @@ var eng_cruise: AudioStreamPlayer
 var deck: AudioStreamPlayer
 var zip: AudioStreamPlayer
 var plane: AudioStreamPlayer
+var grind: AudioStreamPlayer
+var saucer: AudioStreamPlayer
 var coin_voices: Array = []
 var _coin_voice := 0
 var amb := {}
@@ -79,6 +81,9 @@ func _ready() -> void:
 	zip.stream = _stream("sfx/zipline.ogg", true)
 	plane = _player("SFX")
 	plane.stream = _stream("sfx/plane.ogg", true)
+	grind = _player("SFX")
+	saucer = _player("SFX")
+	saucer.stream = _stream("sfx/saucer.ogg", true)
 	for i in 10:
 		pool.append(_player("SFX"))
 	for i in 2:
@@ -97,11 +102,12 @@ func _is_headless() -> bool:
 
 # --- setup ---------------------------------------------------------------------
 
-## Bus tree: Music -> MusicVol -> Master; Engine/Ambience/SFX -> SoundVol -> Master.
+## Bus tree: Music -> MusicVol -> Master; Engine -> EngineVol -> Master;
+## Ambience/SFX -> SoundVol -> Master.
 ## The *Vol buses carry the player's sliders; the inner buses carry the mix.
 func _setup_buses() -> void:
-	for pair in [["MusicVol", "Master"], ["SoundVol", "Master"], ["Music", "MusicVol"],
-			["Engine", "SoundVol"], ["Ambience", "SoundVol"], ["SFX", "SoundVol"]]:
+	for pair in [["MusicVol", "Master"], ["SoundVol", "Master"], ["EngineVol", "Master"], ["Music", "MusicVol"],
+			["Engine", "EngineVol"], ["Ambience", "SoundVol"], ["SFX", "SoundVol"]]:
 		if AudioServer.get_bus_index(pair[0]) == -1:
 			AudioServer.add_bus()
 			var i := AudioServer.bus_count - 1
@@ -147,6 +153,7 @@ func _stream(rel: String, loop := false) -> AudioStream:
 func apply_settings() -> void:
 	_apply_volume("MusicVol", GameState.volume("music"))
 	_apply_volume("SoundVol", GameState.volume("sound"))
+	_apply_volume("EngineVol", GameState.volume("engine"))
 
 
 ## Slider 0..1 -> dB with a squared taper, so 50% sounds about half as loud.
@@ -284,6 +291,37 @@ func zip_on(on: bool) -> void:
 		_fade(zip, -60.0, 0.25, true)
 
 
+## Grinding a rail (steel scrape) or riding a wall (the boards booming): a loop that
+## runs while you're on it.
+func grind_on(on: bool, kind := "rail") -> void:
+	if _is_headless():
+		return
+	if on:
+		_kill_tween(grind)
+		grind.stream = _stream("sfx/grind.ogg" if kind == "rail" else "sfx/deck_roll.ogg", true)
+		grind.pitch_scale = 1.0 if kind == "rail" else 0.7
+		grind.volume_db = -8.0 if kind == "rail" else 0.0
+		grind.play()
+	elif grind.playing:
+		_fade(grind, -60.0, 0.12, true)
+
+
+## A boss's saucer hum. near: 0 (far) .. 1 (right there).
+func saucer_set(on: bool, near := 0.0) -> void:
+	if _is_headless():
+		return
+	if not on:
+		if saucer.playing:
+			_fade(saucer, -60.0, 0.6, true)
+		return
+	if not saucer.playing:
+		_kill_tween(saucer)
+		saucer.volume_db = -40.0
+		saucer.play()
+	_kill_tween(saucer)
+	saucer.volume_db = lerpf(-30.0, -6.0, clampf(near, 0.0, 1.0))
+
+
 # --- engine ----------------------------------------------------------------------
 
 func engine_start(bike_id: String) -> void:
@@ -330,7 +368,7 @@ func engine_stop(secs := 0.6) -> void:
 	_fade(eng_idle, -60.0, secs, true)
 	_fade(eng_cruise, -60.0, secs, true)
 	_fade(deck, -60.0, secs, true)
-	for p in [zip, plane]:
+	for p in [zip, plane, grind, saucer]:
 		if p.playing:
 			_fade(p, -60.0, secs, true)
 
@@ -356,18 +394,22 @@ func engine_update(delta: float, grounded: bool, speed_ratio: float) -> void:
 	deck.pitch_scale = clampf(speed_ratio, 0.6, 1.6)
 
 
-## Garage: a short blip of the throttle on the bike you just picked.
+## Garage: start the bike and give it a rev (idle catches, the throttle opens onto
+## the cruise loop and drops back, then it idles and fades out).
 func preview_engine(bike_id: String) -> void:
 	if _is_headless():
 		return
 	_engine_on = false
-	_kill_tween(eng_idle)
-	_kill_tween(eng_cruise)
-	eng_cruise.stop()
+	for p in [eng_idle, eng_cruise]:
+		_kill_tween(p)
 	eng_idle.stream = _stream("engines/%s_idle.ogg" % bike_id, true)
-	eng_idle.volume_db = -4.0
-	eng_idle.pitch_scale = 1.0
+	eng_cruise.stream = _stream("engines/%s_cruise.ogg" % bike_id, true)
+	eng_idle.volume_db = -30.0
+	eng_idle.pitch_scale = 0.7
 	eng_idle.play(randf() * 3.0)
+	eng_cruise.volume_db = -60.0
+	eng_cruise.pitch_scale = 0.8
+	eng_cruise.play(randf() * 3.0)
 	_preview_t = 0.0
 
 
@@ -375,12 +417,18 @@ func _process(delta: float) -> void:
 	if _preview_t >= 0.0:
 		_preview_t += delta
 		var t := _preview_t
-		# blip: 0.35s up, hold, settle back, then fade out
-		var rev := clampf(t / 0.35, 0.0, 1.0) * clampf((1.3 - t) / 0.5, 0.0, 1.0)
-		eng_idle.pitch_scale = 1.0 + 0.9 * rev
-		eng_idle.volume_db = -4.0 + 3.0 * rev - maxf(0.0, t - 1.6) * 30.0
-		if t > 2.3:
+		# 0-0.25 s: the engine catches (pitch and level come up from a crank).
+		var start := clampf(t / 0.25, 0.0, 1.0)
+		# 0.45-1.4 s: one rev, up fast and back down slower.
+		var rev := clampf((t - 0.45) / 0.25, 0.0, 1.0) * clampf((1.4 - t) / 0.55, 0.0, 1.0)
+		var fade := maxf(0.0, t - 2.0) * 40.0
+		eng_idle.pitch_scale = lerpf(0.7, 1.0, start) + 0.35 * rev
+		eng_idle.volume_db = lerpf(-30.0, -4.0, start) - 8.0 * rev - fade
+		eng_cruise.pitch_scale = 0.8 + 0.5 * rev
+		eng_cruise.volume_db = linear_to_db(maxf(rev, 0.001)) - 3.0 - fade
+		if t > 2.6:
 			eng_idle.stop()
+			eng_cruise.stop()
 			_preview_t = -1.0
 
 

@@ -12,6 +12,8 @@ const Icons := preload("res://scripts/game/icons.gd")
 const Catalog := preload("res://scripts/catalog.gd")
 const Art := preload("res://scripts/game/feature_art.gd")
 const WorldArt := preload("res://scripts/game/world_art.gd")
+const BossArt := preload("res://scripts/game/boss_art.gd")
+const Guide := preload("res://scripts/game/guide.gd")
 
 const SWOOP_SETTLE := 190.0
 const SWOOP_RANGE := 170.0
@@ -102,6 +104,33 @@ var ghost_rec := PackedFloat32Array()
 var ghost: Dictionary = {}
 var _ghost_view: Node2D
 var _tips_shown := {}
+## Rope swings: the camera eases along instead of following every sway (0..1).
+var _cam_ease := 0.0
+## Boss trails: where the boss is drawn (it flies between its windows), its hit flash,
+## and the part it drops when it goes down.
+var boss_vis: Dictionary = {}
+var boss_down_tick := -1
+var boss_part := ""
+var _zips_in_air := 0
+## Crash hints (see guide.gd): off for the dev bot, hint demos and the tour.
+var hints := true
+## Dev: work the hint line out on the spot instead of on a worker thread.
+var hint_sync := false
+## The hint showing now: its tip, and once worked out, the line to follow
+## ({"pts", "z", "held", "marks"}, see Guide.compute).
+var guide_on := false
+var guide_tip := ""
+var guide: Dictionary = {}
+var guide_end := 0.0
+## ride_time when you came back with a hint showing (the HUD shortens it after a bit).
+var guide_since := 0.0
+var _guide_job = null
+var _guide_serial := -1
+## [Thread, Guide.Job] for every worker still running (a newer wreck cancels older ones).
+var _guide_jobs: Array = []
+## Where the wheels last touched a deck (a fall is blamed on the stretch you left).
+var _air_x := 0.0
+const BOSS_FINISH_TICKS := 150
 const LETTER_BONUS := 50
 const MAGNET_R := 60.0
 const POWER_NAMES := {
@@ -129,16 +158,31 @@ func setup(id: String, rig: Dictionary, known: Array, conditions: Dictionary = {
 		gears.append(false)
 		known_gears.append(i < known.size() and known[i])
 	state = Phys.new_state(level, level.start_x, level.start_track, 0.0, ability)
+	if level.has("boss"):
+		var b: Dictionary = level.boss
+		boss_vis = {"pos": Vector2(float(b.x0) + 300.0, float(b.y0) - 130.0), "hurt": 0.0, "drop": {}, "flee": 0.0}
+		boss_part = meta_part(id)
 	_rng.seed = hash(id) ^ Time.get_ticks_usec()
 	_next_plane_t = _rng.randf_range(9.0, 16.0)
 	_focus_y = state.y
 	_snapshot(level.start_x, level.start_track)
 
 
+## The part a story boss is holding (from the catalog), or "".
+static func meta_part(id: String) -> String:
+	return String(Catalog.level(id).get("part", ""))
+
+
 ## Dev/demo: swap in a custom level after the world is in the tree.
 func replace_level(lv: Dictionary, x := 40.0) -> void:
 	level = lv
 	Phys.apply_weather(level, String(cond.weather))
+	boss_vis = {}
+	if level.has("boss"):
+		var b: Dictionary = level.boss
+		boss_vis = {"pos": Vector2(float(b.x0) + 300.0, float(b.y0) - 130.0), "hurt": 0.0, "drop": {}, "flee": 0.0}
+		if boss_part == "":
+			boss_part = {"scooper": "headlight", "hog": "kickstart", "harvester": "seat", "spinner": "wheels"}.get(String(b.kind), "")
 	gears = []
 	known_gears = []
 	for i in level.gear_total:
@@ -205,11 +249,16 @@ func _process(delta: float) -> void:
 		_acc -= Phys.DT
 		tick()
 	_vis_t += delta
+	if not _guide_jobs.is_empty():
+		_poll_guides()
 	_sync_visuals()
 	if phase == "ride" or phase == "done" or phase == "ready":
 		if _audio_on():
 			var wheels_down: bool = (state.grounded or int(state.loop) >= 0) and int(state.zip) < 0
 			AudioDirector.engine_update(delta, wheels_down, float(state.vx) / float(level.speed))
+	if _audio_on() and boss_vis.size() > 0 and cam:
+		var bd := (boss_vis.pos as Vector2).distance_to(cam.position)
+		AudioDirector.saucer_set(phase != "crash" and float(boss_vis.flee) < 2.0, 1.0 - clampf((bd - 60.0) / 320.0, 0.0, 1.0))
 	if _audio_on():
 		if plane.is_empty() or cam == null:
 			AudioDirector.plane_set(false)
@@ -260,7 +309,9 @@ func tick() -> void:
 					"letters": letter_count(), "letters_all": letter_count() >= Library.LETTERS.length(),
 					"letter_bonus": LETTER_BONUS if letters_paid else 0, "ghost": ghost_rec,
 					"rig": loadout.duplicate(),
-					"bike": String(loadout.get("bike", ""))}
+					"bike": String(loadout.get("bike", "")),
+					"boss": level.has("boss"), "boss_down": boss_down_tick >= 0, "part": boss_part,
+					"boss_loops": int(state.boss_loops), "had_ghost": not ghost.is_empty()}
 				run_finished.emit(result)
 	if not headless:
 		_tick_visuals()
@@ -276,6 +327,10 @@ func _ride_tick() -> void:
 		h = d[1]
 	held_now = h
 	var ev := Phys.step(level, state, pressed, h)
+	if state.grounded:
+		_air_x = float(state.x)
+	if guide_on and float(state.x) > guide_end:
+		guide_on = false  # through it: the hint's done its job
 	if ev & Phys.EV_JUMP:
 		_puff(Vector2(state.x - 6, state.y), 5, Color(theme.deck_hi, 0.9))
 		_sfx("jump", randf_range(0.94, 1.06))
@@ -291,6 +346,8 @@ func _ride_tick() -> void:
 	if ev & Phys.EV_SMASH:
 		_on_smash()
 	_feature_events(ev)
+	if level.has("boss"):
+		_boss_events(ev)
 	if ev & Phys.EV_DEAD:
 		_crash()
 		return
@@ -303,10 +360,10 @@ func _ride_tick() -> void:
 		_next_cp += 1
 		_float(Vector2(c.x, state.y - 34), "CHECKPOINT", Color("8ff0a4"))
 		_sfx("checkpoint")
-	if state.x >= level.finish_x:
+	if state.x >= level.finish_x or (boss_down_tick >= 0 and ticks - boss_down_tick >= BOSS_FINISH_TICKS):
 		phase = "done"
 		phase_ticks = 0
-		_float(Vector2(state.x + 20, state.y - 40), "FINISH!", Color("fff1a8"))
+		_float(Vector2(state.x + 20, state.y - 40), "FINISH!" if boss_down_tick < 0 else "PART RECOVERED!", Color("fff1a8"))
 		_vibrate(40)
 		_sfx("finish")
 		if _audio_on():
@@ -320,6 +377,7 @@ func _on_stomp() -> void:
 	e.squash_pos = Phys.enemy_pos(level, e, state.t)
 	e.squash_t = _vis_t
 	stomps += 1
+	_ach("stomps")
 	run_coins += Catalog.STOMP_COINS
 	_float(e.squash_pos + Vector2(0, -16), "+%d" % Catalog.STOMP_COINS, Icons.GOLD)
 	_puff(e.squash_pos, 8, Color("fff1a8"))
@@ -385,6 +443,10 @@ func _feature_events(ev: int) -> void:
 		run_coins += coins
 		trick_coins += coins
 		tricks_landed += 1
+		if _ach_on():
+			Achievements.unlock("flip")
+			if int(state.trick_n) >= 2:
+				Achievements.unlock("double_flip")
 		_float(Vector2(state.x, state.y - 36), "%s +%d" % [String(state.trick_name), coins], Color("8fe3ff"))
 		_puff(Vector2(state.x, state.y), 10, Color("8fe3ff"))
 		_sfx("trick")
@@ -422,6 +484,58 @@ func _feature_events(ev: int) -> void:
 		_shake = 3.0
 	if ev & Phys.EV_CRUMBLE:
 		_sfx("crumble", randf_range(0.9, 1.15), -6.0)
+	if ev & Phys.EV_LAND:
+		_zips_in_air = 0
+	if ev & Phys.EV_ZIP:
+		_zips_in_air += 1
+		if _zips_in_air >= 3 and _ach_on():
+			Achievements.unlock("zip_chain")
+	if ev & Phys.EV_GRIND:
+		var hk := String(level.tracks[state.track].get("hold", "rail")) if int(state.track) >= 0 else "rail"
+		_ach("rails" if hk == "rail" else "walls")
+		_sfx("grind_on" if hk == "rail" else "wall_on", randf_range(0.95, 1.05))
+		if _audio_on():
+			AudioDirector.grind_on(true, hk)
+		if not _tips_shown.has(hk):
+			_tips_shown[hk] = true
+			_float(Vector2(state.x, state.y - 36), "KEEP HOLDING!", Color("9fe8ff"))
+	if ev & Phys.EV_GRIND_OFF:
+		if _audio_on():
+			AudioDirector.grind_on(false)
+	if ev & Phys.EV_ROPE:
+		_ach("ropes")
+		_sfx("rope_grab", randf_range(0.95, 1.05))
+		_squash = 0.4
+	if ev & Phys.EV_ROPE_OFF:
+		_sfx("jump", 1.15, -2.0)
+		_cam_ease = 1.0
+
+
+## Boss hits, the loop back to the arena start, and the part it drops when it goes down.
+func _boss_events(ev: int) -> void:
+	if ev & Phys.EV_BOSS_HIT:
+		boss_vis.hurt = 1.0
+		_shake = 4.5
+		_vibrate(60)
+		var left := int(state.boss_hp)
+		_float(Vector2(state.x, state.y - 34), "HIT! %d TO GO" % left if left > 0 else "KNOCKED OUT!", Color("ff9a6a"))
+		_puff(Vector2(state.x, state.y), 14, Color("9fffd0"))
+		_puff(Vector2(state.x, state.y), 8, Color("fff1a8"))
+		_sfx("boss_hit")
+		if left <= 0:
+			boss_down_tick = ticks
+			var p: Vector2 = boss_vis.pos
+			boss_vis.drop = {"p": p + Vector2(0, 8), "v": Vector2(float(state.vx) * 0.9, -150.0), "got": false}
+			_sfx("boss_down")
+	if ev & Phys.EV_BOSS_LOOP:
+		_focus_y = state.y
+		_next_cp = 0
+		while _next_cp < level.checkpoints.size() and state.x >= level.checkpoints[_next_cp].x:
+			_next_cp += 1
+		if cam:
+			cam.position = _cam_target()
+		_float(Vector2(state.x + 40, state.y - 50), "IT'S COMING ROUND AGAIN!", Color("ffb347"))
+		_sfx("boss_loop")
 
 
 func letter_count() -> int:
@@ -513,6 +627,7 @@ func _crash() -> void:
 	phase_ticks = 0
 	crashes += 1
 	death_log.append({"x": snappedf(state.x, 0.1), "cause": state.death})
+	_hint_check()
 	if headless:
 		return
 	var up := -170.0 if state.death == "hit" else -20.0
@@ -526,6 +641,7 @@ func _crash() -> void:
 	if _audio_on():
 		AudioDirector.engine_cut()
 		AudioDirector.zip_on(false)
+		AudioDirector.grind_on(false)
 	plane = {}
 
 
@@ -542,16 +658,103 @@ func _respawn() -> void:
 		e.alive = not _cp.dead_e.has(i)
 		if e.alive:
 			e.erase("squash_t")
-	state = Phys.new_state(level, _cp.x, _cp.track, state.t, ability)
+	state = _respawn_state(level)
 	_focus_y = state.y
+	guide_since = ride_time
 	phase = "ready"
 	phase_ticks = 0
 	if _audio_on():
 		AudioDirector.engine_start(String(loadout.get("bike", "scrambler")))
 
 
+## The state you come back in at the last checkpoint (the clock carries on).
+func _respawn_state(lv: Dictionary) -> Dictionary:
+	var s := Phys.new_state(lv, _cp.x, _cp.track, state.t, ability)
+	if lv.has("boss"):
+		s.boss_hp = int(state.boss_hp)  # hits stick: you don't have to start the fight over
+		s.boss_hits = int(state.boss_hits)
+	return s
+
+
+# --- crash hints -------------------------------------------------------------
+
+## Count the wreck against its stretch of trail; enough of them and the next try
+## shows the way through (worked out on a worker thread while the crash plays).
+func _hint_check() -> void:
+	guide_on = false
+	guide = {}
+	_guide_job = null
+	for j in _guide_jobs:
+		j[1].cancel()
+	if not hints or (bot != null and not hint_sync):
+		return
+	var x := _air_x if String(state.death) == "fall" else float(state.x)
+	var sec := Guide.section_at(level, x)
+	var counts: Dictionary = Guide.wrecks(level_id)
+	counts[sec] = int(counts.get(sec, 0)) + 1
+	var sname := Guide.section_name(level, sec)
+	if int(counts[sec]) < Guide.threshold(level_id, sname):
+		return
+	guide_on = true
+	guide_tip = Guide.tip(sname, String(state.death))
+	guide_end = maxf(Guide.section_end(level, sec), x + 100.0) + 40.0
+	var lv: Dictionary = level.duplicate(true)
+	for i in lv.enemies.size():
+		lv.enemies[i].alive = not _cp.dead_e.has(i)
+		lv.enemies[i].erase("squash_t")
+	var inp := {"level": lv, "s0": _respawn_state(lv), "end_x": guide_end, "collect": level.has("boss")}
+	if hint_sync or headless:
+		var g := Guide.compute(inp)
+		if bool(g.ok):
+			guide = g
+		return
+	var job := Guide.Job.new()
+	var th := Thread.new()
+	th.start(Callable(Guide, "compute").bind(inp, job))  # normal priority: low can mean a slow core
+	_guide_jobs.append([th, job])
+	_guide_job = job
+	_guide_serial = -1
+
+
+## Take the newest piece of the hint line, and tidy up finished workers.
+func _poll_guides() -> void:
+	if _guide_job != null and guide_on:
+		var g: Dictionary = _guide_job.take(_guide_serial)
+		if not g.is_empty():
+			_guide_serial = int(g.serial)
+			if bool(g.done) and not bool(g.ok):
+				guide = {}  # no clean way through found from here: just the tip
+				_guide_job = null
+			else:
+				g.marks = Guide.marks_for(g.held, g.taps, g.att)
+				guide = g
+	for j in _guide_jobs.duplicate():
+		var th: Thread = j[0]
+		if not th.is_alive():
+			th.wait_to_finish()
+			_guide_jobs.erase(j)
+
+
+func _exit_tree() -> void:
+	for j in _guide_jobs:
+		j[1].cancel()
+	for j in _guide_jobs:
+		(j[0] as Thread).wait_to_finish()
+	_guide_jobs.clear()
+
+
 func _audio_on() -> bool:
 	return not headless and not quiet
+
+
+## Achievements only count real rides (not the dev bot, hint demos or the tour).
+func _ach_on() -> bool:
+	return bot == null and not headless and not quiet
+
+
+func _ach(stat: String) -> void:
+	if _ach_on():
+		Achievements.add(stat)
 
 
 func _sfx(sfx_name: String, pitch := 1.0, vol_db := 0.0) -> void:
@@ -604,6 +807,7 @@ func _plane_tick() -> void:
 			plane.prize = false
 			plane.waggle = 1.2
 			planes_caught += 1
+			_ach("planes")
 			run_coins += int(plane.value)
 			_float(sack + Vector2(0, -12), "+%d BONUS!" % int(plane.value), Icons.GOLD, 0.0)
 			_puff(sack, 14, Icons.GOLD, 0.0)
@@ -766,11 +970,26 @@ func _tick_visuals() -> void:
 			target = 0.0
 		elif int(state.climb) >= 0:
 			target = -PI * 0.5
+		elif int(state.rope) >= 0:
+			target = -float(state.rope_a)
+			_angle = target
 		_angle = lerp_angle(_angle, target, 0.45 if int(state.climb) >= 0 else 0.3)
+		var hold_kind := Phys.attachment(level, state)
+		if hold_kind == "rail" and ticks % 2 == 0:
+			# Sparks off the grinding pegs.
+			for k in 2:
+				_particles.append({"p": _view(Vector2(state.x - 4, state.y)), "v": Vector2(randf_range(-90, -30), randf_range(-70, -20)),
+					"life": 12, "max": 12, "c": Color(1.0, 0.75 + randf() * 0.25, 0.3, 1.0), "s": 1.0, "g": 300.0})
+		elif hold_kind == "wall" and ticks % 4 == 0:
+			_particles.append({"p": _view(Vector2(state.x - 8, state.y)), "v": Vector2(randf_range(-40, -10), randf_range(-20, 5)),
+				"life": 16, "max": 16, "c": Color(theme.deck_hi, 0.7), "s": 1.0, "g": 60.0})
+		if boss_vis.size() > 0:
+			_boss_tick()
 		_wheelie_a = lerpf(_wheelie_a, -0.34 if state.wheelie else 0.0, 0.2)
 		var flipping: bool = int(state.flip_dir) != 0
 		_umbrella = move_toward(_umbrella, 1.0 if (state.ab == "glide" and held_now and not state.grounded and not flipping
-			and float(state.vy) > 0.0 and int(state.zip) < 0) else 0.0, 0.18)
+			and float(state.vy) > 0.0 and int(state.zip) < 0 and Phys.attachment(level, state) == ""
+			and Phys.umbrella_ok(level, state)) else 0.0, 0.18)
 		var fast: bool = float(state.dash_t) > 0.0 or (state.ab == "wheelie" and float(state.boost) > float(level.speed) * 0.05) \
 			or float(state.rocket_t) > 0.0
 		if float(state.rocket_t) > 0.0 and ticks % 2 == 0:
@@ -796,7 +1015,7 @@ func _tick_visuals() -> void:
 			_particles.append({"p": _view(Vector2(state.x + float(REAR_WHEEL.get(String(loadout.get("bike", "scrambler")), -8.0)) - 2, state.y - 1)),
 				"v": Vector2(randf_range(-60, -30), randf_range(-30, -10)), "life": 16, "max": 16,
 				"c": Color(theme.deck_hi, 0.7), "s": 1.0, "g": 80.0})
-		if int(state.loop) >= 0 or int(state.zip) >= 0:
+		if int(state.loop) >= 0 or int(state.zip) >= 0 or int(state.rope) >= 0:
 			pass
 		elif state.grounded or int(state.sw) >= 0 or int(state.climb) >= 0:
 			_focus_y = lerpf(_focus_y, state.y, 0.15)
@@ -824,7 +1043,17 @@ func _tick_visuals() -> void:
 	_floaters = _floaters.filter(func(f): return f.life > 0)
 	if cam and phase != "crash":
 		var tgt := _cam_target()
-		cam.position.x = tgt.x
+		if int(state.rope) >= 0:
+			_cam_ease = 1.0
+			# Follow the rope's anchor (plus a lead), not every swing back and forth.
+			var rp: Dictionary = level.ropes[state.rope]
+			tgt.x = float(rp.ax) + 20.0 + get_viewport_rect().size.x * 0.22
+		if _cam_ease > 0.0:
+			cam.position.x = lerpf(cam.position.x, tgt.x, 0.12)
+			if absf(cam.position.x - tgt.x) < 1.0 and int(state.rope) < 0:
+				_cam_ease = 0.0
+		else:
+			cam.position.x = tgt.x
 		cam.position.y = lerpf(cam.position.y, tgt.y, 0.1)
 
 
@@ -848,6 +1077,13 @@ func _sync_visuals() -> void:
 	else:
 		var base := Vector2(state.x, state.y)
 		var rot := _angle
+		if int(state.rope) >= 0:
+			# Hanging from the rope by the hands: the bike swings round the grip.
+			var rp: Dictionary = level.ropes[state.rope]
+			var a := float(state.rope_a)
+			var hand := Vector2(rp.ax, rp.ay) + float(state.rope_r) * Vector2(sin(a), cos(a))
+			base = hand + Vector2(-4.0, Phys.HEIGHT + 2.0).rotated(-a)
+			rot = -a
 		if absf(_wheelie_a) > 0.01:
 			# Pivot round the rear wheel so it stays planted on the deck.
 			var rear := Vector2(float(REAR_WHEEL.get(String(loadout.get("bike", "scrambler")), -8.0)), 0.0)
@@ -882,14 +1118,14 @@ func _sync_visuals() -> void:
 	bike.wheel_angle = _wheel
 	bike.squash = _squash
 	bike.lean = clampf(-state.vy * 0.006, -1.0, 2.0) if not state.grounded else 0.0
-	if int(state.loop) >= 0 or int(state.zip) >= 0 or int(state.sw) >= 0:
+	if int(state.loop) >= 0 or int(state.zip) >= 0 or int(state.sw) >= 0 or int(state.rope) >= 0:
 		bike.lean = 0.0
 	var gust := Phys.wind_at(level, state.t) / Phys.WIND_PEAK
 	bike.flutter = clampf(0.35 + gust * 0.65 + (0.15 if not state.grounded else 0.0), 0.0, 1.0)
 	if gust > 0.0 and not state.grounded:
 		bike.lean += gust * 1.5
 	bike.umbrella = _umbrella
-	bike.hanging = int(state.zip) >= 0
+	bike.hanging = int(state.zip) >= 0 or int(state.rope) >= 0
 	bike.sticky = float(state.sticky_t) > 0.0 and (float(state.sticky_t) > 2.0 or int(_vis_t * 8.0) % 2 == 0)
 	bike.rocket = clampf(float(state.rocket_t) / 0.3, 0.0, 1.0)
 	bike.hat = int(state.hat) > 0
@@ -1005,6 +1241,17 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 	for zz in level.zips:
 		if int(zz.lane) == lane and zz.x1 > left and zz.x0 < right:
 			Art.zip(ci, zz, _ground_y_or(zz.x0, bottom, lane), _ground_y_or(zz.x1, bottom, lane), theme)
+	var on_hold := int(state.track) if state.grounded and Phys.attachment(level, state) in ["rail", "wall"] else -1
+	WorldArt.draw_holds(ci, level.tracks, lane, tl, right, bottom, theme, _style, _vis_t, on_hold)
+	for ri in level.get("ropes", []).size():
+		var rp: Dictionary = level.ropes[ri]
+		if int(rp.lane) != lane or float(rp.ax) + 120.0 < left or float(rp.ax) - 120.0 > right:
+			continue
+		var end := Vector2.INF
+		if int(state.rope) == ri:
+			var a := float(state.rope_a)
+			end = Vector2(rp.ax, rp.ay) + float(state.rope_r) * Vector2(sin(a), cos(a))
+		Art.rope(ci, rp, end, _vis_t, theme, String(_style.get("rope", "beam")))
 	_draw_markers(ci, lane, left, right)
 	_draw_pickups(ci, lane, left, right)
 	for i in level.powerups.size():
@@ -1012,6 +1259,8 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 		if int(pu.lane) == lane and not (state.got as Dictionary).has(i) and pu.pos.x > left and pu.pos.x < right:
 			Icons.power(ci, (pu.pos + Vector2(0, sin(_vis_t * 3.0 + pu.pos.x) * 2.0)).floor(), String(pu.kind), _vis_t)
 	_draw_enemies(ci, lane, left, right)
+	if lane == 0 and boss_vis.size() > 0:
+		_draw_boss(ci)
 	if lane == 0 and not plane.is_empty():
 		if plane.prize:
 			var sack := prize_pos()
@@ -1040,6 +1289,58 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 		if night:
 			_draw_headlight(ci)
 	ci.draw_set_transform(Vector2.ZERO)
+
+
+## The boss flies to its next window (the weak spot is a fixed place in the world) and
+## hovers ahead of you between windows. Knocked out, it drops its part and limps off.
+func _boss_tick() -> void:
+	var b: Dictionary = level.boss
+	var tgt := Vector2.INF
+	if int(state.boss_hp) > 0:
+		for wi in b.windows.size():
+			var w: Dictionary = b.windows[wi]
+			if (state.boss_used as Dictionary).has(wi) or float(w.x) < float(state.x) - 30.0:
+				continue
+			if float(w.x) - float(state.x) < 420.0:
+				tgt = BossArt.anchor(String(b.kind), Phys.boss_rects(level, wi, state.t)[0])
+			break
+		if tgt == Vector2.INF:
+			tgt = Vector2(float(state.x) + 230.0, _focus_y - 110.0 + sin(_vis_t * 1.3) * 8.0)
+		boss_vis.pos = (boss_vis.pos as Vector2).lerp(tgt, 0.07 if (boss_vis.pos as Vector2).distance_to(tgt) > 6.0 else 0.3)
+	else:
+		boss_vis.flee = float(boss_vis.flee) + Phys.DT
+		boss_vis.pos = (boss_vis.pos as Vector2) + Vector2(60.0, -70.0 - 120.0 * float(boss_vis.flee)) * Phys.DT
+		if ticks % 3 == 0:
+			_particles.append({"p": _view(boss_vis.pos), "v": Vector2(randf_range(-40, 10), randf_range(-20, 20)),
+				"life": 24, "max": 24, "c": Color(0.4, 0.4, 0.45, 0.8), "s": 2.0, "g": -30.0})
+	boss_vis.hurt = maxf(0.0, float(boss_vis.hurt) - 0.04)
+	var d: Dictionary = boss_vis.drop
+	if not d.is_empty() and not d.got:
+		d.v.y += 500.0 * Phys.DT
+		var np: Vector2 = d.p + d.v * Phys.DT
+		var gy := _ground_y_or(np.x, INF, 0)
+		if gy < INF and np.y > gy - 6.0 and d.p.y <= gy - 6.0:
+			np.y = gy - 6.0
+			d.v = Vector2(d.v.x * 0.4, -d.v.y * 0.3)
+		d.p = np
+		if Phys.bike_rect(state, level).grow(10.0).has_point(d.p) or float(state.x) > d.p.x + 30.0:
+			d.got = true
+			_float(d.p + Vector2(0, -16), "%s!" % BossArt.part_name(boss_part), Icons.GOLD, 0.0)
+			_puff(d.p, 16, Icons.GOLD)
+			_sfx("part_get")
+			_vibrate(50)
+
+
+func _draw_boss(ci: CanvasItem) -> void:
+	var b: Dictionary = level.boss
+	var p: Vector2 = boss_vis.pos
+	var has_part := int(state.boss_hp) > 0
+	BossArt.draw(ci, String(b.kind), p.floor(), _vis_t, float(boss_vis.hurt), int(state.boss_hp), boss_part if has_part else "",
+		_focus_y + 120.0)
+	var d: Dictionary = boss_vis.drop
+	if not d.is_empty() and not d.got:
+		ci.draw_circle(d.p, 10.0, Color(Icons.GOLD, 0.2 + 0.1 * sin(_vis_t * 8.0)))
+		Icons.part(ci, d.p.floor(), boss_part, 1.0)
 
 
 ## Planks that swing between two lanes, drawn in camera space (each plank at its
@@ -1082,6 +1383,8 @@ func _draw_switch_ramps(ci: CanvasItem, lane: int) -> void:
 
 ## Particles and floating text, already in camera space.
 func draw_fx(ci: CanvasItem) -> void:
+	if guide_on and not guide.is_empty() and phase != "crash":
+		_draw_guide(ci)
 	for p in _particles:
 		ci.draw_rect(Rect2(floorf(p.p.x), floorf(p.p.y), p.s, p.s), Color(p.c, p.c.a * float(p.life) / p.max))
 	var font: Font = GameState.font
@@ -1090,6 +1393,40 @@ func draw_fx(ci: CanvasItem) -> void:
 		var tw: float = ceilf(maxf(140.0, font.get_string_size(f.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x + 8.0) * 0.5) * 2.0
 		ci.draw_string(font, Vector2(f.p.x - tw * 0.5 + 1, f.p.y + 1), f.text, HORIZONTAL_ALIGNMENT_CENTER, tw, 8, Color(0, 0, 0, a))
 		ci.draw_string(font, Vector2(f.p.x - tw * 0.5, f.p.y), f.text, HORIZONTAL_ALIGNMENT_CENTER, tw, 8, Color(f.c, a))
+
+
+## The hint line: a dot every few frames ahead of the bike (blue while the button
+## should be down), with TAP / HOLD / LET GO tags where the button changes.
+func _draw_guide(ci: CanvasItem) -> void:
+	var pts: PackedVector2Array = guide.pts
+	var zs: PackedFloat32Array = guide.z
+	var hd: PackedByteArray = guide.held
+	var bx := float(state.x) - 2.0
+	var font: Font = GameState.font
+	for i in range(0, pts.size(), 3):
+		var p: Vector2 = pts[i]
+		if p.x < bx:
+			continue
+		var v := _view(p + Vector2(0, -7), zs[i]).floor()
+		var on := hd[i] == 1
+		var w := 0.6 + 0.4 * sin(_vis_t * 7.0 - i * 0.18)
+		var sz := 3.0 if on else 2.0
+		ci.draw_rect(Rect2(v - Vector2(sz, sz) * 0.5 + Vector2(1, 1), Vector2(sz, sz)), Color(0, 0, 0, 0.45 * w))
+		ci.draw_rect(Rect2(v - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), Color(Color("7fe0ff") if on else Color("fff4d0"), 0.95 * w))
+	for m in guide.marks:
+		var i := int(m[0])
+		if i >= pts.size() or pts[i].x < bx - 30.0:
+			continue
+		var label := String(m[1])
+		var c := Icons.GOLD if label == "TAP" else (Color("7fe0ff") if label == "HOLD" else Color("ff9a6a"))
+		var v := _view(pts[i] + Vector2(0, -7), zs[i]).floor()
+		var bob := floorf(2.0 * sin(_vis_t * 5.0))
+		var top := v + Vector2(0, -22 + bob)
+		ci.draw_line(top + Vector2(0, 4), v + Vector2(0, -4), Color(c, 0.8), 1.0)
+		ci.draw_colored_polygon(PackedVector2Array([v + Vector2(-3, -6), v + Vector2(3, -6), v + Vector2(0, -3)]), c)
+		var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+		ci.draw_rect(Rect2(top.x - tw * 0.5 - 3, top.y - 8, tw + 6, 11), Color(0.05, 0.04, 0.08, 0.8))
+		ci.draw_string(font, Vector2(top.x - tw * 0.5, top.y + 1), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, c)
 
 
 func _ground_y_or(px: float, fallback: float, lane := 0) -> float:

@@ -31,16 +31,19 @@ const STAGES := {
 }
 const Library := preload("res://scripts/game/level_library.gd")
 
+## "@screen" entries show a menu screen instead of a ride.
 const TOUR := [
-	["quarry_cliffs", 300.0, 8.0, "scrambler", "day", "clear", "NEW: STICKY TIRES - JUMP AT THE GREEN FACE", ""],
-	["rocket_ridge", 330.0, 7.0, "scrambler", "day", "clear", "NEW: ROCKET + THREE-WAY RAMP: TOP ROUTE", ""],
-	["rocket_ridge", 330.0, 6.0, "scrambler", "dusk", "clear", "NO ROCKET: A FULL JUMP TAKES THE MIDDLE", "norocket"],
-	["last_trestle", 200.0, 9.0, "dirt", "dusk", "clear", "NEW: CRUMBLING PLANKS + THE COLLAPSE BEHIND YOU", ""],
-	["copper_canyon", 380.0, 6.0, "scrambler", "day", "clear", "COIN MAGNET", ""],
-	["night_trestle", 60.0, 5.5, "scrambler", "night", "clear", "HARD HAT: TAKES ONE HIT", "hat"],
-	["dusty_trail", 300.0, 7.0, "scrambler", "day", "clear", "T-R-E-S-T-L-E LETTERS ON EVERY TRAIL", ""],
-	["hoodoo_loops", 400.0, 7.0, "scrambler", "day", "clear", "GHOST OF YOUR BEST RUN", "ghost"],
-	["last_trestle", 150.0, 8.0, "scrambler", "dusk", "clear", "? TIPS: ONE PAGE PER NEW THING", "hint"],
+	["@story_intro", 0.0, 9.0, "", "", "", "NEW: STORY MODE - WIN BACK GRANDPA'S BIKE", ""],
+	["@story", 0.0, 4.5, "", "", "", "FOUR AREAS, THREE TRAILS AND A BOSS EACH", ""],
+	["s2_siding", 470.0, 8.0, "scrambler", "", "", "NEW: GRIND RAILS - THEY ONLY HOLD YOU WHILE YOU HOLD", ""],
+	["s3_apple_row", 430.0, 7.5, "scrambler", "", "", "NEW: ROPE SWINGS - LET GO ON THE UPSWING", ""],
+	["s4_fairgrounds", 430.0, 7.5, "scrambler", "", "", "NEW: WALL-RIDES - HOLD ALL THE WAY ROUND", ""],
+	["s1_powerlines", 1280.0, 7.0, "scrambler", "", "", "MORE ZIPLINES: CHAINS, UPHILL CABLES, ISLANDS", ""],
+	["s1_boss", 250.0, 26.0, "scrambler", "", "", "BOSSES: LAND ON THE GLASS TOP THREE TIMES", "boss"],
+	["dusty_trail", 2340.0, 9.0, "scrambler", "day", "clear", "WRECK A FEW TIMES? A HINT SHOWS THE WAY", "guide"],
+	["@garage", 0.0, 6.0, "", "", "", "PICK A RIDER OR BIKE TO HEAR ITS ENGINE", ""],
+	["@settings", 0.0, 3.5, "", "", "", "NEW: ENGINE VOLUME SLIDER", ""],
+	["@achievements", 0.0, 5.0, "", "", "", "31 ACHIEVEMENTS, READY FOR PLAY GAMES + GAME CENTER", ""],
 ]
 
 
@@ -84,6 +87,10 @@ class Showoff:
 
 
 func _tour() -> void:
+	# A fresh mix for the capture, whatever this machine's save has (not saved).
+	GameState.set_volume("music", 0.5, false)
+	GameState.set_volume("sound", 0.85, false)
+	GameState.set_volume("engine", 0.8, false)
 	var cap_layer := CanvasLayer.new()
 	cap_layer.layer = 50
 	add_child(cap_layer)
@@ -93,7 +100,12 @@ func _tour() -> void:
 	cap.offset_bottom = -12
 	cap_layer.add_child(cap)
 	for sg in TOUR:
-		GameState.data.conditions = {"time": sg[4], "weather": sg[5]}
+		cap.text = sg[6]
+		if String(sg[0]).begins_with("@"):
+			await _tour_screen(String(sg[0]).substr(1), float(sg[2]))
+			continue
+		if sg[4] != "":
+			GameState.data.conditions = {"time": sg[4], "weather": sg[5]}
 		GameState.data.bike = sg[3]
 		main.navigate("game", sg[0])
 		await get_tree().process_frame
@@ -119,7 +131,19 @@ func _tour() -> void:
 			w.set_ghost(_bot_ghost(sg[0], float(sg[1]), "sport"))
 		if sg[7] == "plane":
 			w._next_plane_t = 0.0
-		cap.text = sg[6]
+		if sg[7] == "guide":
+			# Wreck at the gap past this checkpoint as if for the 99th time, then ride
+			# the hint line exactly (the sim is deterministic).
+			var G = load("res://scripts/game/guide.gd")
+			G.wrecks(w.level_id)[G.section_at(w.level, 2950.0)] = 98
+			w.bot = null
+			w.hint_sync = true
+			w._air_x = 2950.0
+			w.state.death = "fall"
+			w._crash()
+			var rp := GuideReplay.new()
+			rp.g = w.guide
+			w.bot = rp
 		if sg[7] == "hint":
 			await get_tree().create_timer(1.6).timeout
 			gs.show_hint()
@@ -131,6 +155,58 @@ func _tour() -> void:
 			gs.resume()
 		else:
 			await get_tree().create_timer(float(sg[2])).timeout
+
+
+## Menu screens for the tour.
+func _tour_screen(target: String, secs: float) -> void:
+	match target:
+		"story_intro":
+			main.navigate("story_intro", "")
+			await get_tree().process_frame
+			var pages := 6
+			for i in pages:
+				main.current._show(i)
+				await get_tree().create_timer(secs / pages).timeout
+		"story":
+			main.navigate("story", "")
+			await get_tree().create_timer(secs).timeout
+		"garage":
+			main.navigate("garage", "")
+			await get_tree().process_frame
+			var g = main.current
+			g._tabs["rider"].button_pressed = true
+			g._set_tab("rider")
+			await get_tree().create_timer(0.6).timeout
+			g._equip(GameState.equipped("rider"))  # picking a rider starts your bike
+			await get_tree().create_timer(1.8).timeout
+			g._tabs["bike"].button_pressed = true
+			g._set_tab("bike")
+			for b in ["chopper", "sport", "scooter"]:
+				AudioDirector.preview_engine(b)  # same as tapping the bike's tile
+				await get_tree().create_timer((secs - 2.4) / 3.0).timeout
+		"settings":
+			main.navigate("title", "")
+			await get_tree().process_frame
+			main.current._open_settings()
+			await get_tree().create_timer(0.8).timeout
+			AudioDirector.preview_engine(GameState.equipped("bike"))
+			await get_tree().create_timer(secs - 0.8).timeout
+		"achievements":
+			main.navigate("achievements", "")
+			await get_tree().create_timer(0.8).timeout
+			Achievements._toasts.append("part_headlight")
+			await get_tree().create_timer(secs - 0.8).timeout
+
+
+## Plays a hint line's presses back frame by frame.
+class GuideReplay:
+	var g: Dictionary
+	var i := 0
+
+	func decide(_s: Dictionary) -> Array:
+		i += 1
+		var hd: PackedByteArray = g.get("held", PackedByteArray())
+		return [(g.get("taps", PackedInt32Array()) as PackedInt32Array).has(i), i < hd.size() and hd[i] == 1]
 
 
 ## A ghost recorded from a headless bot run on another bike (for showing ghosts).
@@ -230,7 +306,11 @@ func _ready() -> void:
 				chain.append("%s:%s" % [nn.get_class(), ["STOP", "PASS", "IGNORE"][nn.mouse_filter]])
 			nn = nn.get_parent()
 		print("SCROLL chain ", chain)
-		var hit = get_viewport().gui_get_hovered_control() if get_viewport().has_method("gui_get_hovered_control") else null
+		# Measure the card where the drags will start: scrolled back to the start (the
+		# picker opens scrolled to your current trail).
+		ls._scroll.scroll_horizontal = 0
+		await get_tree().process_frame
+		await get_tree().process_frame
 		var spots := {}
 		for n in card.find_children("*", "Control", true, false):
 			var nm := "%s(%s)" % [n.get_class(), ["STOP", "PASS", "IGNORE"][n.mouse_filter]]
@@ -242,12 +322,26 @@ func _ready() -> void:
 			ls._scroll.scroll_horizontal = 0
 			await get_tree().process_frame
 			var a: Vector2 = spots[nm]
-			_mouse(xf * a, true)
+			var touch := "--touch" in OS.get_cmdline_user_args()
+			if touch:
+				_touch(xf * a, true, 0)
+			else:
+				_mouse(xf * a, true)
 			await get_tree().process_frame
 			for k in 8:
-				_mouse_move(xf * (a - Vector2(12.0 * (k + 1), 0)), xf.basis_xform(Vector2(-12, 0)))
+				if touch:
+					var dv := InputEventScreenDrag.new()
+					dv.index = 0
+					dv.position = xf * (a - Vector2(12.0 * (k + 1), 0))
+					dv.relative = xf.basis_xform(Vector2(-12, 0))
+					Input.parse_input_event(dv)
+				else:
+					_mouse_move(xf * (a - Vector2(12.0 * (k + 1), 0)), xf.basis_xform(Vector2(-12, 0)))
 				await get_tree().process_frame
-			_mouse(xf * (a - Vector2(96, 0)), false)
+			if touch:
+				_touch(xf * (a - Vector2(96, 0)), false, 0)
+			else:
+				_mouse(xf * (a - Vector2(96, 0)), false)
 			await get_tree().process_frame
 			await get_tree().process_frame
 			print("SCROLL from %-28s -> scroll_x=%d  events_at_scroll=%d confirm=\"%s\"" % [nm, ls._scroll.scroll_horizontal, got.n, ls._confirm])

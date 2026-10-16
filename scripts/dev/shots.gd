@@ -43,6 +43,26 @@ func _ready() -> void:
 				rec.cleared = true
 				rec.gears = [true, i % 2 == 0, true]
 				rec.best_coins = 80 + i * 9
+		elif a.begins_with("--story="):
+			# Story progress: the first n story trails cleared (and their bosses' parts).
+			var n := int(a.substr(8))
+			var sl := Catalog.story_levels()
+			for i in mini(n, sl.size()):
+				var rec: Dictionary = GameState.level_record(sl[i].id)
+				rec.cleared = true
+				rec.best_coins = 60 + i * 7
+				rec.best_time = 40.0 + i
+				rec.gold = i % 3 == 0
+				if not sl[i].id in GameState.data.levels_unlocked:
+					GameState.data.levels_unlocked.append(sl[i].id)
+				if sl[i].has("part") and not sl[i].part in GameState.story_parts():
+					GameState.story_parts().append(sl[i].part)
+			if n < sl.size() and not sl[n].id in GameState.data.levels_unlocked:
+				GameState.data.levels_unlocked.append(sl[n].id)
+			GameState.story().intro_seen = true
+		elif a.begins_with("--ach="):
+			for id in a.substr(6).split(","):
+				Achievements._store()[id] = 1
 		elif a == "--own-all":
 			for kind in Catalog.KINDS:
 				for it in Catalog.items(kind):
@@ -60,14 +80,25 @@ func _ready() -> void:
 			for a in args:
 				if a.begins_with("--stage="):
 					stage = a.substr(8)
-			if stage != "":
+			var test := ""
+			for a in args:
+				if a.begins_with("--test="):
+					test = a.substr(7)
+			if test != "":
+				var Lib = load("res://scripts/game/level_library.gd")
+				var Lay = load("res://scripts/game/level_layouts.gd")
+				var meta: Dictionary = Catalog.level(parts[1]).duplicate()
+				meta.id = parts[1]
+				w.replace_level(Lib.build_layout(Lay.TESTS[test], meta))
+				w.bot = Bot.new(w.level)
+			elif stage != "":
 				var Demo = load("res://scripts/dev/demo.gd")
 				w.replace_level(load("res://scripts/game/level_library.gd").build_layout(Demo.STAGES[stage], Catalog.level(parts[1])))
 				var sh = Demo.Showoff.new()
 				sh.bot = Bot.new(w.level)
 				sh.mode = stage
 				w.bot = sh
-			else:
+			elif test == "":
 				w.bot = Bot.new(w.level)
 			if "--ghost" in args:
 				var Demo2 = load("res://scripts/dev/demo.gd")
@@ -104,6 +135,37 @@ func _ready() -> void:
 				else:
 					for i in int(parts[2]):
 						w.tick()
+				if parts.size() > 3 and parts[3] == "guidethread":
+					# The real thing: wreck here (counted as the 99th time), then let the
+					# game run on its own clock with the hint worked out on the worker.
+					var G2 = load("res://scripts/game/guide.gd")
+					G2.wrecks(w.level_id)[G2.section_at(w.level, float(w.state.x))] = 98
+					w.bot = null
+					w._air_x = float(w.state.x)
+					w.state.death = "fall"
+					w._crash()
+				elif parts.size() > 3 and parts[3] == "guide":
+					# Wreck here enough times for a hint, respawn, then ride the hint line
+					# for N frames (game:<id>:x<x>:guide:<N>).
+					var G = load("res://scripts/game/guide.gd")
+					w._air_x = float(w.state.x)
+					w.state.death = "fall"
+					G.wrecks(w.level_id)[G.section_at(w.level, float(w.state.x))] = 99
+					w.bot = null
+					w.hint_sync = true
+					G.Rider.debug = true
+					w._hint_check()
+					G.Rider.debug = false
+					w.state = w._respawn_state(w.level)
+					w.guide_since = w.ride_time
+					var rp := GuideReplay.new()
+					rp.g = w.guide
+					w.bot = rp
+					w.phase = "ride"
+					for i in int(parts[4]) if parts.size() > 4 else 0:
+						w.tick()
+					print("GUIDE tip=%s ok=%s frames=%d marks=%s" % [w.guide_tip, not w.guide.is_empty(),
+						(w.guide.get("pts", PackedVector2Array()) as PackedVector2Array).size(), str(w.guide.get("marks", []))])
 				# Let the visuals catch up (_vis_t, camera smoothing) on the frozen frame.
 				w._vis_t += 1.0
 				if parts.size() > 3 and parts[3] == "pause":
@@ -112,6 +174,8 @@ func _ready() -> void:
 				elif parts.size() > 3 and parts[3] == "hint":
 					w.bot = null
 					gs.show_hint()
+				elif parts.size() > 3 and parts[3] == "guidethread":
+					pass  # keeps running
 				else:
 					w._acc = -1.0e9  # freeze the sim; visuals keep drawing
 		"garage":
@@ -121,6 +185,8 @@ func _ready() -> void:
 				main.current._tabs[parts[1]].button_pressed = true
 				main.current._set_tab(parts[1])
 		"settings":
+			GameState.set_volume("sound", 0.8, false)
+			GameState.set_volume("engine", 0.7, false)
 			main.navigate("title", "")
 			await get_tree().process_frame
 			main.current._open_settings()
@@ -128,6 +194,16 @@ func _ready() -> void:
 			main.navigate("levels", "")
 			await get_tree().process_frame
 			main.current._show_setup(parts[1])
+		"story_intro":
+			main.navigate("story_intro", "")
+			await get_tree().process_frame
+			if parts.size() > 1:
+				main.current._show(int(parts[1]))
+				main.current._t = 2.0
+		"story_card":
+			main.navigate("story", "")
+			await get_tree().process_frame
+			main.current._show_card(parts[1])
 		"tips":
 			main.navigate("levels", "")
 			await get_tree().process_frame
@@ -150,3 +226,15 @@ func _ready() -> void:
 	img.save_png(out)
 	print("SHOT saved ", out, " ", img.get_size())
 	get_tree().quit()
+
+
+## Plays a hint line's button presses back frame by frame (the sim is deterministic,
+## so the bike follows the dots exactly).
+class GuideReplay:
+	var g: Dictionary
+	var i := 0
+
+	func decide(_s: Dictionary) -> Array:
+		i += 1
+		var hd: PackedByteArray = g.get("held", PackedByteArray())
+		return [(g.get("taps", PackedInt32Array()) as PackedInt32Array).has(i), i < hd.size() and hd[i] == 1]

@@ -26,6 +26,10 @@ var forced: Array = []
 var _hold_left := 0
 var _was_air := false
 var _tick := 0
+## Rope / rail / wall-ride: on grabbing one, plan when to let go (frames from the grab).
+var _plan_key := ""
+var _plan_i := 0
+var _plan_k := 0
 
 
 func _init(lvl: Dictionary) -> void:
@@ -37,6 +41,11 @@ func decide(s: Dictionary) -> Array:
 	if int(s.zip) >= 0:
 		_hold_left = 0
 		return [false, not _release_better(s)]
+	var att := Phys.attachment(level, s)
+	if att != "":
+		_hold_left = 0
+		return [false, _plan_hold(s, att)]
+	_plan_key = ""
 	if _hold_left > 0 and s.grounded and _was_air:
 		_hold_left = 0  # touched down: the jump's done, plan afresh (as the sims assume)
 	_was_air = not s.grounded
@@ -50,21 +59,21 @@ func decide(s: Dictionary) -> Array:
 		_hold_left -= 1
 		return [false, true]
 	if not s.grounded and s.coyote <= 0.0:
-		return [false, false]
+		return [false, Phys.auto_hold(level, s)]
 	var route := _route_hint(s)
 	if route == 1:
 		_hold_left = 29  # full jump: off a three-way ramp's lip, or at a climbable face
 		return [true, true]
 	var base := _ride(s, horizon)
 	if route == -1 and (base.safe or _wait_then_jump(s)):
-		return [false, false]  # hold off: a ramp or a cliff face is coming up
+		return [false, Phys.auto_hold(level, s)]  # hold off: a ramp or a cliff face is coming up
 	if not base.safe and base.has("loop_exit"):
 		# Trouble only after a loop: ride the loop and jump on the way out.
 		var after := _continue(base.loop_exit, 2)
 		if after.safe:
 			base = {"safe": true, "score": float(base.score) + float(after.score)}
 	if base.safe and (not collect or _tick % eval_every != 0):
-		return [false, false]
+		return [false, Phys.auto_hold(level, s)]  # (as _ride assumed: e.g. coyote frames off a wall)
 	var best_opt := 0 if base.safe else -1
 	var best_score: float = base.score if base.safe else -INF
 	var log := []
@@ -81,7 +90,7 @@ func decide(s: Dictionary) -> Array:
 			forced.append({"x": s.x, "t": s.t, "hold": best_opt})
 		_hold_left = best_opt - 1
 		return [true, true]
-	return [false, false]
+	return [false, Phys.auto_hold(level, s)]
 
 
 ## Would a tap now start a flip that lands clean, with a safe way on afterwards?
@@ -89,7 +98,7 @@ func _clean_flip(s0: Dictionary) -> bool:
 	var s := _copy(s0)
 	var held := _hold_left > 0
 	for i in 400:
-		var ev: int = Phys.step(level, s, i == 0, held and i < _hold_left)
+		var ev: int = Phys.step(level, s, i == 0, (held and i < _hold_left) or Phys.auto_hold(level, s))
 		if not s.alive or (ev & Phys.EV_SKETCHY):
 			return false
 		if i == 0 and not (ev & Phys.EV_FLIP):
@@ -106,7 +115,7 @@ func _wait_then_jump(s0: Dictionary) -> bool:
 	for i in 120:
 		if (s.grounded or float(s.coyote) > 0.0) and _route_hint(s) == 1:
 			return _jump(s, 30, 2).safe
-		Phys.step(level, s, false, false)
+		Phys.step(level, s, false, Phys.auto_hold(level, s))
 		if not s.alive:
 			return false
 	return false
@@ -148,6 +157,88 @@ func _copy(s0: Dictionary) -> Dictionary:
 	return Phys.copy_state(s0)
 
 
+## A fresh "already collected" record for a simulation starting from s0.
+func _got0(s0: Dictionary) -> Dictionary:
+	return {"bh": int(s0.boss_hits)}
+
+
+## On a rope, rail or wall-ride: keep holding until the planned release frame.
+func _plan_hold(s: Dictionary, att: String) -> bool:
+	var key := "%s:%d" % [att, int(s.rope) if att == "rope" else int(s.track)]
+	if key != _plan_key:
+		_plan_key = key
+		_plan_i = 0
+		_plan_k = _make_plan(s, att)
+	_plan_i += 1
+	return _plan_i <= _plan_k
+
+
+## Try letting go every few frames (and, on a rail or wall, holding to the end); keep
+## the best one that lands safely with a way on. Ropes have no "hold forever".
+func _make_plan(s0: Dictionary, att: String) -> int:
+	var hold_end := -1
+	var kmax := 110
+	if att != "rope":
+		var tr: Dictionary = level.tracks[s0.track]
+		hold_end = int(ceil((float(tr.x1) - float(s0.x)) / maxf(float(s0.vx), 1.0) / Phys.DT)) + 2
+		kmax = hold_end
+	var dflt := hold_end if hold_end >= 0 else _rope_default(s0)
+	var best_k := dflt
+	var best_score := -INF
+	var ks := []
+	var k := 0
+	while k < kmax:
+		ks.append(k)
+		k += 4
+	ks.append(dflt)
+	for kk in ks:
+		var r := _release_at(s0, int(kk))
+		if not r.safe:
+			continue
+		var sc := float(r.score) + (1.0 if int(kk) == dflt else 0.0)
+		if sc > best_score:
+			best_score = sc
+			best_k = int(kk)
+	if s0.x >= trace.x and s0.x <= trace.y:
+		print("TRACE plan %s at x=%.1f -> release at %d (score %.1f)" % [att, s0.x, best_k, best_score])
+	return best_k
+
+
+## Frames until the simulation's rope rule (forward swing past ROPE_REL) lets go.
+func _rope_default(s0: Dictionary) -> int:
+	var s := _copy(s0)
+	for i in 160:
+		if not Phys.auto_hold(level, s):
+			return i
+		Phys.step(level, s, false, true)
+		if int(s.rope) < 0:
+			return i
+	return 160
+
+
+## Hold for k frames, then let go and play it out until the wheels are on a plain deck.
+func _release_at(s0: Dictionary, k: int) -> Dictionary:
+	var s := _copy(s0)
+	var got := _got0(s0)
+	var score := 0.0
+	for i in 700:
+		var h: bool = true if i < k else Phys.auto_hold(level, s)
+		if i == k:
+			h = false
+		Phys.step(level, s, false, h)
+		if not s.alive:
+			return {"safe": false, "score": score}
+		if s.x >= level.finish_x:
+			return {"safe": true, "score": score + 5.0}
+		score += _collect(s, got)
+		if i >= k and s.grounded and Phys.attachment(level, s) == "":
+			if float(s.x) < float(s0.x) + 20.0:
+				return {"safe": false, "score": score}  # swung back to where we came from: no progress
+			var c := _continue(s, 1)
+			return {"safe": c.safe, "score": score + c.score}
+	return {"safe": false, "score": score}
+
+
 ## On a cable: is letting go now safe and better than riding it to the end?
 func _release_better(s0: Dictionary) -> bool:
 	var drop := _fly(s0, false)
@@ -161,17 +252,17 @@ func _release_better(s0: Dictionary) -> bool:
 ## touch down, then look for a way on (riding or follow-up jumps).
 func _fly(s0: Dictionary, hang: bool) -> Dictionary:
 	var s := _copy(s0)
-	var got := {}
+	var got := _got0(s0)
 	var score := 0.0
 	for i in 900:
-		var was_air: bool = not s.grounded
-		Phys.step(level, s, false, hang and int(s.zip) >= 0)
+		var was_air: bool = not s.grounded or Phys.attachment(level, s) != ""
+		Phys.step(level, s, false, (hang and int(s.zip) >= 0) or (int(s.zip) < 0 and Phys.auto_hold(level, s)))
 		if not s.alive:
 			return {"safe": false, "score": score}
 		if s.x >= level.finish_x:
 			return {"safe": true, "score": score + 5.0}
 		score += _collect(s, got)
-		if was_air and s.grounded:
+		if was_air and s.grounded and Phys.attachment(level, s) == "":
 			var c := _continue(s, 1)
 			return {"safe": c.safe, "score": score + c.score}
 	return {"safe": false, "score": score}
@@ -180,13 +271,13 @@ func _fly(s0: Dictionary, hang: bool) -> Dictionary:
 ## Ride with no input for n frames (extending to finish any flight).
 func _ride(s0: Dictionary, n: int) -> Dictionary:
 	var s := _copy(s0)
-	var got := {}
+	var got := _got0(s0)
 	var score := 0.0
 	var i := 0
 	var limit := n
 	var loop_exit = null
 	while i < limit:
-		var ev := Phys.step(level, s, false, false)
+		var ev := Phys.step(level, s, false, Phys.auto_hold(level, s))
 		i += 1
 		if ev & Phys.EV_LOOP_OUT and loop_exit == null:
 			loop_exit = _copy(s)
@@ -198,7 +289,7 @@ func _ride(s0: Dictionary, n: int) -> Dictionary:
 		if s.x >= level.finish_x:
 			return {"safe": true, "score": score + 5.0, "frames": i}
 		score += _collect(s, got)
-		if i == limit and (not s.grounded or int(s.loop) >= 0) and limit < n + 200:
+		if i == limit and (not s.grounded or int(s.loop) >= 0 or Phys.attachment(level, s) != "") and limit < n + 200:
 			limit += 1
 	return {"safe": true, "score": score, "frames": i}
 
@@ -207,26 +298,29 @@ func _ride(s0: Dictionary, n: int) -> Dictionary:
 ## then judge the landing.
 func _jump(s0: Dictionary, hold: int, depth: int) -> Dictionary:
 	var s := _copy(s0)
-	var got := {}
+	var got := _got0(s0)
 	var score := 0.0
 	var i := 0
 	var limit := horizon + 90
+	var flew := false
 	while i < limit:
-		var was_air: bool = not s.grounded
 		var hanging := int(s.zip) >= 0
-		if hanging:
-			hold = 0  # decide() drops its hold counter on the cable, so mirror that
-		var ev := Phys.step(level, s, i == 0, i < hold or hanging)
+		var att := Phys.attachment(level, s)
+		if not s.grounded or att != "":
+			flew = true
+		if hanging or att != "":
+			hold = 0  # decide() drops its hold counter on a cable/rope/rail, so mirror that
+		var ev := Phys.step(level, s, i == 0, i < hold or hanging or Phys.auto_hold(level, s))
 		if ev & Phys.EV_BONK:
 			score -= 4.0  # a bonk is survivable but sloppy: prefer a clean tap
-		if hanging and limit < 900:
+		if (hanging or att != "") and limit < 900:
 			limit += 1
 		if not s.alive:
 			return {"safe": false, "score": score}
 		if s.x >= level.finish_x:
 			return {"safe": true, "score": score + 5.0}
 		score += _collect(s, got)
-		if i > 1 and was_air and s.grounded:
+		if i > 1 and flew and s.grounded and Phys.attachment(level, s) == "":
 			if depth <= 1:
 				var g := _ride(s, GRACE)
 				return {"safe": g.safe, "score": score + g.score}
@@ -246,7 +340,7 @@ func _continue(s0: Dictionary, depth: int) -> Dictionary:
 	var s := _copy(s0)
 	for i in int(ride.frames) - 1:
 		states.append(_copy(s))
-		Phys.step(level, s, false, false)
+		Phys.step(level, s, false, Phys.auto_hold(level, s))
 		if not s.alive:
 			break
 	var k := states.size() - 1
@@ -284,4 +378,8 @@ func _collect(s: Dictionary, got: Dictionary) -> float:
 		if not got.has(-1 - int(k)):
 			got[-1 - int(k)] = true
 			sc += 12.0
+	# Boss hits are what the arena is for.
+	if got.has("bh") and int(s.boss_hits) > int(got.bh):
+		sc += 90.0 * float(int(s.boss_hits) - int(got.bh))
+		got["bh"] = int(s.boss_hits)
 	return sc

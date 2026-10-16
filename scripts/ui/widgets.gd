@@ -30,14 +30,16 @@ class MedalRow extends Control:
 	var par := 0.0
 	var letters := 0
 	var compact := false
+	var boss := false
 	var _t := 0.0
 
-	func _init(h: Array, f: Array = [false, false, false], p := 0.0, l := 0, small := false) -> void:
+	func _init(h: Array, f: Array = [false, false, false], p := 0.0, l := 0, small := false, is_boss := false) -> void:
 		have = h
 		fresh = f
 		par = p
 		letters = l
 		compact = small
+		boss = is_boss
 		custom_minimum_size = Vector2(44, 14) if small else Vector2(280, 16)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -53,7 +55,7 @@ class MedalRow extends Control:
 				Icons.medal(self, Vector2(x0 + 6 + i * 14, 9), i, bool(have[i]))
 			return
 		var font: Font = GameState.font
-		var labels := ["CLEAR", "LETTERS" if have[1] else "LETTERS %d/7" % letters,
+		var labels := ["CLEAR", "NO CRASH" if boss else ("LETTERS" if have[1] else "LETTERS %d/7" % letters),
 			"PAR %.1fs" % par if par > 0.0 else "PAR"]
 		var widths := []
 		var total := 0.0
@@ -71,6 +73,50 @@ class MedalRow extends Control:
 			Icons.medal(self, Vector2(x + 6, 9), i, bool(have[i]))
 			draw_string(font, Vector2(x + 14, 13), String(labels[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, c)
 			x += float(widths[i]) + gap
+
+
+## Grandpa's bike with the parts you've got back (missing ones as dim silhouettes).
+## flash: a part just recovered, drawn with a pulsing glow.
+class GrandpaBikeView extends Control:
+	const StoryArt := preload("res://scripts/game/story_art.gd")
+	var parts: Array = []
+	var px_scale := 1.0
+	var flash := ""
+	var _t := 0.0
+
+	func _init(p: Array, sc := 1.0, fl := "") -> void:
+		parts = p
+		px_scale = sc
+		flash = fl
+		custom_minimum_size = Vector2(100, 62) * sc
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var o := Vector2(floorf(size.x * 0.5), floorf(size.y - 3.0 * px_scale))
+		draw_rect(Rect2(o.x - 46 * px_scale, o.y, 92 * px_scale, 1), Color("5a4a6e"))
+		if flash != "":
+			draw_circle(o + Vector2(0, -26) * px_scale, 40.0 * px_scale, Color(1.0, 0.85, 0.3, 0.08 + 0.06 * sin(_t * 6.0)))
+		StoryArt.grandpa_bike(self, o, px_scale, parts)
+
+
+## A row of the eight parts: bright when recovered, dim when still out there.
+class PartRow extends Control:
+	var parts: Array = []
+
+	func _init(p: Array) -> void:
+		parts = p
+		custom_minimum_size = Vector2(8 * 16, 16)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var all := ["headlight", "kickstart", "seat", "wheels", "carb", "top_end", "bottom_end", "frame"]
+		var x0 := (size.x - all.size() * 16.0) * 0.5 + 8.0
+		for i in all.size():
+			Icons.part(self, Vector2(x0 + i * 16.0, size.y * 0.5).floor(), String(all[i]), 0.8, not (all[i] in parts))
 
 
 class RigPreview extends Control:
@@ -217,16 +263,19 @@ class VolumeSlider extends Control:
 			UITheme.DIM if value <= 0.001 else UITheme.CREAM)
 
 
-## MUSIC + SOUND sliders, saved on release. The SOUND slider chimes so you can hear it.
-static func audio_sliders() -> VBoxContainer:
+## MUSIC + SOUND + ENGINE sliders, saved on release. SOUND chimes so you can hear
+## it; ENGINE revs your bike (menus only: in a paused run the engine is paused too).
+static func audio_sliders(rev_engine := true) -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
-	for key in ["music", "sound"]:
+	for key in ["music", "sound", "engine"]:
 		var s := VolumeSlider.new(key.to_upper(), GameState.volume(key))
 		s.changed.connect(func(v): GameState.set_volume(key, v, false))
 		s.released.connect(func():
 			GameState.save_settings()
 			if key == "sound":
-				AudioDirector.play("checkpoint"))
+				AudioDirector.play("checkpoint")
+			elif key == "engine" and rev_engine:
+				AudioDirector.preview_engine(GameState.equipped("bike")))
 		box.add_child(s)
 	return box

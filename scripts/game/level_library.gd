@@ -24,6 +24,8 @@ var switches: Array = []
 var walls: Array = []
 var ramps: Array = []
 var powerups: Array = []
+var ropes: Array = []
+var boss: Dictionary = {}
 var chase := false
 var level_id := ""
 ## Dev (--place-letters): build without letters so every coin is a coin.
@@ -37,7 +39,8 @@ var _gears := 0
 
 
 static func build(level_id: String) -> Dictionary:
-	return build_layout(Layouts.LAYOUTS[level_id], Catalog.level(level_id))
+	var layout: Array = Layouts.LAYOUTS[level_id] if Layouts.LAYOUTS.has(level_id) else Layouts.STORY[level_id]
+	return build_layout(layout, Catalog.level(level_id))
 
 
 static func build_layout(layout: Array, meta: Dictionary) -> Dictionary:
@@ -145,6 +148,19 @@ func spring(t: int, px: float) -> void:
 func roof(xa: float, xb: float, deck_y: float, h: float, top := -INF) -> void:
 	ceils.append({"lane": lane, "pts": PackedVector2Array([Vector2(xa, deck_y - h), Vector2(xb, deck_y - h)]),
 		"x0": xa, "x1": xb, "h": h, "deck": deck_y, "top": top})
+
+
+## A track that only carries you while the button is held: "rail" (grind) or "wall"
+## (wall-ride). Let go and you drop off.
+func hold_track(kind: String, pts: PackedVector2Array) -> int:
+	tracks.append({"lane": lane, "pts": pts, "side": true, "hold": kind, "no_supports": true})
+	return tracks.size() - 1
+
+
+## A rope hanging from (ax, ay).
+func rope(ax: float, ay: float, length: float) -> int:
+	ropes.append({"lane": lane, "ax": ax, "ay": ay, "len": length})
+	return ropes.size() - 1
 
 
 ## A power-up icon floating over the deck: "sticky", "rocket", "magnet" or "hat".
@@ -623,6 +639,306 @@ func c_zip(span := 300.0, h := 60.0, drop := 30.0, low := 0, hazard := "") -> vo
 		spring(lo, lx + 74.0)
 
 
+## Rising cable: a pulley hauls you up to a high deck (the trail carries on up there).
+func c_zip_up(span := 260.0, h := 50.0, rise := 50.0, with_gear := 0) -> void:
+	run(80.0)
+	var xa := x
+	var ya := y
+	zips.append({"lane": lane, "x0": xa - 60.0, "y0": ya - h, "x1": xa + span + 40.0, "y1": ya - h - rise, "up": true})
+	var z: Dictionary = zips[zips.size() - 1]
+	gap(span, -rise)
+	var t := run(200.0)
+	for i in 7:
+		var px := xa + 20.0 + i * (span - 30.0) / 6.0
+		coin(px, Phys.cable_y(z, px) + Phys.ZIP_HANG - 8.0)
+	if with_gear:
+		gear(xa + span + 120.0, y - 18.0)
+	coins_on(t, xa + span + 40.0, 4, 16.0)
+
+
+## Cables one after another over a wide chasm: keep holding. Off the end of one you
+## pop up and, still holding, catch the next (each starts a little lower).
+func c_zip_chain(spans: Array = [200.0, 200.0], h := 62.0, drop := 16.0, gap_w := 22.0) -> void:
+	run(80.0)
+	var xa := x
+	var ya := y
+	var cx := xa - 60.0
+	var cy := ya - h
+	for i in spans.size():
+		var sp := float(spans[i])
+		zips.append({"lane": lane, "x0": cx, "y0": cy, "x1": cx + sp, "y1": cy + drop})
+		var z: Dictionary = zips[zips.size() - 1]
+		for k in 5:
+			var px := cx + 40.0 + k * (sp - 70.0) / 4.0
+			coin(px, Phys.cable_y(z, px) + Phys.ZIP_HANG - 8.0)
+		cx += sp + gap_w
+		cy += drop + 10.0
+	# Far deck under the last cable's end, a short drop below your wheels.
+	var end_y := cy - 10.0
+	var far := cx - gap_w - 40.0
+	gap(far - xa, end_y + Phys.ZIP_HANG + 16.0 - ya)
+	run(230.0)
+
+
+## A long cable over a chasm with two islands below: let go over one for its prize.
+## Each island's spring throws you on to the next (or the far deck).
+func c_zip_drops(span := 340.0, h := 62.0, drop := 20.0, with_gear := 1) -> void:
+	run(80.0)
+	var xa := x
+	var ya := y
+	zips.append({"lane": lane, "x0": xa - 60.0, "y0": ya - h, "x1": xa + span + 40.0, "y1": ya - h + drop})
+	var z: Dictionary = zips[zips.size() - 1]
+	for i in 8:
+		var px := xa + 20.0 + i * (span - 40.0) / 7.0
+		coin(px, Phys.cable_y(z, px) + Phys.ZIP_HANG - 8.0)
+	var i1 := side(xa + span * 0.22, ya + 30.0, [[70.0, 0.0]])
+	bag(xa + span * 0.22 + 30.0, ya + 30.0 - 14.0)
+	spring(i1, xa + span * 0.22 + 62.0)
+	var i2 := side(xa + span * 0.58, ya + 30.0, [[70.0, 0.0]])
+	if with_gear:
+		gear(xa + span * 0.58 + 30.0, ya + 30.0 - 16.0)
+	spring(i2, xa + span * 0.58 + 62.0)
+	gap(span)
+	run(190.0)
+
+
+# --- chunks: hold moves (rails, wall-rides, ropes) ----------------------------------
+
+## Grind rail over a pit: jump on and keep holding. It starts just past the deck's end,
+## a little above it, and joins the far deck. dy: how far it drops (a handrail down).
+## under: "" pit, "low" a lower deck (with a spring back up) for anyone who lets go.
+func c_rail(length := 160.0, dy := 0.0, lead := 18.0, under := "", with_gear := 0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var rx0 := xa + lead
+	var ry0 := ya - 8.0
+	var rx1 := rx0 + length
+	var ry1 := ry0 + dy
+	hold_track("rail", PackedVector2Array([Vector2(rx0, ry0), Vector2(rx1, ry1)]))
+	for i in 6:
+		var u := (i + 0.5) / 6.0
+		coin(lerpf(rx0, rx1, u), lerpf(ry0, ry1, u) - 10.0)
+	coin_arc(xa - 10.0, ya, rx0 + 8.0, ry0, 16.0, 3)
+	if with_gear:
+		gear(lerpf(rx0, rx1, 0.7), lerpf(ry0, ry1, 0.7) - 20.0)
+	if under == "low":
+		var lo := side(xa - 20.0, ya + 48.0, [[length + lead + 70.0, dy]])
+		coins_on(lo, xa + 20.0, 5, 24.0)
+		spring(lo, rx1 + 40.0)
+	gap(lead + length, dy - 8.0)
+	run(110.0)
+
+
+## Rails one after another: off the end of each you pop up (still holding) and land on
+## the next one.
+func c_rail_chain(n := 2, length := 120.0, gap_w := 26.0, dy := 0.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var rx := xa + 18.0
+	var ry := ya - 8.0
+	for i in n:
+		hold_track("rail", PackedVector2Array([Vector2(rx, ry), Vector2(rx + length, ry + dy)]))
+		for k in 4:
+			var u := (k + 0.5) / 4.0
+			coin(rx + length * u, ry + dy * u - 10.0)
+		rx += length + gap_w
+		ry += dy + 6.0
+	var end_x := rx - gap_w
+	gap(end_x - xa, ry - 6.0 - ya)
+	run(110.0)
+
+
+## Wall-ride: a curved board wall that arcs up over a pit (h px high) and back down.
+## Jump on and hold all the way round; let go and you fall. lip = 1: the wall ends
+## still climbing, so it throws you up and forward off the top.
+func c_wall(span := 180.0, h := 70.0, lead := 14.0, lip := 0, with_gear := 0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var wx0 := xa + lead
+	var wy0 := ya - 6.0
+	var pts := PackedVector2Array()
+	var n := 18
+	# An arch over the pit, or (lip) a quarter-pipe that's still climbing at the top.
+	var w_span := span * 0.55 if lip else span
+	for i in n + 1:
+		var u := float(i) / float(n)
+		pts.append(Vector2(wx0 + w_span * u, wy0 - (h * u * u if lip else h * sin(PI * u))))
+	hold_track("wall", pts)
+	for i in 7:
+		var u := (i + 0.5) / 7.0
+		coin(wx0 + w_span * u, wy0 - (h * u * u if lip else h * sin(PI * u)) - 12.0)
+	var end_x := wx0 + w_span
+	if with_gear:
+		gear(wx0 + w_span * 0.5, wy0 - (h * 0.25 if lip else h) - 19.0)
+	if lip:
+		# Thrown up off the lip: land on the deck a little past it.
+		gap(end_x - xa + 30.0, 0.0)
+	else:
+		gap(end_x - xa, -6.0)
+	run(120.0)
+
+
+## Rope swing over a pit: jump and hold to catch the rope, let go on the forward swing.
+## n ropes in a row (swing, let go, catch the next).
+## reach: from the last rope to the far deck.
+func c_rope(reach := 84.0, length := 72.0, n := 1, spacing := 86.0, far_dy := 0.0, with_gear := 0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	for i in n:
+		var ax := xa + 40.0 + i * spacing
+		var ay := ya - 118.0 + i * 14.0  # each rope a little lower, so a swing carries you to the next
+		rope(ax, ay, length)
+		# Coins along the forward swing.
+		for k in 4:
+			var a := -0.2 + 0.25 * k
+			coin(ax + sin(a) * (length - 2.0) - 4.0, ay + cos(a) * (length - 2.0) + 18.0)
+	if with_gear:
+		gear(xa + 40.0 + (n - 1) * spacing + 70.0, ya - 82.0)
+	gap(40.0 + (n - 1) * spacing + reach, far_dy)
+	run(120.0)
+
+
+# --- chunks: boss arenas ------------------------------------------------------------
+# A boss arena is a stretch of trail with "windows": spots where the boss's glowing weak
+# spot sits (a fixed place in the world, so the trail can line up a rail, rope or cable
+# with it). Land on it from above for a hit. 3 hits wins; reach the arena's end with
+# hits still to go and it circles round (you're carried back to the arena start).
+
+func c_boss(kind := "scooper", hp := 3) -> void:
+	var x0 := x
+	var t := run(220.0)
+	checkpoints.append({"x": x0 + 90.0, "track": t})
+	boss = {"kind": kind, "hp": hp, "x0": x0 + 90.0, "track0": t, "windows": [], "y0": y}
+
+
+func c_boss_end() -> void:
+	run(80.0)
+	boss.x1 = x
+	finish_x = x + 30.0
+	run(460.0)
+
+
+func _bwin(wx: float, spot: Rect2, body: Rect2 = Rect2(), kind := "") -> void:
+	boss.windows.append({"x": wx, "spot": spot, "body": body, "kind": kind})
+
+
+## The boss hovers low over the deck: a full jump comes down on its dome.
+## You can ride underneath if you don't jump.
+func c_bw_low(top := 42.0) -> void:
+	var x0 := x
+	var t := run(300.0)
+	var wx := x0 + 170.0
+	_bwin(wx, Rect2(wx - 11.0, y - top, 22.0, 8.0), Rect2(wx - 20.0, y - top + 8.0, 40.0, 8.0), "low")
+	coins_on(t, x0 + 40.0, 4, 16.0)
+	coin_arc(wx - 50.0, y, wx - 14.0, y - top, 30.0, 3)
+
+
+## The boss hovers over a gap at about deck height: hop on it and bounce across.
+func c_bw_gap(w := 72.0, top := 22.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	gap(w)
+	run(120.0)
+	var wx := xa + w * 0.5
+	_bwin(wx, Rect2(wx - 11.0, ya - top, 22.0, 8.0), Rect2(wx - 20.0, ya - top + 8.0, 40.0, 8.0), "gap")
+	coin(xa - 14.0, ya - 18.0)
+
+
+## A cable over a pit; the boss waits just past its end, under the pop off the end.
+func c_bw_zip(span := 200.0) -> void:
+	run(80.0)
+	var xa := x
+	var ya := y
+	zips.append({"lane": lane, "x0": xa - 60.0, "y0": ya - 70.0, "x1": xa + span, "y1": ya - 66.0})
+	var z: Dictionary = zips[zips.size() - 1]
+	for i in 6:
+		var px := xa + 10.0 + i * (span - 30.0) / 5.0
+		coin(px, Phys.cable_y(z, px) + Phys.ZIP_HANG - 8.0)
+	gap(span)
+	run(260.0)
+	var wx := xa + span + 30.0
+	_bwin(wx, Rect2(wx - 12.0, ya - 38.0, 24.0, 8.0), Rect2(wx - 20.0, ya - 30.0, 40.0, 8.0), "zip")
+
+
+## A grind rail over a pit with the boss's head poking up under it: let go over the
+## head, land on it, and hold to ride the bounce back up onto the rail.
+func c_bw_rail(length := 230.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var rx0 := xa + 18.0
+	var ry := ya - 8.0
+	hold_track("rail", PackedVector2Array([Vector2(rx0, ry), Vector2(rx0 + length, ry)]))
+	for i in 5:
+		coin(rx0 + 20.0 + i * 18.0, ry - 10.0)
+	gap(18.0 + length, -8.0)
+	run(120.0)
+	var wx := rx0 + length * 0.42
+	_bwin(wx, Rect2(wx - 12.0, ry + 20.0, 24.0, 8.0), Rect2(wx - 16.0, ry + 28.0, 32.0, 40.0), "rail")
+
+
+## A rope over a pit; the boss's head dangles where a good swing comes down.
+func c_bw_rope(reach := 100.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var ax := xa + 40.0
+	rope(ax, ya - 118.0, 72.0)
+	gap(40.0 + reach, 0.0)
+	run(160.0)
+	var wx := ax + 92.0
+	_bwin(wx, Rect2(wx - 12.0, ya - 34.0, 24.0, 8.0), Rect2(wx - 14.0, ya - 26.0, 28.0, 6.0), "rope")
+
+
+## A wall-ride arch over a pit with the boss hovering under its far side: let go
+## above it, then hold to ride the bounce back onto the wall or the deck past it.
+func c_bw_wall(span := 200.0, h := 70.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var wx0 := xa + 14.0
+	var wy0 := ya - 6.0
+	var pts := PackedVector2Array()
+	for i in 19:
+		var u := float(i) / 18.0
+		pts.append(Vector2(wx0 + span * u, wy0 - h * sin(PI * u)))
+	hold_track("wall", pts)
+	for i in 6:
+		var u := (i + 0.5) / 6.0
+		coin(wx0 + span * u, wy0 - h * sin(PI * u) - 12.0)
+	gap(wx0 + span - xa, -6.0)
+	run(150.0)
+	var u2 := 0.62
+	var wx := wx0 + span * u2
+	var py := wy0 - h * sin(PI * u2)
+	_bwin(wx, Rect2(wx - 12.0, py + 22.0, 24.0, 8.0), Rect2(wx - 20.0, py + 30.0, 40.0, 8.0), "wall")
+
+
+## A quarter-pipe wall: hold all the way up and the lip throws you onto the boss.
+func c_bw_lip(span := 160.0, h := 70.0) -> void:
+	run(70.0)
+	var xa := x
+	var ya := y
+	var wx0 := xa + 14.0
+	var wy0 := ya - 6.0
+	var w_span := span * 0.55
+	var pts := PackedVector2Array()
+	for i in 19:
+		var u := float(i) / 18.0
+		pts.append(Vector2(wx0 + w_span * u, wy0 - h * u * u))
+	hold_track("wall", pts)
+	var end_x := wx0 + w_span
+	gap(end_x - xa + 30.0, 0.0)
+	run(200.0)
+	var wx := end_x + 52.0
+	_bwin(wx, Rect2(wx - 12.0, wy0 - h + 4.0, 24.0, 8.0), Rect2(wx - 20.0, wy0 - h + 12.0, 40.0, 8.0), "lip")
+
+
 # --- chunks: power-ups ------------------------------------------------------------
 
 ## A stretch of deck with a power-up hovering over it (a hop grabs it, so does riding).
@@ -837,6 +1153,10 @@ func _finalize(meta: Dictionary) -> Dictionary:
 	var power_buckets := {}
 	for i in powerups.size():
 		_bucket(power_buckets, powerups[i].pos.x - 24.0, powerups[i].pos.x + 24.0, i, int(powerups[i].lane))
+	var rope_buckets := {}
+	for i in ropes.size():
+		var rp: Dictionary = ropes[i]
+		_bucket(rope_buckets, float(rp.ax) - float(rp.len) * 1.4 - 24.0, float(rp.ax) + float(rp.len) * 1.4 + 24.0, i, int(rp.lane))
 
 	var lv := {
 		"id": meta.get("id", "custom"), "name": meta.get("name", ""),
@@ -845,7 +1165,7 @@ func _finalize(meta: Dictionary) -> Dictionary:
 		"tracks": tracks, "enemies": enemies, "pickups": pickups,
 		"checkpoints": checkpoints, "finish_x": finish_x,
 		"springs": springs, "ceils": ceils, "loops": loops, "zips": zips, "switches": switches,
-		"walls": walls, "powerups": powerups, "ramps": ramps,
+		"walls": walls, "powerups": powerups, "ramps": ramps, "ropes": ropes,
 		"wall_buckets": _pack(wall_buckets), "power_buckets": _pack(power_buckets),
 		"start_x": 40.0, "start_track": 0,
 		"kill_y": max_y + 140.0,
@@ -859,6 +1179,10 @@ func _finalize(meta: Dictionary) -> Dictionary:
 		"switch_buckets": _pack(switch_buckets),
 		"coin_total": coin_total, "gear_total": _gears,
 	}
+	if not ropes.is_empty():
+		lv.rope_buckets = _pack(rope_buckets)
+	if not boss.is_empty():
+		lv.boss = boss
 	if chase:
 		lv.chase = true
 	return lv
@@ -868,8 +1192,8 @@ func _finalize(meta: Dictionary) -> Dictionary:
 ## letter_spots.gd (chosen by --place-letters from coins the dev bot really picks up);
 ## anything else falls back to choose_letters() over all coins.
 func _place_letters() -> void:
-	if no_letters:
-		return
+	if no_letters or not boss.is_empty():
+		return  # boss arenas end when the boss goes down, so no letters there
 	var spots: Array = LetterSpots.SPOTS.get(level_id, [])
 	if spots.size() == LETTERS.length():
 		for i in spots.size():

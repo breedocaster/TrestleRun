@@ -7,6 +7,9 @@ const Levels := preload("res://scripts/screens/level_select.gd")
 const Garage := preload("res://scripts/screens/garage.gd")
 const GameScreen := preload("res://scripts/screens/game_screen.gd")
 const Credits := preload("res://scripts/screens/credits.gd")
+const StoryMap := preload("res://scripts/screens/story_map.gd")
+const StoryIntro := preload("res://scripts/screens/story_intro.gd")
+const AchievementsScreen := preload("res://scripts/screens/achievements_screen.gd")
 
 var current: Node
 
@@ -42,6 +45,12 @@ func _ready() -> void:
 		if a == "--place-letters":
 			add_child(load("res://scripts/dev/place_letters.gd").new())
 			return
+		if a.begins_with("--ach-export="):
+			add_child(load("res://scripts/dev/ach_export.gd").new())
+			return
+		if a == "--guide-test":
+			add_child(load("res://scripts/dev/guide_test.gd").new())
+			return
 		if a == "--probe":
 			add_child(load("res://scripts/dev/probe.gd").new())
 			return
@@ -75,6 +84,12 @@ func navigate(target: String, arg: String) -> void:
 			n.setup(arg)
 		"credits":
 			n = Credits.new()
+		"story":
+			n = StoryMap.new()
+		"story_intro":
+			n = StoryIntro.new()
+		"achievements":
+			n = AchievementsScreen.new()
 		_:
 			n = Title.new()
 	if current:

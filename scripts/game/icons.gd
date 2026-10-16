@@ -108,3 +108,61 @@ static func letter(ci: CanvasItem, p: Vector2, ch: String, lit := true, t := 0.0
 		ci.draw_rect(Rect2(p.x - 5, p.y - 5, 10, 1), GOLD_LIGHT)
 	ci.draw_string(font, Vector2(p.x - 4, p.y + 4), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
 		Color("4a2a10") if lit else Color(0.6, 0.56, 0.66))
+
+
+## Parts of Grandpa's bike (story mode). p = centre; s = scale (1 = HUD/world size).
+static func part(ci: CanvasItem, p: Vector2, kind: String, s := 1.0, dim := false) -> void:
+	var chrome := Color("d8dee6") if not dim else Color(0.35, 0.32, 0.42)
+	var chrome_d := Color("7f8a96") if not dim else Color(0.25, 0.22, 0.3)
+	var leather := Color("6b3f2a") if not dim else Color(0.3, 0.27, 0.36)
+	var tire := Color("1e1a1f") if not dim else Color(0.2, 0.18, 0.26)
+	var paint := Color("2e5a8a") if not dim else Color(0.3, 0.27, 0.36)
+	var k := s
+	match kind:
+		"headlight":
+			ci.draw_circle(p, 6.0 * k, chrome_d)
+			ci.draw_circle(p, 5.0 * k, chrome)
+			ci.draw_circle(p + Vector2(1, 0) * k, 3.5 * k, Color("fff4c0") if not dim else chrome_d)
+			ci.draw_rect(Rect2(p.x - 7 * k, p.y - 1 * k, 2 * k, 2 * k), chrome_d)
+		"kickstart":
+			ci.draw_line(p + Vector2(-5, -5) * k, p + Vector2(3, 4) * k, chrome, 2.0 * k)
+			ci.draw_rect(Rect2(p.x + 1 * k, p.y + 3 * k, 6 * k, 2 * k), Color("2a2a30") if not dim else chrome_d)
+			ci.draw_circle(p + Vector2(-5, -5) * k, 2.0 * k, chrome_d)
+		"seat":
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, -1) * k, p + Vector2(-4, -4) * k, p + Vector2(5, -4) * k,
+				p + Vector2(7, -1) * k, p + Vector2(5, 1) * k, p + Vector2(-6, 1) * k]), leather)
+			ci.draw_line(p + Vector2(-4, -4) * k, p + Vector2(5, -4) * k, leather.lightened(0.3), -1.0)
+			for sx in [-3.0, 3.0]:
+				ci.draw_line(p + Vector2(sx, 1) * k, p + Vector2(sx, 5) * k, chrome, -1.0)
+				ci.draw_line(p + Vector2(sx - 1, 3) * k, p + Vector2(sx + 1, 3) * k, chrome_d, -1.0)
+		"wheels":
+			ci.draw_circle(p, 6.5 * k, tire)
+			ci.draw_circle(p, 4.5 * k, chrome_d)
+			ci.draw_circle(p, 3.5 * k, Color(0, 0, 0, 0.0) if dim else Color("2a2430"))
+			for i in 8:
+				var a := i * TAU / 8.0
+				ci.draw_line(p, p + Vector2(cos(a), sin(a)) * 4.5 * k, chrome, -1.0)
+			ci.draw_circle(p, 1.5 * k, chrome)
+		"carb":
+			ci.draw_rect(Rect2(p.x - 4 * k, p.y - 4 * k, 8 * k, 6 * k), chrome)
+			ci.draw_rect(Rect2(p.x - 6 * k, p.y - 2 * k, 2 * k, 3 * k), chrome_d)
+			ci.draw_rect(Rect2(p.x + 4 * k, p.y - 2 * k, 2 * k, 3 * k), chrome_d)
+			ci.draw_rect(Rect2(p.x - 3 * k, p.y + 2 * k, 6 * k, 3 * k), chrome_d)
+			ci.draw_rect(Rect2(p.x - 1 * k, p.y - 7 * k, 2 * k, 3 * k), chrome)
+		"top_end":
+			for i in 4:
+				ci.draw_rect(Rect2(p.x - 6 * k, p.y - 6 * k + i * 3 * k, 12 * k, 2 * k), chrome)
+			ci.draw_rect(Rect2(p.x - 4 * k, p.y - 7 * k, 8 * k, 12 * k), chrome_d)
+			ci.draw_rect(Rect2(p.x - 3 * k, p.y - 9 * k, 6 * k, 2 * k), chrome)
+		"bottom_end":
+			ci.draw_circle(p + Vector2(0, 1) * k, 6.0 * k, chrome_d)
+			ci.draw_circle(p + Vector2(0, 1) * k, 4.5 * k, chrome)
+			ci.draw_rect(Rect2(p.x - 7 * k, p.y - 6 * k, 14 * k, 4 * k), chrome_d)
+			ci.draw_circle(p + Vector2(0, 1) * k, 1.5 * k, chrome_d)
+		"frame":
+			var c := paint
+			ci.draw_line(p + Vector2(-7, -4) * k, p + Vector2(5, -4) * k, c, 2.0 * k)
+			ci.draw_line(p + Vector2(-7, -4) * k, p + Vector2(-3, 5) * k, c, 2.0 * k)
+			ci.draw_line(p + Vector2(5, -4) * k, p + Vector2(-3, 5) * k, c, 2.0 * k)
+			ci.draw_line(p + Vector2(5, -4) * k, p + Vector2(8, 5) * k, c, 2.0 * k)
+			ci.draw_line(p + Vector2(-7, -4) * k, p + Vector2(-9, 4) * k, c, 2.0 * k)

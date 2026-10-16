@@ -42,7 +42,7 @@ func _show_page(i: int) -> void:
 	var feats := Catalog.level_features(meta)
 	var key := String(feats[i])
 	var feat: Array = Catalog.FEATURES.get(key, ["", "", ""])
-	var head := "NEW ON TRAIL %d: %s" % [Catalog.level_index(level_id) + 1, String(meta.get("name", ""))]
+	var head := "NEW ON %s: %s" % [Catalog.level_label(level_id), String(meta.get("name", ""))]
 	if feats.size() > 1:
 		head += "  (%d/%d)" % [i + 1, feats.size()]
 	_box.add_child(Kit.label(head, 8, UITheme.DIM))
@@ -62,6 +62,8 @@ func _show_page(i: int) -> void:
 		how = "HOW TO USE IT"
 	elif key == "chase":
 		how = "HOW TO STAY AHEAD"
+	elif key == "boss":
+		how = "HOW TO BEAT IT"
 	text.add_child(_head(how))
 	text.add_child(_body(String(feat[2])))
 	row.add_child(text)
@@ -143,10 +145,12 @@ class DemoView extends SubViewportContainer:
 		var rig := GameState.loadout()
 		rig["ability"] = {}
 		world.setup("demo", rig, [], {"time": backdrop.time_mode, "weather": "clear"}, lv)
+		if feature == "boss":
+			world.boss_part = "headlight"
 		# Minimal autopilot: it only jumps when it has to, so it rolls into springs and
 		# loops instead of hopping around for coins.
 		var ap = Autopilot.new(world.level)
-		ap.collect = feature in ["sticky", "rocket", "magnet"]
+		ap.collect = feature in ["sticky", "rocket", "magnet", "boss"]
 		ap.tricks = feature == "trick"
 		world.bot = ap
 		if feature == "hat":

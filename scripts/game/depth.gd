@@ -378,7 +378,7 @@ func _ambient_far(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horiz
 					var ang := t * 7.0 + k * 0.8
 					var p := Vector2(wx + sin(h * 3.0 + t) * 3.0 + cos(ang) * (1.5 + h * 7.0), base_y - h * 36.0)
 					ci.draw_rect(Rect2(floorf(p.x), floorf(p.y), 1, 1), Color(col, 0.55 * (1.0 - h * 0.6)))
-		2, 7:  # smokestacks on the horizon
+		2, 7, 13:  # smokestacks on the horizon
 			var col := (th.far as Color).darkened(0.25)
 			for d in 3:
 				var sx := fposmod(d * 190.0 + 70.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
@@ -429,6 +429,34 @@ func _ambient_far(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horiz
 					var h := k / 8.0
 					ci.draw_circle(Vector2(floorf(gx + h * 10.0), floorf(base_y - h * 26.0 * minf(1.0, cyc))), 2.0 + h * 5.0,
 						Color(col, 0.45 * (1.0 - cyc / 2.5)))
+		12, 14:  # a flock of birds crossing the far sky now and then
+			var cyc := fmod(t, 14.0)
+			if cyc < 9.0 and time_mode != "night":
+				var fx := vs.x + 40.0 - cyc * (vs.x + 80.0) / 9.0
+				var fy := horizon * 0.35 + sin(cyc * 0.7) * 10.0
+				for k in 7:
+					var bx := fx + (k % 3) * 9.0 + k * 4.0
+					var by := fy + absf(float(k) - 3.0) * 4.0
+					var flap := sin(t * 9.0 + k) * 1.5
+					ci.draw_line(Vector2(bx - 2, by - flap), Vector2(bx, by), Color((th.far as Color).darkened(0.4), 0.8), -1.0)
+					ci.draw_line(Vector2(bx, by), Vector2(bx + 2, by - flap), Color((th.far as Color).darkened(0.4), 0.8), -1.0)
+		15:  # fireworks over the fairgrounds after dark, a blimp by day
+			if time_mode == "day":
+				var bx := fposmod(120.0 + t * 5.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
+				var by := horizon * 0.3
+				ci.draw_circle(Vector2(bx, by), 6.0, Color(th.far as Color, 0.9))
+				ci.draw_rect(Rect2(bx - 12, by - 5, 24, 10), Color(th.far as Color, 0.9))
+				ci.draw_rect(Rect2(bx - 3, by + 5, 6, 2), Color((th.far as Color).darkened(0.3), 0.9))
+			else:
+				var cyc := fmod(t, 4.0)
+				var fx := fposmod(floorf(t / 4.0) * 137.0, vs.x - 80.0) + 40.0
+				if cyc > 1.0 and cyc < 2.6:
+					var k := (cyc - 1.0) / 1.6
+					var col := [Color("ff6a6a"), Color("ffd27a"), Color("8fe3ff"), Color("b07aff")][int(t / 4.0) % 4] as Color
+					for i in 12:
+						var a := i * TAU / 12.0
+						var pp := Vector2(fx, horizon * 0.3) + Vector2(cos(a), sin(a)) * 22.0 * k + Vector2(0, 8.0 * k * k)
+						ci.draw_rect(Rect2(floorf(pp.x), floorf(pp.y), 1, 1), Color(col, 1.0 - k))
 		8:  # snow blowing off the far peaks
 			var col := Color(1, 1, 1, 0.35)
 			for d in 3:
@@ -631,6 +659,45 @@ func _draw_front_prop(ci: CanvasItem, base: Vector2, s: float, col: Color, kind:
 				ci.draw_line(Vector2(x + 4, y - 50), Vector2(x + 36, y - 60), see, 3.0)
 			else:
 				_bush(ci, Vector2(x, y), 20.0 * s, col)
+		"farm":
+			if _h(c * 3.3) < 0.5:
+				# Fence posts with two rails, a tall sunflower leaning over them.
+				for k in 3:
+					ci.draw_rect(Rect2(x + k * 34 * s, y - 40 * s, 6, 40 * s), col)
+				ci.draw_rect(Rect2(x, y - 34 * s, 74 * s, 4), col)
+				ci.draw_rect(Rect2(x, y - 20 * s, 74 * s, 4), col)
+			else:
+				var h := floorf(90.0 * s)
+				ci.draw_line(Vector2(x, y), Vector2(x + 6, y - h), col, 3.0)
+				ci.draw_circle(Vector2(x + 6, y - h), 10.0 * s, col)
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(x + 2, y - h * 0.5), Vector2(x - 14, y - h * 0.55), Vector2(x + 2, y - h * 0.42)]), col)
+		"railyard":
+			if _h(c * 3.3) < 0.45:
+				# A buffer stop and a signal post rushing past.
+				var see := Color(col, 0.7)
+				ci.draw_rect(Rect2(x, y - 130, 6, 130), see)
+				ci.draw_rect(Rect2(x - 6, y - 130, 18, 22), see)
+			else:
+				ci.draw_rect(Rect2(x, y - 22 * s, 50 * s, 22 * s), col)
+				ci.draw_rect(Rect2(x + 6, y - 30 * s, 10, 8), col)
+		"orchard":
+			# Big apple tree trunks and canopy right up close.
+			var h := floorf(70.0 * s)
+			ci.draw_rect(Rect2(x, y - h, 10 * s, h), col)
+			ci.draw_circle(Vector2(x + 5 * s, y - h - 10 * s), 28.0 * s, col)
+			ci.draw_circle(Vector2(x - 18 * s, y - h + 2 * s), 18.0 * s, col)
+			ci.draw_circle(Vector2(x + 26 * s, y - h + 4 * s), 20.0 * s, col)
+		"fair":
+			if _h(c * 3.3) < 0.5:
+				# Flagpole with a pennant snapping in the breeze.
+				var see := Color(col, 0.8)
+				ci.draw_rect(Rect2(x, y - 120, 3, 120), see)
+				var fl := sin(t * 6.0 + c) * 3.0
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(x + 3, y - 120), Vector2(x + 28, y - 113 + fl), Vector2(x + 3, y - 106)]), see)
+			else:
+				# A rail of hay bales along the track.
+				for k in 3:
+					ci.draw_rect(Rect2(x + k * 22 * s, y - 16 * s, 20 * s, 16 * s), col)
 		_:
 			_bush(ci, Vector2(x, y), 20.0 * s, col)
 

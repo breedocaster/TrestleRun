@@ -151,13 +151,30 @@ func _tile(it: Dictionary) -> Control:
 		b.pressed.connect(func(): _try_buy(id))
 	v.add_child(b)
 	panel.add_child(v)
+	if tab == "bike":
+		# Tap a bike (owned or not) to hear it start and rev. A drag scrolls instead.
+		panel.mouse_filter = Control.MOUSE_FILTER_PASS
+		panel.gui_input.connect(func(e: InputEvent): _tile_tap(e, id))
 	return panel
+
+
+var _press_at := Vector2(-1, -1)
+
+
+func _tile_tap(e: InputEvent, id: String) -> void:
+	if not (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if e.pressed:
+		_press_at = e.global_position
+	elif _press_at.x >= 0.0 and e.global_position.distance_to(_press_at) < 8.0:
+		_press_at = Vector2(-1, -1)
+		AudioDirector.preview_engine(id)
 
 
 func _equip(id: String) -> void:
 	GameState.equip(tab, id)
-	if tab == "bike":
-		AudioDirector.preview_engine(id)
+	if tab in ["bike", "rider"]:
+		AudioDirector.preview_engine(GameState.equipped("bike"))
 	_build()
 
 
@@ -169,8 +186,8 @@ func _try_buy(id: String) -> void:
 	_confirm = ""
 	if GameState.buy(tab, id):
 		AudioDirector.play("purchase")
-		if tab == "bike":
-			AudioDirector.preview_engine(id)
+		if tab in ["bike", "rider"]:
+			AudioDirector.preview_engine(GameState.equipped("bike") if tab == "rider" else id)
 	_build()
 
 

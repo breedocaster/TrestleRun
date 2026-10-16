@@ -20,6 +20,7 @@ INTRO = 8      # bars of guitar + pad before bass and drums come in
 STYLE = "brush"  # drum feel: brush (theme), train (driving 8ths), sparse (kick + one brush)
 TRANS = 0      # semitones up from D
 GTR_LP = 7500
+VIB_CENTS = 11.0  # lead vibrato depth (the boss loop's theremin wobbles much wider)
 
 CHORDS = {  # bass, upper voicing (MIDI)
     "Dmaj7": (50, [57, 61, 66, 69]),
@@ -37,6 +38,10 @@ PROG = A + A + B + A
 CHORDS.update({
     "Bm9": (47, [57, 61, 62, 66]),
     "F#7sus4": (42, [59, 61, 64, 66]),
+    "Dm9": (50, [57, 60, 64, 65]),
+    "Bbmaj7": (46, [57, 58, 62, 65]),
+    "Fmaj7": (41, [57, 60, 64, 65]),
+    "A7b9": (45, [55, 58, 61, 64]),
 })
 
 # (bar, beat, beats, midi, glide_from or None)
@@ -60,10 +65,10 @@ MELODY_THEME = MELODY = [
 
 
 def configure(bpm=78.0, bars=32, prog=None, melody=None, intro=8, style="brush", trans=0,
-              lead_from=16, seed=1978, gtr_lp=7500, mix_db=None):
+              lead_from=16, seed=1978, gtr_lp=7500, mix_db=None, vib=11.0):
     """Re-point the composer at another arrangement (module globals, read at render)."""
-    global BPM, BEAT, BARS, T, N, RNG, PROG, MELODY, INTRO, STYLE, TRANS, ACTIVE, GTR_LP, MIX_DB
-    BPM, BARS, INTRO, STYLE, TRANS, GTR_LP = bpm, bars, intro, style, trans, gtr_lp
+    global BPM, BEAT, BARS, T, N, RNG, PROG, MELODY, INTRO, STYLE, TRANS, ACTIVE, GTR_LP, MIX_DB, VIB_CENTS
+    BPM, BARS, INTRO, STYLE, TRANS, GTR_LP, VIB_CENTS = bpm, bars, intro, style, trans, gtr_lp, vib
     BEAT = 60.0 / BPM
     T = BARS * 4 * BEAT
     N = int(round(T * SR))
@@ -245,7 +250,7 @@ def lead():
                                                     np.exp(-(tt - (beats * BEAT - 0.05)) / 0.22), 1.0)
         a[i0:i1] = np.maximum(a[i0:i1], env)
         vib[i0:i1] = np.clip((tt - 0.3) / 0.5, 0, 1)
-    f = f * 2 ** (11.0 / 1200 * vib * np.sin(2 * np.pi * 5.2 * t))
+    f = f * 2 ** (VIB_CENTS / 1200 * vib * np.sin(2 * np.pi * 5.2 * t))
     ph = 2 * np.pi * np.cumsum(f) / SR
     y = sum((1.0 / k ** 1.4) * np.sin(k * ph) for k in range(1, 12))
     y = y * a
@@ -332,12 +337,32 @@ HIGH_MELODY = [
     (14, 0, 2, 74, None), (14, 2, 2, 76, 74),
     (15, 0, 4, 73, 74),
 ]
+# "Saucer Stomp": the boss loop. D minor, quick train beat, and the slide lead turned
+# into a wobbly theremin for the aliens.
+BOSS_PROG = ["Dm9", "Bbmaj7", "Gm6", "A7sus4", "Dm9", "Bbmaj7", "Gm6", "A7b9",
+             "Bbmaj7", "Fmaj7", "Gm6", "Dm9", "Bbmaj7", "Gm6", "A7sus4", "A7b9"]
+BOSS_MELODY = [
+    (4, 0, 1, 74, None), (4, 1, 1, 72, None), (4, 2, 2, 69, 72),
+    (5, 0, 2, 70, None), (5, 2, 2, 65, 70),
+    (6, 0, 3, 67, 65), (6, 3, 1, 70, None),
+    (7, 0, 4, 69, 70),
+    (8, 0, 2, 74, None), (8, 2, 1, 77, None), (8, 3, 1, 76, None),
+    (9, 0, 3, 72, 74), (9, 3, 1, 69, None),
+    (10, 0, 2, 70, None), (10, 2, 2, 67, 70),
+    (11, 0, 4, 69, 67),
+    (12, 0, 2, 74, None), (12, 2, 2, 77, 74),
+    (13, 0, 2, 79, None), (13, 2, 2, 76, None),
+    (14, 0, 4, 74, 76),
+    (15, 0, 3, 73, 74),
+]
 VARIANTS = {
     "trestle_dreams": {},
     "lantern_low": dict(bpm=68.0, bars=16, prog=LOW_PROG, melody=LOW_MELODY, intro=4, style="sparse",
                         lead_from=8, seed=2031, gtr_lp=4200, mix_db={"drums": -14, "pad": -5}),
     "ridge_runner": dict(bpm=96.0, bars=16, prog=HIGH_PROG, melody=HIGH_MELODY, intro=2, style="train",
                          trans=2, lead_from=8, seed=1890, mix_db={"drums": -9, "bass": -7}),
+    "saucer_stomp": dict(bpm=116.0, bars=16, prog=BOSS_PROG, melody=BOSS_MELODY, intro=1, style="train",
+                         lead_from=4, seed=4242, gtr_lp=5200, vib=48.0, mix_db={"drums": -7, "bass": -6, "lead": -4}),
 }
 
 

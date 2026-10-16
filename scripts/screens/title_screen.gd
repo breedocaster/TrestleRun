@@ -95,11 +95,13 @@ func _ready() -> void:
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 8)
 	col.add_child(gap)
-	var ride := Kit.button("RIDE", 150, 30)
+	var story := Kit.button("STORY", 150, 26)
+	story.pressed.connect(func(): navigate.emit("story" if GameState.story().intro_seen else "story_intro", ""))
+	var ride := Kit.button("FREE RIDE", 150, 26)
 	ride.pressed.connect(func(): navigate.emit("levels", ""))
-	var garage := Kit.button("GARAGE", 150, 30)
+	var garage := Kit.button("GARAGE", 150, 26)
 	garage.pressed.connect(func(): navigate.emit("garage", ""))
-	for b in [ride, garage]:
+	for b in [story, ride, garage]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(b)
 	var center := Kit.full_rect(CenterContainer.new())
@@ -115,7 +117,9 @@ func _ready() -> void:
 	settings.pressed.connect(_open_settings)
 	var credits := Kit.button("CREDITS", 0, 22)
 	credits.pressed.connect(func(): navigate.emit("credits", ""))
-	for b in [settings, credits]:
+	var awards := Kit.button("ACHIEVEMENTS", 0, 22)
+	awards.pressed.connect(func(): navigate.emit("achievements", ""))
+	for b in [settings, credits, awards]:
 		opts.add_child(b)
 	add_child(opts)
 

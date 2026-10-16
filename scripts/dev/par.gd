@@ -1,5 +1,5 @@
 ## Dev: par time per trail = the bot's clean clear-weather riding time + 1 s, rounded
-## up to the half second. Prints a PARS block for catalog.gd.  -- --par
+## up to the half second (story trails in rain too: it's the gentler of the two). Prints a PARS block for catalog.gd.  -- --par
 extends Node
 
 const World := preload("res://scripts/game/world.gd")
@@ -9,7 +9,7 @@ const Catalog := preload("res://scripts/catalog.gd")
 
 func _ready() -> void:
 	var lines := []
-	for meta in Catalog.levels():
+	for meta in Catalog.all_levels():
 		var w = World.new()
 		w.headless = true
 		w.setup(meta.id, {"bike": "scrambler", "ability": {}}, [], {"time": "dusk", "weather": "clear"})

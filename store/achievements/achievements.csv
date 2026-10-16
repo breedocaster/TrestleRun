@@ -1,0 +1,32 @@
+id,name,how,points,goal (0 = one step),play type,steps
+story_start,"Off You Go","Finish the first story trail.",10,0,standard,
+part_headlight,"Lights On","Get Grandpa's headlight back from the Scooper.",50,0,standard,
+part_kickstart,"Kicked Off","Get the kickstart back from the Rail Hog.",50,0,standard,
+part_seat,"Take a Seat","Get the seat back from the Harvester.",50,0,standard,
+part_wheels,"Rolling Again","Get both wheels back from the Spinner.",50,0,standard,
+parts_4,"Halfway Home","Recover four parts of Grandpa's bike.",50,4,incremental,4
+boss_flawless,"Not a Scratch","Beat a boss without crashing.",30,0,standard,
+boss_quick,"Short Work","Knock out a boss before it circles round.",30,0,standard,
+first_clear,"Trail Blazer","Clear your first Free Ride trail.",10,0,standard,
+free_all,"Every Trestle","Clear all 12 Free Ride trails.",80,12,incremental,12
+no_crash,"Clean Run","Clear a trail without crashing.",15,0,standard,
+gold_first,"Gold Rush","Win a gold medal.",20,0,standard,
+gold_ten,"Golden Touch","Win 10 gold medals.",50,10,incremental,10
+letters_first,"Spell It Out","Find all of T-R-E-S-T-L-E in one run.",20,0,standard,
+gears_all,"Gear Head","Find all 36 gears in Free Ride.",60,36,incremental,36
+flip,"Head Over Wheels","Land a flip.",10,0,standard,
+double_flip,"Double Trouble","Land a double flip.",25,0,standard,
+tricks_run,"Showboat","Land 10 tricks in one run.",30,0,standard,
+stomp_100,"Stomper","Stomp 100 critters.",30,100,incremental,100
+zip_chain,"Cable Hopper","Ride three cables in a row without touching down.",20,0,standard,
+rails_25,"Spark Show","Grind 25 rails.",25,25,incremental,25
+ropes_25,"Rope Trick","Swing on 25 ropes.",25,25,incremental,25
+walls_25,"Wall of Death","Ride 25 walls.",25,25,incremental,25
+planes_10,"Air Mail","Catch 10 prize sacks from the bonus plane.",25,10,incremental,10
+any_weather,"Any Weather","Clear a trail in the rain and one in the wind.",20,0,standard,
+night_5,"After Dark","Clear 5 trails at night.",25,5,incremental,5
+garage_bikes,"Full Garage","Own all 7 bikes.",40,7,incremental,7
+garage_riders,"The Whole Gang","Own all 8 riders.",40,8,incremental,8
+rich,"Savings Jar","Have 2,000 coins at once.",20,0,standard,
+ghost_beat,"Beat Your Ghost","Set a new best time while your ghost rides.",20,0,standard,
+outrun,"Outrun It","Finish Last Trestle without crashing.",30,0,standard,

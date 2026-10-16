@@ -2,6 +2,8 @@
 
 One-button motorcycle runner for Android/iOS, built in **Godot 4.7** (GL Compatibility renderer, 2D pixel art drawn in code). Inspired by the mine-cart *mechanic*, with original names, art and characters throughout.
 
+Two ways to play from the title screen: **STORY** (win back the parts of Grandpa's motorcycle, area by area, boss by boss) and **FREE RIDE** (the twelve trails, any time and weather). Both share the garage, the wallet and the achievements.
+
 ## Gameplay
 
 - The bike rides automatically along canyon trestles. **Tap = short hop, hold = full jump** (variable height, with coyote time and jump buffering).
@@ -24,7 +26,76 @@ One-button motorcycle runner for Android/iOS, built in **Godot 4.7** (GL Compati
 - Checkpoints mid-trail; crashes respawn you there. Coins only bank when you finish.
 - **Payout** per clear = coins + conditions bonus + new gears + clear bonus + no-crash bonus. Results also show your time and best time.
 
-### Trails
+### Story mode
+
+Grandpa's old motorcycle sat in the barn for forty years, until a saucer beamed it up one night. Grandma got two shells of birdshot into it from the porch; the capture pod holding the bike got knocked about and spilled its parts across the county before the saucer limped off. A short comic tells it the first time you pick STORY (SKIP jumps straight to the map).
+
+The county map has four areas so far, each with three trails and a boss: an alien machine sitting on one part. Beat it and the part drops; it goes back on the bike in the barn (the map shows the bike filling in, part by part). Clearing a trail opens the next; the boss opens after the area's third trail. Story trails are their own layouts (Free Ride's twelve are untouched), and each has a fixed time of day and weather that's part of its look.
+
+| Area | Trail | Speed | New | Conditions |
+|---|---|---|---|---|
+| Grandma's Farm | Hayfield Run | 116 | Jumping, crawlers | day, clear |
+| | Clothesline | 120 | Ziplines, spikers | day, clear |
+| | Power Lines | 124 | Zipline tricks: cables that haul you up, chains, islands | dusk, clear |
+| | **The Scooper** (boss) | 120 | Boss fight; wins the **headlight** | dusk, clear |
+| The Rail Yard | Switchback Siding | 126 | Grind rails, flyers | dusk, clear |
+| | Coal Chutes | 130 | Rail hops, switch tracks | dusk, rain |
+| | Roundhouse | 134 | Springs, lifts | night, clear |
+| | **Rail Hog** (boss) | 128 | wins the **kickstart** | night, clear |
+| Old Orchard | Apple Row | 132 | Rope swings | dusk, clear |
+| | Creek Crossing | 136 | Loops | night, clear |
+| | Hollow Oak | 140 | Low ceilings | night, wind |
+| | **The Harvester** (boss) | 134 | wins the **seat** | night, clear |
+| County Speedway | Fairgrounds | 140 | Wall-rides | day, clear |
+| | Wall of Death | 144 | Big walls and launch lips, coin magnet | dusk, wind |
+| | Grandstand | 148 | Rocket, sticky tires | night, clear |
+| | **The Spinner** (boss) | 142 | wins **both wheels** | night, clear |
+
+The carburetor, top end, bottom end and frame are still out there (shown as "coming" on the map): four more areas to build.
+
+**Story difficulty**, measured the same way as Free Ride's (`--difficulty --set=story`, each trail in its own weather; bosses aren't timed this way). A jump onto a cable, rail, rope or wall-ride is a press held until it catches, and counts as soon as it does, since once you've caught one, when you jumped hardly matters:
+
+| Area | Trail | Speed | Weather | Tightest window | 10th percentile | Forced jumps per 10 s | Crashes |
+|---|---|---|---|---|---|---|---|
+| Farm | Hayfield Run | 116 | clear | 283 ms | 333 ms | 3.4 | 0 |
+| Farm | Clothesline | 120 | clear | 266 ms | 333 ms | 3.7 | 0 |
+| Farm | Power Lines | 124 | clear | 166 ms | 183 ms | 3.1 | 0 |
+| Rail Yard | Switchback Siding | 126 | clear | 133 ms | 166 ms | 2.9 | 0 |
+| Rail Yard | Coal Chutes | 130 | rain | 150 ms | 150 ms | 2.8 | 0 |
+| Rail Yard | Roundhouse | 134 | clear | 133 ms | 250 ms | 2.8 | 0 |
+| Orchard | Apple Row | 132 | clear | 150 ms | 183 ms | 3.9 | 0 |
+| Orchard | Creek Crossing | 136 | clear | 133 ms | 166 ms | 3.3 | 0 |
+| Orchard | Hollow Oak | 140 | wind | 166 ms | 166 ms | 4.0 | 0 |
+| Speedway | Fairgrounds | 140 | clear | 133 ms | 166 ms | 4.0 | 0 |
+| Speedway | Wall of Death | 144 | wind | 250 ms | 250 ms | 3.6 | 0 |
+| Speedway | Grandstand | 148 | clear | 150 ms | 183 ms | 3.0 | 0 |
+
+The story is gentler on timing than late Free Ride (its tightest spot anywhere is 133 ms, eight frames, and those are all ordinary hazards: a flyer over a gap, a spiker under a flyer; Free Ride's tightest is 83 ms). Its step up from area to area is the new hold move, plus speed. Measuring it turned up wall-rides that could only be caught by coming down onto the steep face, a one-frame window on the speedway; now holding as you rise into the face sticks you to it too, and no hold move is in the tightest spots any more.
+
+### Hold moves
+
+Ziplines were the one place the button meant "keep holding". Story trails add three more, and they only carry you **while you hold**: let go and you drop.
+
+- **Grind rails:** steel rails over gaps. Jump onto one and keep holding; sparks and a grind sound while you're on it. Hold off the end and you pop up (onto the next rail in a chain); some rails run downhill or have a lower road under them for letting go early.
+- **Rope swings:** ropes hanging from beams, branches and cranes. Jump and hold to catch one; the swing builds as you hang, and letting go on the forward upswing flings you across. Let go too early and you can swing back and try again.
+- **Wall-rides:** curved board walls that arc up over a pit. Jump at the face and hold: you stick to it whether you come down onto it or are still rising into it (like catching a cable), so the timing is forgiving. Hold all the way round; a wall that ends going up (a lip) throws you into the air.
+- **More zipline variants:** cables that haul you uphill, chains where you pop off one cable onto the next, and cables over little islands with a prize and a spring.
+
+### Bosses
+
+Each boss is an alien machine that moves between fixed spots in its arena: the Scooper (a flying saucer), the Rail Hog (a junk locomotive head that rides up out of the pit under the rails), the Harvester (a stilt-legged walker whose head pod hangs low on a cable) and the Spinner (a bigger saucer). Land on its glowing glass top three times; the arena's own cables, rails, ropes or walls are how you get above it. Each hit bounces you up (hold to ride the bounce higher). Miss them all and it circles round: you're carried back to the arena start with the hits you've landed kept, and crashes keep them too. When it goes down the part falls out, and the trail ends a couple of seconds later. Medals: bronze for the win, silver for a win without crashing, gold for a clean win under par.
+
+### Crash hints
+
+Wreck a few times in the same stretch of trail and your next try shows the way through it: a tip at the top of the screen for that kind of stretch, and a dotted line from the checkpoint to past the trouble, with **TAP**, **HOLD** and **LET GO** marks (the dots turn blue while the button should be down). The line is the real physics played forward from the exact spot you respawn at, ridden by the autopilot, with each plain jump moved to the middle of its timing window (where a person has the most room either side). It's worked out on a background thread while the crash plays, so the run never stutters. It disappears once you're through.
+
+How many wrecks it takes rises as the game goes on: 2 on Free Ride trails 1-3 and on the farm, 3 on trails 4-6 and in the rail yard, 4 on trails 7-9 and in the orchard, 5 on trails 10-12 and at the speedway. Cables, rails, ropes, wall-rides and boss arenas always hint after 2, since those are the ones you can't solve by jumping harder. The count is per stretch and survives RESTART until you close the app.
+
+### Achievements
+
+31 achievements, from finishing the first story trail to recovering each part, beating a boss without a scratch, gold medals, stomps, rail grinds and catching prize sacks. They unlock in the save, pop a toast, and show on the ACHIEVEMENTS screen (title screen) with progress for the counted ones. Progress from an older save counts. The game reports them to Google Play Games and Apple Game Center when those plugins are in the build; that part needs store accounts, and [ACHIEVEMENTS.md](ACHIEVEMENTS.md) is the step-by-step, with the store icons and import files already generated in `store/achievements/`.
+
+### Free Ride trails
 
 Twelve trails, each adding one new thing on top of the earlier ones. Speed, gap widths and hazard density climb from trail to trail.
 
@@ -45,7 +116,7 @@ Twelve trails, each adding one new thing on top of the earlier ones. Speed, gap 
 
 Trails 6–9 also carry bonus routes for the new power-ups: a sticky-tire cliff on Lantern Mine and Hoist Yard, a rocket three-way ramp on Hoodoo Loops and Skyline Pass. Magnets and hard hats turn up from Trail 2 on.
 
-**Hints:** the in-run **?** button (top right) pauses and opens a card explaining the trail's new feature, with a live demo of the autopilot riding it. Trails that introduce two things get two pages (NEXT / BACK). On a first visit the button pulses and a small "NEW: ..." tag shows for a few seconds; there is no splash screen. The trail picker has the same card behind **? TIPS**, and each trail card names its feature.
+**Hints:** besides the crash hints above, the in-run **?** button (top right) pauses and opens a card explaining the trail's new feature, with a live demo of the autopilot riding it. Trails that introduce two things get two pages (NEXT / BACK). On a first visit the button pulses and a small "NEW: ..." tag shows for a few seconds; there is no splash screen. The trail picker has the same card behind **? TIPS**, and each trail card names its feature.
 
 **Each trail has its own identity:**
 
@@ -64,7 +135,7 @@ Trails 6–9 also carry bonus routes for the new power-ups: a sticky-tire cliff 
 | 11 | Rocket Ridge | White lattice towers, red and white grating | Rustbot / mine / drone | Exhaust haze, a test rocket climbing off a far pad | Yard, canyon wind | Ridge Runner | Four three-way ramps, lifts, a zipline |
 | 12 | Last Trestle | Old grey timber over a gorge | Beetle / urchin / bat | Splinters and ash, dust where far bents give way | The collapse (rumble, snapping timbers) | Ridge Runner | The trestle falls away behind you; crumbling plank runs |
 
-**Difficulty ramp**, measured by `--difficulty` (see Dev checks). For every jump a trail forces, it finds how long the window of frames is in which pressing still gets you past (pressing in the middle of the window, like a person would):
+**Difficulty ramp**, measured by `--difficulty` (see Dev checks; these are the v0.7 numbers, and the Free Ride trails haven't changed since). For every jump a trail forces, it finds how long the window of frames is in which pressing still gets you past (pressing in the middle of the window, like a person would):
 
 | # | Trail | Speed | Tightest window: clear / rain / wind | 10th percentile (clear) | Forced jumps per 10 s |
 |---|---|---|---|---|---|
@@ -97,7 +168,7 @@ Every bike keeps the same one-button control and hitbox; each adds one move.
 | Cafe racer | Air dash | Tap in the air to dash forward |
 | Chopper | Iron hide | Smash through one enemy per checkpoint (falls still count) |
 
-An air press within a few pixels of landing still counts as a buffered jump rather than a specialty move. The garage shows each bike's specialty; the HUD names it bottom left and lights it while it's active.
+An air press within a few pixels of landing still counts as a buffered jump rather than a specialty move. On story trails the scooter's umbrella stays shut when a rail, wall-ride or rope is just ahead: holding there means "grab", and a floating scooter would drift over the top of them. The garage shows each bike's specialty; the HUD names it bottom left and lights it while it's active.
 
 ### Bonus plane
 
@@ -142,7 +213,7 @@ The title screen runs the far and valley layers too, so rivals race behind the m
 
 ### Sound
 
-- **Engines:** every bike model has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. Equipping a bike in the garage blips its throttle.
+- **Engines:** every bike model has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. In the garage, picking a rider or a bike starts the engine and revs it (for a rider, the bike you have equipped), and tapping any bike tile, owned or not, lets you hear it before you buy.
 - **Ambience:** birds by day; crickets at dusk and night. On top of that each trail has its own bed (table above): synthesized canyon wind, machine yard (hum, distant clanks in a shed, steam hiss), mine (rumble, echoing drips, timber creaks), mountain wind and, on Last Trestle, the collapse (low rumble, snapping timbers), plus the creek at Copper Canyon and Mesa Springs. The mine and the hoist yard drop the birds; Skyline Pass drops the crickets. Rain adds a rain bed. In wind, the wind recording's volume follows the same gust curve that pushes the bike.
 - **Foley:** soft chimes tuned to the theme's key (coin streaks climb a pentatonic ladder), a soft whoosh on jumps, wooden thock on landings, splash in rain, plank-joint "ta-dak" while rolling, gentle crash with a falling two-note chime. Springs boing up a fifth, roof bonks knock, loops swoop, ziplines clink on and whine along the cable, and the bonus biplane drones in from behind with a Doppler drop as it passes.
 - **Coins:** each coin is a short, dry chime (rings out in about 0.3 s, down from 1.1 s), and two coin voices alternate with each new coin damping the last, so a fast streak plays as separate notes.
@@ -152,7 +223,8 @@ The title screen runs the far and valley layers too, so rivals race behind the m
   - "Ridge Runner": up a tone in E, 96 BPM, driving train beat and walking bass. Rustyard, Hoist Yard, Skyline Pass, Rocket Ridge, Last Trestle.
 - **Power-ups and letters:** a sparkle arpeggio for a pickup (a squelch for sticky tires, an ignition roar for the rocket), a tire-grip grind on the climb, a plastic clonk when the hard hat saves you, a dry crack as a plank gives way, two bright notes per letter and a seven-note run for the full word.
 - **Tricks and tracks:** a quick whoosh per flip, rising chimes for a landed trick, a wobble knock for a sketchy one, and a rail clack when a switch ramp swings you across.
-- **Settings:** MUSIC and SOUND sliders (0–100%, squared taper so 50% sounds about half as loud). Music now starts at 50% (existing saves still at the old 100% default move to 50% once; any other level you set is kept) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
+- **Story sounds:** grind rails clank as you land and then scrape and crackle for as long as you're on; wall-rides slap onto the boards with a boom under you; ropes creak as they take your weight. Bosses hum (a low wobbling drone that gets louder as you close in), each hit is a hollow metal bong with ringing glass and an alien yelp, a knockout is a crumpling bang and a falling alien warble, and getting a part back plays a bigger cousin of the gear chime. Achievements pop with three bright rising notes. Boss arenas have their own music loop, "Saucer Stomp" (the theme band at 116 BPM with a wobbling lead).
+- **Settings:** MUSIC, SOUND and **ENGINE** sliders (0–100%, squared taper so 50% sounds about half as loud). ENGINE is the bike alone, so you can keep the music and chimes up and the engine down. Moving it revs your bike so you can hear the level (on the title screen's SETTINGS; in a paused run the engine is paused too). Music now starts at 50% (existing saves still at the old 100% default move to 50% once; any other level you set is kept) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
 - **Mix:** set from Movie Maker captures of real gameplay with each bus soloed: engine and theme near -24 LUFS, chimes -24, nature bed -33, about -19 LUFS overall.
 - **Swapping sounds:** replace any file in `assets/audio/` with one of the same name. Engine files should loop cleanly. To use real engine recordings later, drop in `<bike>_idle.ogg` / `<bike>_cruise.ogg`.
 
@@ -198,14 +270,18 @@ Godot exports iOS as an Xcode project, and that export has to run on **macOS wit
 
 ```
 scripts/
-  game_state.gd          autoload: wallet, unlocks, skins, save (user://save.json), input map, font/theme
-  catalog.gd             riders, bikes, paint, levels, prices, condition bonuses   <- economy knobs
+  game_state.gd          autoload: wallet, unlocks, skins, story progress, save (user://save.json), input map, font/theme
+  achievements.gd        autoload: the achievement list, unlocks, toasts, Play Games / Game Center bridge
+  catalog.gd             riders, bikes, paint, Free Ride and story trails, story areas and parts, prices   <- economy knobs
   main.gd                screen switching, Android back button
   game/
     bike_physics.gd      deterministic 60 Hz physics, track features, bike specialties <- feel knobs
     level_library.gd     chunk builders (gaps, enemies, springs, tunnels, loops, lifts, ziplines)
-    level_layouts.gd     the 12 trail layouts + short hint-demo layouts   <- level design
-    autopilot.gd         lookahead bot: dev verify and the hint-card demos
+    level_layouts.gd     the 12 Free Ride layouts, the 16 story layouts, hint-demo and test strips   <- level design
+    autopilot.gd         lookahead bot: dev verify, the hint-card demos and the crash-hint line
+    guide.gd             crash hints: wreck counting per stretch, tips, the hint line (worker thread)
+    boss_art.gd          the four bosses
+    story_art.gd         Grandpa's bike (filling in part by part), Grandma, the intro comic panels
     world.gd             one run: sim, pickups, checkpoints, bonus plane, camera, drawing
     feature_art.gd       pixel art for springs, tunnels, loops, lifts, ziplines, biplane
     backdrop.gd          parallax themes: day/dusk/night palettes per trail, weather skies
@@ -213,12 +289,16 @@ scripts/
     letter_spots.gd      where each trail's T-R-E-S-T-L-E letters sit (generated, see Dev checks)
     world_art.gd         per-trail track builds and critter skins, switch-ramp signs
     bike_view.gd         bike models + riders drawn from primitives (paint = palette)
-  screens/               title, trail select, garage, game (pause/results)
-  ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport)
+  screens/               title, trail select, story map and intro, achievements, garage, game (pause/results)
+  ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport), achievement badges
   audio/audio_director.gd  autoload: buses, engine, ambience, SFX pool, theme
   dev/                   bot, verifier, screenshots, input test, Movie Maker demo (excluded from export)
 tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio
+tools/store/play_ids.py  Play Console achievement ids -> scripts/achievements.gd (see ACHIEVEMENTS.md)
+store/achievements/      store icons and import files (not part of the game; .gdignore keeps it out of the APK)
 ```
+
+Hold moves are chunks too: `["rail", 160.0]`, `["rail_chain", 3, 100.0]`, `["rope"]` (or `["rope", reach, length, count, spacing]`), `["wall", 180.0, 70.0]` (a fifth argument 1 makes it a launch lip), `["zip_up", ...]`, `["zip_chain", [160.0, 160.0]]`, `["zip_drops", ...]`. A boss arena is `["boss", kind, ...]`, then windows (`bw_low`, `bw_gap`, `bw_zip`, `bw_rail`, `bw_rope`, `bw_wall`, `bw_lip`: the stretch where the boss sits and the move that gets you above it), then `["boss_end"]`.
 
 Levels are lists of chunks, e.g. `["gap", 56.0]`, `["branch_upper", 1]` (1 = put a gear on it), `["lifts", [[56, 18, 2.2, 0]], 48]`, `["zip", 300, 62, 30, 1]`, `["hills", 2, 14.0]`, `["kicker", 76.0, 40.0]`. A switch-track fork is `["fork", to_lane, [inner chunks], [main chunks], gear, forced]` with to_lane 1 = behind, -1 = in front; forced = 1 ends the main deck so the switch is the only way on. Adding a trail means a layout in `level_layouts.gd` plus an entry in `catalog.gd` (speed, price, theme, feature); new feature text goes in `Catalog.FEATURES`.
 
@@ -233,6 +313,10 @@ godot --headless --path . -- --physics-report                          # jump ta
 godot --headless --path . -- --place-letters                           # regenerate letter_spots.gd after layout changes
 godot --headless --path . -- --par                                     # par times for the gold medal
 godot --headless --path . -- --probe                                   # collapse-chase margin on Last Trestle
+godot --headless --path . -- --verify --set=story                      # just the story trails (or --set=free)
+godot --headless --path . -- --verify --test=rail,rope:140             # the hold-move test strips (name[:speed])
+godot --headless --path . -- --guide-test                              # crash-hint line from every checkpoint
+xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2   # store icons + import files
 ```
 
 - `--headless` runs with no window or audio
@@ -244,15 +328,22 @@ godot --headless --path . -- --probe                                   # collaps
 - `--place-letters` runs the bot on every trail in clear and rain with no letters, then puts each letter on the most airborne coin it collected in both, one per seventh of the trail, and rewrites `scripts/game/letter_spots.gd`
 - `--probe` rides Last Trestle in each weather and prints how close the collapse came
 - `--par` prints each trail's par time (the bot's clean clear-weather time + 1 s, rounded up to the half second) for `Catalog.PARS`
+- `--set=story|free` limits `--verify` to the story or Free Ride trails; `--test=` runs the short test strips in `level_layouts.gd` (`TESTS`) instead, each at the given speed
+- `--guide-test` rides every trail in every weather and, at each checkpoint, works out the crash-hint line from there to the next checkpoint exactly as a wreck would; it reports any line that doesn't get through and how long the work took
+- `--ach-export=` writes the store kit for achievements (needs a display, so `xvfb-run` on a server; see ACHIEVEMENTS.md)
 
-Current result (v0.7.0):
-- Plain bike: all 36 runs (12 trails x 3 weathers) cleared with 0 crashes and 3/3 gears each, so every route, cliff top, ramp road, switch track and gear is reachable in every weather. Letters: 7/7 in 34 of 36 runs; the other two (Night Trestle in wind, Hoodoo Loops in clear) miss one letter that the same bot picks up in the other two weathers.
-- Every bike with its specialty active: all 252 runs cleared with 0 crashes. Gears: 3/3 in every run except five scooter runs, where the umbrella floats it past one gear. Letters: 7/7 in 233 of 252 runs.
+Current result (v0.8.0):
+- Plain bike: all 84 runs (12 Free Ride trails + 16 story trails, x 3 weathers) cleared with 0 crashes and 3/3 gears; every boss knocked out 3/3 without circling round, in every weather. Letters 7/7 in 68 of 72 trail runs (bosses have none); each miss is a single letter that the bot picks up in the other weathers.
+- Every bike with its specialty active: all 588 runs cleared with 0 crashes, and no boss circles round on any bike. (The first pass had the scooter falling on rail-yard trails: holding to grind also opened its umbrella, which floated it over the rails. The umbrella now stays shut with a rail, wall-ride or rope just ahead.) Gears 3/3 in all but eight runs, all of them the scooter floating past one. Letters 7/7 in 466 of 504 trail runs.
+- `--guide-test`: from every checkpoint of every trail in every weather, the crash-hint line gets through to the next checkpoint (240 lines, 0 failures). Working it out takes at most 1.4-2.7 ms per frame of line on this machine, depending on the trail, against 16.7 ms per frame of riding, so the line runs well ahead of you on the worker thread.
+- `--guide-test --flow` (nobody pressing): the hint comes on after the 2nd wreck at the first gap of Trail 1, the 3rd on Trail 4, the 5th on Trail 11, and the 2nd at a rail or wall-ride in any area.
 - `--input-test`: taps and holds jump through the real touch pipeline; the pause and **?** buttons never leak a jump.
-- `--demo=scroll`: finger drags that start anywhere on a trail card (panel, text, thumbnail, button) scroll the trail picker, a drag across a button doesn't press it, and a plain tap on RIDE still opens the picker. Same fix in the garage and credits lists.
+- `--demo=scroll` (add `--touch` to send screen-touch events instead of emulated mouse): finger drags that start anywhere on a trail card (panel, text, thumbnail, button) scroll the trail picker, a drag across a button doesn't press it, and a plain tap on RIDE still opens the picker. Same fix in the garage and credits lists.
 
 ## Not done yet
 
+- Story areas 5-8 (carburetor, top end, bottom end, frame) and the ending where Grandpa's bike runs again.
+- Achievements on the stores: the game side is done; the store accounts, plugins and Gradle build are the steps in [ACHIEVEMENTS.md](ACHIEVEMENTS.md).
 - In-app purchases and ads: Godot needs platform plugins for Google Play Billing, StoreKit and an ad network, plus consent handling. Next phase.
 - Hand-drawn sprite art (current art is code-drawn placeholders that already read as pixel art)
 - More enemy types and trails; a best-time leaderboard

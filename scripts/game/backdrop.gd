@@ -146,6 +146,39 @@ static func _build() -> void:
 		"night": _t(["020204", "06060e", "0c0c1a", "141426", "1e1e36"], "e8edf7", 10.0, 0.25,
 			"2a2430", "1c1822", "0e0c12", "ruin", true, "5a5044", "8a7e6c", "2e261e", "1a1612"),
 	})
+	# Story mode: Grandma's county.
+	_base.append({ # 12 Grandma's Farm: green hills, barns, silos, windmills
+		"day": _t(["3f8ae0", "5aa0e8", "7cb8ee", "a6d0f4", "d6ecfa"], "fffbe6", 13.0, 0.2,
+			"7fa8c8", "6aa04a", "3e7a34", "farm", false, "c0904e", "f0c890", "7a4a2a", "4a2a1a"),
+		"dusk": _t(["2a1a3e", "5a2a5a", "a8466a", "e88a5a", "f8c070"], "fff0c0", 17.0, 0.42,
+			"7a5a7a", "4a5a3a", "26341e", "farm", false, "c0904e", "f0c890", "7a4a2a", "4a2a1a"),
+		"night": _t(["03050e", "081028", "101c40", "1a2a58", "263870"], "e8edf7", 11.0, 0.25,
+			"2a3448", "1e2a24", "101810", "farm", true, "6e5236", "a68a64", "3a2a1e", "201610"),
+	})
+	_base.append({ # 13 The Rail Yard: boxcars, water towers, signal masts
+		"day": _t(["5a86b8", "76a0c8", "98b8d6", "bccfe2", "dfe8ee"], "fffbe6", 14.0, 0.22,
+			"8a94a4", "5e6670", "34383e", "railyard", false, "6a5a4a", "b0a490", "4a4f5c", "2a2d36"),
+		"dusk": _t(["1a1626", "34263e", "664050", "b8664a", "f0a860"], "ffd9a0", 18.0, 0.42,
+			"5a4a58", "3a3240", "1e1a22", "railyard", false, "6a5a4a", "b0a490", "4a4f5c", "2a2d36"),
+		"night": _t(["020306", "070a14", "0e1424", "182034", "222c48"], "e8edf7", 10.0, 0.25,
+			"262832", "181a22", "0c0d12", "railyard", true, "4a4038", "7e7262", "3a3e48", "1e2028"),
+	})
+	_base.append({ # 14 Old Orchard: rows of apple trees, a creek, the old farmhouse
+		"day": _t(["4a92d8", "68a8e2", "8cc0ea", "b4d8f2", "e0f0fa"], "fffbe6", 13.0, 0.2,
+			"86a0b8", "5a8a46", "2e5a2a", "orchard", false, "8a6a46", "c8a878", "5a3e2a", "3a2618"),
+		"dusk": _t(["241838", "4a2a52", "8a3a5a", "d06a4a", "f0a050"], "ffe0a8", 16.0, 0.42,
+			"6a5070", "3a4a30", "1c2a18", "orchard", false, "8a6a46", "c8a878", "5a3e2a", "3a2618"),
+		"night": _t(["02040a", "060c1c", "0c1630", "142242", "1e2e58"], "e8edf7", 11.0, 0.25,
+			"222c40", "16221a", "0a120c", "orchard", true, "5a4632", "8a7458", "34261a", "1e160e"),
+	})
+	_base.append({ # 15 County Speedway: grandstand, Ferris wheel, striped tents
+		"day": _t(["2e78d8", "4c90e0", "72aae8", "9cc6f0", "d0e6f8"], "fffbe6", 12.0, 0.2,
+			"9ab0c8", "8aa860", "5a6a4a", "fair", false, "d8dce2", "ffffff", "8a3a30", "5a221c"),
+		"dusk": _t(["1e1438", "3e1e50", "7e3058", "d05a4a", "f8a050"], "ffd0a0", 15.0, 0.42,
+			"5a4a6e", "4a4a3a", "24221e", "fair", false, "d8dce2", "ffffff", "8a3a30", "5a221c"),
+		"night": _t(["03030c", "08081e", "10123a", "1a1c50", "242868"], "e8edf7", 10.0, 0.25,
+			"282a40", "1a1c28", "0c0c14", "fair", true, "9a9ea6", "c8ccd2", "5a2620", "341612"),
+	})
 	for i in [8]:
 		for k in TIMES:
 			_base[i][k].snow = true
@@ -358,6 +391,108 @@ static func _props(ci: CanvasItem, vs: Vector2, off: float, base: float, th: Dic
 				ci.draw_line(Vector2(px + 2, base - h * 0.4), Vector2(px + 14, base - h * 0.45), col, -1.0)
 				if _hash(c * 2.9) < 0.5:
 					ci.draw_line(Vector2(px + 26, base), Vector2(px + 40, base - h * 0.8), col, 2.0)
+			"farm":
+				var pick := _hash(c * 3.7)
+				if pick < 0.4:
+					# Barn: gable roof, a hayloft door.
+					var w := floorf(28.0 * sz)
+					var h := floorf(16.0 * sz)
+					ci.draw_rect(Rect2(px, base - h, w, h), col)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(px - 2, base - h), Vector2(px + w * 0.5, base - h - 10 * sz),
+						Vector2(px + w + 2, base - h)]), col)
+					if th.time == "night":
+						ci.draw_rect(Rect2(px + w * 0.5 - 2, base - h - 4, 3, 3), Color("ffcf6a"))
+				elif pick < 0.7:
+					# Silo with a domed cap, sometimes a second one.
+					var h := floorf(30.0 * sz + 6.0)
+					ci.draw_rect(Rect2(px, base - h, 9, h), col)
+					ci.draw_circle(Vector2(px + 4.5, base - h), 4.5, col)
+					if _hash(c * 5.1) < 0.5:
+						ci.draw_rect(Rect2(px + 11, base - h * 0.7, 7, h * 0.7), col)
+						ci.draw_circle(Vector2(px + 14.5, base - h * 0.7), 3.5, col)
+				else:
+					# Windmill: lattice tower and a turning wheel.
+					var h := floorf(34.0 * sz + 6.0)
+					ci.draw_line(Vector2(px, base), Vector2(px + 5, base - h), col, -1.0)
+					ci.draw_line(Vector2(px + 10, base), Vector2(px + 5, base - h), col, -1.0)
+					ci.draw_line(Vector2(px + 2, base - h * 0.5), Vector2(px + 8, base - h * 0.5), col, -1.0)
+					var hub := Vector2(px + 5, base - h)
+					var spin := float(Time.get_ticks_msec()) / 1000.0 * 1.5
+					for k in 6:
+						var a := spin + k * TAU / 6.0
+						ci.draw_line(hub, hub + Vector2(cos(a), sin(a)) * 7.0 * sz, col, -1.0)
+					ci.draw_rect(Rect2(hub.x - 6, hub.y - 1, 4, 2), col)
+			"railyard":
+				var pick := _hash(c * 3.7)
+				if pick < 0.45:
+					# A short string of boxcars.
+					for k in 2 + int(_hash(c * 2.2) * 2.0):
+						var bx := px + k * 24.0
+						ci.draw_rect(Rect2(bx, base - 12, 22, 10), col)
+						ci.draw_circle(Vector2(bx + 5, base - 2), 2.0, col)
+						ci.draw_circle(Vector2(bx + 17, base - 2), 2.0, col)
+				elif pick < 0.7:
+					# Water tower: tank on legs, a spout.
+					var h := floorf(26.0 * sz + 6.0)
+					ci.draw_line(Vector2(px + 2, base), Vector2(px + 4, base - h), col, -1.0)
+					ci.draw_line(Vector2(px + 16, base), Vector2(px + 14, base - h), col, -1.0)
+					ci.draw_rect(Rect2(px, base - h - 10, 18, 10), col)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(px - 1, base - h - 10), Vector2(px + 9, base - h - 15),
+						Vector2(px + 19, base - h - 10)]), col)
+					ci.draw_line(Vector2(px + 18, base - h - 4), Vector2(px + 24, base - h + 2), col, -1.0)
+				else:
+					# Signal mast with two lamps.
+					var h := floorf(30.0 * sz + 4.0)
+					ci.draw_rect(Rect2(px, base - h, 2, h), col)
+					ci.draw_rect(Rect2(px - 2, base - h, 6, 9), col)
+					var red := int(Time.get_ticks_msec() / 1500 + c) % 2 == 0
+					ci.draw_rect(Rect2(px, base - h + 1, 2, 2), Color("ff4040") if red else Color(col, 1.0))
+					ci.draw_rect(Rect2(px, base - h + 5, 2, 2), Color("40ff80") if not red else Color(col, 1.0))
+			"orchard":
+				# A row of round apple trees, now and then the farmhouse.
+				if _hash(c * 6.3) < 0.18:
+					ci.draw_rect(Rect2(px, base - 14, 22, 14), col)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(px - 2, base - 14), Vector2(px + 11, base - 24), Vector2(px + 24, base - 14)]), col)
+					if th.time != "day":
+						ci.draw_rect(Rect2(px + 4, base - 10, 3, 3), Color("ffcf6a"))
+						ci.draw_rect(Rect2(px + 14, base - 10, 3, 3), Color("ffcf6a"))
+				else:
+					for k in 3:
+						var tx := px + k * 16.0 * sz
+						var r := floorf((6.0 + 3.0 * _hash(c * 2.0 + k)) * sz)
+						ci.draw_rect(Rect2(tx - 1, base - r - 4, 2, r + 4), col)
+						ci.draw_circle(Vector2(tx, base - r - 6), r, col)
+			"fair":
+				var pick := _hash(c * 3.7)
+				if pick < 0.3:
+					# Ferris wheel, turning slowly; lit cars at night.
+					var r := floorf(20.0 * sz + 6.0)
+					var hub := Vector2(px + r, base - r - 4)
+					ci.draw_line(Vector2(px + r - 8, base), hub, col, -1.0)
+					ci.draw_line(Vector2(px + r + 8, base), hub, col, -1.0)
+					ci.draw_arc(hub, r, 0.0, TAU, 20, col, -1.0)
+					var spin := float(Time.get_ticks_msec()) / 1000.0 * 0.25
+					for k in 8:
+						var a := spin + k * TAU / 8.0
+						var rim := hub + Vector2(cos(a), sin(a)) * r
+						ci.draw_line(hub, rim, col, -1.0)
+						ci.draw_rect(Rect2(rim.x - 1, rim.y, 3, 3), Color("ffcf6a") if th.time == "night" and k % 2 == 0 else col)
+				elif pick < 0.6:
+					# Big top: a striped tent with a pennant.
+					var w := floorf(30.0 * sz)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(px, base), Vector2(px + w * 0.5, base - 20 * sz),
+						Vector2(px + w, base)]), col)
+					ci.draw_line(Vector2(px + w * 0.5, base - 20 * sz), Vector2(px + w * 0.5, base - 26 * sz), col, -1.0)
+					ci.draw_rect(Rect2(px + w * 0.5, base - 26 * sz, 4, 2), Color("e04848"))
+				else:
+					# Grandstand with flags and a light tower.
+					ci.draw_rect(Rect2(px, base - 10, 40, 10), col)
+					ci.draw_rect(Rect2(px + 4, base - 16, 32, 6), col)
+					for k in 4:
+						ci.draw_line(Vector2(px + 6 + k * 10, base - 16), Vector2(px + 6 + k * 10, base - 22), col, -1.0)
+						ci.draw_rect(Rect2(px + 6 + k * 10, base - 22, 3, 2), [Color("e04848"), Color("f0c040"), Color("4a7ad0"), Color("f4f4f4")][k])
+					ci.draw_rect(Rect2(px + 44, base - 36, 2, 36), col)
+					ci.draw_rect(Rect2(px + 41, base - 38, 8, 3), Color("fff1a8") if th.time == "night" else col)
 			"poles":
 				ci.draw_rect(Rect2(px, base - 34, 2, 34), col)
 				ci.draw_rect(Rect2(px - 5, base - 32, 12, 2), col)

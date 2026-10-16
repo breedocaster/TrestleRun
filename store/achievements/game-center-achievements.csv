@@ -1,0 +1,32 @@
+Achievement ID,Reference Name,Point Value,Hidden,Achievable More Than Once,Display Name,Pre-earned Description,Earned Description,Image
+trestlerun.story_start,Off You Go,10,No,No,"Off You Go","Finish the first story trail.","Finish the first story trail.",apple/story_start.png
+trestlerun.part_headlight,Lights On,50,No,No,"Lights On","Get Grandpa's headlight back from the Scooper.","Get Grandpa's headlight back from the Scooper.",apple/part_headlight.png
+trestlerun.part_kickstart,Kicked Off,50,No,No,"Kicked Off","Get the kickstart back from the Rail Hog.","Get the kickstart back from the Rail Hog.",apple/part_kickstart.png
+trestlerun.part_seat,Take a Seat,50,No,No,"Take a Seat","Get the seat back from the Harvester.","Get the seat back from the Harvester.",apple/part_seat.png
+trestlerun.part_wheels,Rolling Again,50,No,No,"Rolling Again","Get both wheels back from the Spinner.","Get both wheels back from the Spinner.",apple/part_wheels.png
+trestlerun.parts_4,Halfway Home,50,No,No,"Halfway Home","Recover four parts of Grandpa's bike.","Recover four parts of Grandpa's bike.",apple/parts_4.png
+trestlerun.boss_flawless,Not a Scratch,30,No,No,"Not a Scratch","Beat a boss without crashing.","Beat a boss without crashing.",apple/boss_flawless.png
+trestlerun.boss_quick,Short Work,30,No,No,"Short Work","Knock out a boss before it circles round.","Knock out a boss before it circles round.",apple/boss_quick.png
+trestlerun.first_clear,Trail Blazer,10,No,No,"Trail Blazer","Clear your first Free Ride trail.","Clear your first Free Ride trail.",apple/first_clear.png
+trestlerun.free_all,Every Trestle,80,No,No,"Every Trestle","Clear all 12 Free Ride trails.","Clear all 12 Free Ride trails.",apple/free_all.png
+trestlerun.no_crash,Clean Run,15,No,No,"Clean Run","Clear a trail without crashing.","Clear a trail without crashing.",apple/no_crash.png
+trestlerun.gold_first,Gold Rush,20,No,No,"Gold Rush","Win a gold medal.","Win a gold medal.",apple/gold_first.png
+trestlerun.gold_ten,Golden Touch,50,No,No,"Golden Touch","Win 10 gold medals.","Win 10 gold medals.",apple/gold_ten.png
+trestlerun.letters_first,Spell It Out,20,No,No,"Spell It Out","Find all of T-R-E-S-T-L-E in one run.","Find all of T-R-E-S-T-L-E in one run.",apple/letters_first.png
+trestlerun.gears_all,Gear Head,60,No,No,"Gear Head","Find all 36 gears in Free Ride.","Find all 36 gears in Free Ride.",apple/gears_all.png
+trestlerun.flip,Head Over Wheels,10,No,No,"Head Over Wheels","Land a flip.","Land a flip.",apple/flip.png
+trestlerun.double_flip,Double Trouble,25,No,No,"Double Trouble","Land a double flip.","Land a double flip.",apple/double_flip.png
+trestlerun.tricks_run,Showboat,30,No,No,"Showboat","Land 10 tricks in one run.","Land 10 tricks in one run.",apple/tricks_run.png
+trestlerun.stomp_100,Stomper,30,No,No,"Stomper","Stomp 100 critters.","Stomp 100 critters.",apple/stomp_100.png
+trestlerun.zip_chain,Cable Hopper,20,No,No,"Cable Hopper","Ride three cables in a row without touching down.","Ride three cables in a row without touching down.",apple/zip_chain.png
+trestlerun.rails_25,Spark Show,25,No,No,"Spark Show","Grind 25 rails.","Grind 25 rails.",apple/rails_25.png
+trestlerun.ropes_25,Rope Trick,25,No,No,"Rope Trick","Swing on 25 ropes.","Swing on 25 ropes.",apple/ropes_25.png
+trestlerun.walls_25,Wall of Death,25,No,No,"Wall of Death","Ride 25 walls.","Ride 25 walls.",apple/walls_25.png
+trestlerun.planes_10,Air Mail,25,No,No,"Air Mail","Catch 10 prize sacks from the bonus plane.","Catch 10 prize sacks from the bonus plane.",apple/planes_10.png
+trestlerun.any_weather,Any Weather,20,No,No,"Any Weather","Clear a trail in the rain and one in the wind.","Clear a trail in the rain and one in the wind.",apple/any_weather.png
+trestlerun.night_5,After Dark,25,No,No,"After Dark","Clear 5 trails at night.","Clear 5 trails at night.",apple/night_5.png
+trestlerun.garage_bikes,Full Garage,40,No,No,"Full Garage","Own all 7 bikes.","Own all 7 bikes.",apple/garage_bikes.png
+trestlerun.garage_riders,The Whole Gang,40,No,No,"The Whole Gang","Own all 8 riders.","Own all 8 riders.",apple/garage_riders.png
+trestlerun.rich,Savings Jar,20,No,No,"Savings Jar","Have 2,000 coins at once.","Have 2,000 coins at once.",apple/rich.png
+trestlerun.ghost_beat,Beat Your Ghost,20,No,No,"Beat Your Ghost","Set a new best time while your ghost rides.","Set a new best time while your ghost rides.",apple/ghost_beat.png
+trestlerun.outrun,Outrun It,30,No,No,"Outrun It","Finish Last Trestle without crashing.","Finish Last Trestle without crashing.",apple/outrun.png

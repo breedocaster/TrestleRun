@@ -114,6 +114,29 @@ func _ambient(vs: Vector2, cam: Vector2) -> void:
 		10:  # Rocket Ridge: exhaust haze drifting across low
 			_mist(vs, cam.x, Color(1.0, 0.95, 0.9, 0.06))
 			_motes(vs, cam.x, 10, Color(1.0, 0.7, 0.4, 0.4), 12.0)
+		12:  # Grandma's Farm: dandelion fluff and pollen drifting by
+			_motes(vs, cam.x, 18, Color(1.0, 1.0, 0.95, 0.55), 10.0)
+		13:  # Rail Yard: soot specks and a whiff of steam
+			_motes(vs, cam.x, 14, Color(0.35, 0.33, 0.36, 0.55), 8.0)
+			_steam(vs, cam, 420.0, Color(0.92, 0.92, 0.95, 0.14))
+		14:  # Old Orchard: leaves tumbling down, fireflies after sunset
+			for i in 14:
+				var h1 := _hash(i * 3.91 + 0.4)
+				var h2 := _hash(i * 6.07 + 0.9)
+				var x := fposmod(h1 * vs.x * 1.4 - cam.x * 1.1 + sin(_t * 1.3 + i) * 10.0, vs.x + 10.0) - 5.0
+				var y := fposmod(h2 * vs.y + _t * (16.0 + h1 * 14.0), vs.y + 10.0) - 5.0
+				var c := Color("d0702a") if i % 3 == 0 else (Color("8aa040") if i % 3 == 1 else Color("c84a2a"))
+				draw_rect(Rect2(floorf(x), floorf(y), 2, 1 + int(sin(_t * 4.0 + i) > 0.0)), Color(c, 0.75))
+			if night or time_mode == "dusk":
+				_motes(vs, cam.x, 10, Color(1.0, 0.95, 0.5, 0.7), 3.0)
+		15:  # County Speedway: a little confetti on the breeze
+			for i in 16:
+				var h1 := _hash(i * 2.21 + 0.6)
+				var h2 := _hash(i * 7.31 + 0.2)
+				var x := fposmod(h1 * vs.x * 1.5 - cam.x * 1.08 - _t * 10.0, vs.x + 10.0) - 5.0
+				var y := fposmod(h2 * vs.y + _t * (20.0 + h2 * 16.0), vs.y + 10.0) - 5.0
+				var cols := [Color("ff6a6a"), Color("ffd27a"), Color("8fe3ff"), Color("b07aff"), Color("7aff9a")]
+				draw_rect(Rect2(floorf(x), floorf(y), 1 + int(sin(_t * 5.0 + i) > 0.3), 1), Color(cols[i % 5], 0.7))
 		11:  # Last Trestle: splinters and ash on the wind
 			for i in 24:
 				var h1 := _hash(i * 2.71 + 0.5)

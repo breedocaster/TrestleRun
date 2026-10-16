@@ -55,7 +55,9 @@ def main():
             y, meta = engines.render(name, state)
             save(f"engines/{name}_{state}.ogg", y, q=4, loop=True, meta=meta, manifest=manifest)
     for name, y in (sfx.build(SRC).items() if want("sfx") else []):
-        save(f"sfx/{name}.ogg", y, q=4, loop=name in ("deck_roll", "zipline", "plane"), manifest=manifest)
+        # q2: one-shots are short and mostly bright noise and chimes; q2 keeps them clean
+        # at about two thirds the size (APK budget).
+        save(f"sfx/{name}.ogg", y, q=2, loop=name in ("deck_roll", "zipline", "plane", "grind", "saucer"), manifest=manifest)
     if want("ambience"):
         amb, info = ambience.build(f"{SRC}/blanket/data/resources/sounds")
         for name, y in amb.items():
@@ -63,10 +65,11 @@ def main():
             save(f"ambience/{name}.ogg", y, q=0 if info[name].get("synth") else 1, loop=True,
                  meta=info[name], manifest=manifest, rate=22050)
     if want("music"):
-        # One theme and two trail variants; q1 keeps all three in the APK budget.
+        # One theme and three variants (two trail moods and the boss); q1 keeps them in
+        # the APK budget, q0 for the boss loop (busy and loud, it hides the artefacts).
         for name, cfg in theme.VARIANTS.items():
             y = theme.render_variant(name)
-            save(f"music/{name}.ogg", y, q=1, loop=True,
+            save(f"music/{name}.ogg", y, q=0 if name == "saucer_stomp" else 1, loop=True,
                  meta={"bpm": cfg.get("bpm", 78.0), "bars": cfg.get("bars", 32)}, manifest=manifest)
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)

@@ -227,291 +227,377 @@
  "music/lantern_low.ogg": {
   "bars": 16,
   "bpm": 68.0,
-  "kb": 495.7,
+  "kb": 496.0,
   "loop": true,
   "lufs": -16.0,
-  "peak_db": -6.2,
+  "peak_db": -6.3,
   "seconds": 56.471
  },
  "music/ridge_runner.ogg": {
   "bars": 16,
   "bpm": 96.0,
-  "kb": 365.4,
+  "kb": 365.2,
   "loop": true,
   "lufs": -16.0,
-  "peak_db": -5.5,
+  "peak_db": -6.5,
   "seconds": 40.0
+ },
+ "music/saucer_stomp.ogg": {
+  "bars": 16,
+  "bpm": 116.0,
+  "kb": 247.8,
+  "loop": true,
+  "lufs": -16.0,
+  "peak_db": -6.9,
+  "seconds": 33.103
  },
  "music/trestle_dreams.ogg": {
   "bars": 32,
   "bpm": 78.0,
-  "kb": 890.8,
+  "kb": 891.3,
   "loop": true,
   "lufs": -16.0,
-  "peak_db": -4.6,
+  "peak_db": -5.1,
   "seconds": 98.462
  },
+ "sfx/achievement.ogg": {
+  "kb": 19.7,
+  "loop": false,
+  "lufs": -20.0,
+  "peak_db": -10.7,
+  "seconds": 1.9
+ },
  "sfx/bag.ogg": {
-  "kb": 27.5,
+  "kb": 20.5,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -9.2,
   "seconds": 2.2
  },
  "sfx/bonk.ogg": {
-  "kb": 14.2,
+  "kb": 11.6,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -3.8,
   "seconds": 0.85
  },
+ "sfx/boss_down.ogg": {
+  "kb": 44.8,
+  "loop": false,
+  "lufs": -17.0,
+  "peak_db": -4.1,
+  "seconds": 4.0
+ },
+ "sfx/boss_hit.ogg": {
+  "kb": 19.7,
+  "loop": false,
+  "lufs": -18.0,
+  "peak_db": -6.1,
+  "seconds": 1.9
+ },
+ "sfx/boss_loop.ogg": {
+  "kb": 19.1,
+  "loop": false,
+  "lufs": -23.0,
+  "peak_db": -9.2,
+  "seconds": 1.6
+ },
  "sfx/checkpoint.ogg": {
-  "kb": 25.4,
+  "kb": 19.2,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -12.9,
   "seconds": 2.4
  },
  "sfx/climb.ogg": {
-  "kb": 14.7,
+  "kb": 12.5,
   "loop": false,
   "lufs": -23.0,
   "peak_db": -9.6,
   "seconds": 0.85
  },
  "sfx/coin.ogg": {
-  "kb": 7.8,
+  "kb": 6.5,
   "loop": false,
   "lufs": -22.0,
   "peak_db": -13.1,
   "seconds": 0.42
  },
  "sfx/crash.ogg": {
-  "kb": 40.5,
+  "kb": 31.5,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -7.4,
   "seconds": 3.4
  },
  "sfx/crumble.ogg": {
-  "kb": 12.7,
+  "kb": 10.4,
   "loop": false,
   "lufs": -26.0,
   "peak_db": -7.6,
   "seconds": 0.6
  },
  "sfx/dash.ogg": {
-  "kb": 10.7,
+  "kb": 9.1,
   "loop": false,
   "lufs": -25.0,
   "peak_db": -10.8,
   "seconds": 0.6
  },
  "sfx/deck_roll.ogg": {
-  "kb": 32.0,
+  "kb": 29.6,
   "loop": true,
   "lufs": -30.0,
-  "peak_db": -11.3,
+  "peak_db": -12.0,
   "seconds": 4.0
  },
  "sfx/deny.ogg": {
-  "kb": 13.4,
+  "kb": 10.2,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -11.4,
   "seconds": 0.8
  },
  "sfx/finish.ogg": {
-  "kb": 66.5,
+  "kb": 46.4,
   "loop": false,
   "lufs": -17.0,
   "peak_db": -7.6,
   "seconds": 5.5
  },
  "sfx/flip.ogg": {
-  "kb": 10.0,
+  "kb": 8.5,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -16.5,
   "seconds": 0.52
  },
  "sfx/gear.ogg": {
-  "kb": 49.4,
+  "kb": 35.3,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -8.3,
   "seconds": 3.6
  },
+ "sfx/grind.ogg": {
+  "kb": 12.8,
+  "loop": true,
+  "lufs": -27.0,
+  "peak_db": -16.1,
+  "seconds": 1.0
+ },
+ "sfx/grind_on.ogg": {
+  "kb": 11.3,
+  "loop": false,
+  "lufs": -22.0,
+  "peak_db": -6.4,
+  "seconds": 0.75
+ },
  "sfx/hat.ogg": {
-  "kb": 12.2,
+  "kb": 9.8,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -2.0,
   "seconds": 0.8
  },
  "sfx/jump.ogg": {
-  "kb": 11.6,
+  "kb": 9.7,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -14.7,
   "seconds": 0.75
  },
  "sfx/land.ogg": {
-  "kb": 13.5,
+  "kb": 10.9,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -6.5,
   "seconds": 0.8
  },
  "sfx/letter.ogg": {
-  "kb": 15.0,
+  "kb": 11.8,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -13.4,
   "seconds": 1.1
  },
  "sfx/letters_all.ogg": {
-  "kb": 35.0,
+  "kb": 25.7,
   "loop": false,
   "lufs": -18.0,
   "peak_db": -7.6,
   "seconds": 2.6
  },
  "sfx/loop.ogg": {
-  "kb": 25.3,
+  "kb": 19.4,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -15.4,
   "seconds": 2.0
  },
+ "sfx/page.ogg": {
+  "kb": 9.3,
+  "loop": false,
+  "lufs": -28.0,
+  "peak_db": -18.4,
+  "seconds": 0.55
+ },
+ "sfx/part_get.ogg": {
+  "kb": 41.7,
+  "loop": false,
+  "lufs": -17.0,
+  "peak_db": -6.8,
+  "seconds": 4.2
+ },
  "sfx/plane.ogg": {
-  "kb": 11.1,
+  "kb": 10.7,
   "loop": true,
   "lufs": -28.0,
   "peak_db": -14.8,
   "seconds": 1.0
  },
  "sfx/power.ogg": {
-  "kb": 18.4,
+  "kb": 13.6,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -9.2,
   "seconds": 1.2
  },
  "sfx/power_rocket.ogg": {
-  "kb": 27.8,
+  "kb": 23.0,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -2.2,
   "seconds": 1.9
  },
  "sfx/power_sticky.ogg": {
-  "kb": 19.2,
+  "kb": 14.3,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -7.5,
   "seconds": 1.2
  },
  "sfx/prize.ogg": {
-  "kb": 40.3,
+  "kb": 29.1,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -6.5,
   "seconds": 2.8
  },
  "sfx/purchase.ogg": {
-  "kb": 30.6,
+  "kb": 21.9,
   "loop": false,
   "lufs": -20.0,
   "peak_db": -8.9,
   "seconds": 2.2
  },
+ "sfx/rope_grab.ogg": {
+  "kb": 15.2,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -9.7,
+  "seconds": 1.1
+ },
+ "sfx/saucer.ogg": {
+  "kb": 6.5,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -17.4,
+  "seconds": 1.0
+ },
  "sfx/smash.ogg": {
-  "kb": 18.3,
+  "kb": 14.9,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -1.8,
   "seconds": 1.2
  },
  "sfx/splash.ogg": {
-  "kb": 16.9,
+  "kb": 13.6,
   "loop": false,
   "lufs": -27.0,
   "peak_db": -15.9,
   "seconds": 1.0
  },
  "sfx/spring.ogg": {
-  "kb": 15.6,
+  "kb": 12.4,
   "loop": false,
   "lufs": -22.0,
   "peak_db": -7.6,
   "seconds": 1.0
  },
  "sfx/stomp.ogg": {
-  "kb": 16.7,
+  "kb": 13.4,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -5.2,
   "seconds": 1.0
  },
  "sfx/switch.ogg": {
-  "kb": 21.9,
+  "kb": 16.9,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -8.6,
   "seconds": 1.4
  },
  "sfx/tap.ogg": {
-  "kb": 7.5,
+  "kb": 6.5,
   "loop": false,
   "lufs": -26.0,
   "peak_db": -3.3,
   "seconds": 0.247
  },
  "sfx/thunder.ogg": {
-  "kb": 61.2,
+  "kb": 50.9,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -7.3,
   "seconds": 5.5
  },
  "sfx/toggle.ogg": {
-  "kb": 6.6,
+  "kb": 5.8,
   "loop": false,
   "lufs": -28.0,
   "peak_db": -9.1,
   "seconds": 0.168
  },
  "sfx/train_horn.ogg": {
-  "kb": 65.7,
+  "kb": 46.6,
   "loop": false,
   "lufs": -24.9,
   "peak_db": -15.2,
   "seconds": 6.2
  },
  "sfx/trick.ogg": {
-  "kb": 21.3,
+  "kb": 15.8,
   "loop": false,
   "lufs": -21.0,
   "peak_db": -9.2,
   "seconds": 1.55
  },
+ "sfx/wall_on.ogg": {
+  "kb": 14.4,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -4.2,
+  "seconds": 1.1
+ },
  "sfx/wheelie.ogg": {
-  "kb": 13.1,
+  "kb": 10.8,
   "loop": false,
   "lufs": -26.0,
   "peak_db": -11.7,
   "seconds": 0.6
  },
  "sfx/zip_grab.ogg": {
-  "kb": 14.9,
+  "kb": 12.1,
   "loop": false,
   "lufs": -24.0,
   "peak_db": -8.2,
   "seconds": 0.8
  },
  "sfx/zipline.ogg": {
-  "kb": 12.4,
+  "kb": 11.2,
   "loop": true,
   "lufs": -30.0,
   "peak_db": -19.6,

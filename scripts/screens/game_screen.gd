@@ -14,6 +14,7 @@ const WeatherFX := preload("res://scripts/game/weather_fx.gd")
 const Phys := preload("res://scripts/game/bike_physics.gd")
 const Depth := preload("res://scripts/game/depth.gd")
 const HintCard := preload("res://scripts/ui/hint_card.gd")
+const BossArt := preload("res://scripts/game/boss_art.gd")
 
 var level_id := ""
 var world: Node2D
@@ -35,7 +36,9 @@ func _ready() -> void:
 	backdrop = Backdrop.new()
 	bg.add_child(backdrop)
 
-	var cond: Dictionary = GameState.conditions().duplicate()
+	var meta0 := Catalog.level(level_id)
+	# Story trails always ride in their own time and weather.
+	var cond: Dictionary = (meta0.cond as Dictionary).duplicate() if meta0.has("cond") else GameState.conditions().duplicate()
 	world = World.new()
 	world.setup(level_id, GameState.loadout(), GameState.level_record(level_id).gears, cond)
 	if GameState.flag("ghost"):
@@ -72,7 +75,8 @@ func _ready() -> void:
 	add_child(hl)
 	hud = Hud.new()
 	hud.world = world
-	hud.show_hint = Catalog.level_index(level_id) == 0 and not GameState.level_record(level_id).cleared
+	hud.show_hint = (Catalog.level_index(level_id) == 0 or level_id == String(Catalog.story_levels()[0].id)) \
+		and not GameState.level_record(level_id).cleared
 	hud.pause_pressed.connect(pause)
 	hud.hint_pressed.connect(show_hint)
 	var meta := Catalog.level(level_id)
@@ -139,15 +143,15 @@ func pause() -> void:
 	r.pressed.connect(resume)
 	var rs := Kit.button("RESTART", 150)
 	rs.pressed.connect(func(): _go("game", level_id))
-	var q := Kit.button("QUIT TO TRAILS", 150)
-	q.pressed.connect(func(): _go("levels", ""))
+	var q := Kit.button("QUIT TO MAP" if Catalog.is_story(level_id) else "QUIT TO TRAILS", 150)
+	q.pressed.connect(func(): _go(_menu_target(), ""))
 	for b in [r, rs, q]:
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		col.add_child(b)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 2)
 	col.add_child(gap)
-	col.add_child(Widgets.audio_sliders())
+	col.add_child(Widgets.audio_sliders(false))
 	_show_overlay(col)
 
 
@@ -166,14 +170,25 @@ func resume() -> void:
 	get_tree().paused = false
 
 
+func _menu_target() -> String:
+	return "story" if Catalog.is_story(level_id) else "levels"
+
+
 func _on_finished(r: Dictionary) -> void:
 	var pay := GameState.record_result(r)
+	Achievements.on_run(r, pay)
 	if (pay.new_best or pay.first_clear) and r.has("ghost") and (r.ghost as PackedFloat32Array).size() > 0:
 		GameState.save_ghost(level_id, r.get("rig", {}), r.ghost, float(r.get("time", 0.0)))
+	if pay.has("new_part"):
+		_part_recovered(r, pay)
+		return
+	var meta := Catalog.level(level_id)
+	var is_boss: bool = meta.get("boss", false)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 3)
-	col.add_child(Kit.label("TRAIL CLEAR!", 16, UITheme.GOLD))
-	col.add_child(Widgets.GearRow.new(GameState.level_record(level_id).gears))
+	col.add_child(Kit.label("BOSS BEATEN!" if is_boss else "TRAIL CLEAR!", 16, UITheme.GOLD))
+	if not is_boss:
+		col.add_child(Widgets.GearRow.new(GameState.level_record(level_id).gears))
 	var tc := int(r.get("trick_coins", 0))
 	var lb := int(r.get("letter_bonus", 0))
 	var rows := [
@@ -212,14 +227,14 @@ func _on_finished(r: Dictionary) -> void:
 	if r.crashes > 0:
 		extras.append("CRASHES %d" % r.crashes)
 	col.add_child(Kit.label("   ".join(extras), 8, UITheme.DIM))
-	col.add_child(Widgets.MedalRow.new(pay.medals, pay.new_medals, float(pay.par), int(r.get("letters", 0))))
+	col.add_child(Widgets.MedalRow.new(pay.medals, pay.new_medals, float(pay.par), int(r.get("letters", 0)), false, is_boss))
 
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	var retry := Kit.button("RETRY", 70)
 	retry.pressed.connect(func(): _go("game", level_id))
-	var trails := Kit.button("TRAILS", 70)
-	trails.pressed.connect(func(): _go("levels", ""))
+	var trails := Kit.button("MAP" if Catalog.is_story(level_id) else "TRAILS", 70)
+	trails.pressed.connect(func(): _go(_menu_target(), ""))
 	buttons.add_child(retry)
 	buttons.add_child(trails)
 	var nxt := GameState.next_level_id(level_id)
@@ -228,6 +243,42 @@ func _on_finished(r: Dictionary) -> void:
 		nb.pressed.connect(func(): _go("game", nxt))
 		buttons.add_child(nb)
 	col.add_child(buttons)
+	_show_overlay(col)
+
+
+## A boss went down: its part of Grandpa's bike comes home.
+func _part_recovered(r: Dictionary, pay: Dictionary) -> void:
+	var part := String(pay.new_part)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	var meta := Catalog.level(level_id)
+	col.add_child(Kit.label("%s IS DOWN!" % String(meta.name), 8, UITheme.DIM))
+	col.add_child(Kit.label("%s RECOVERED!" % BossArt.part_name(part), 16, UITheme.GOLD))
+	var parts := GameState.story_parts()
+	var bike := Widgets.GrandpaBikeView.new(parts, 1.6, part)
+	bike.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(bike)
+	col.add_child(Kit.label("GRANDPA'S BIKE: %d/%d PARTS" % [parts.size(), Catalog.PARTS.size()], 8, UITheme.CREAM))
+	var nxt := GameState.next_level_id(level_id)
+	var msg := ""
+	if nxt != "":
+		msg = "%s IS OPEN!" % String(Catalog.STORY_AREAS[int(Catalog.level(nxt).story)].name)
+	else:
+		msg = "MORE OF THE COUNTY IS COMING SOON."
+	col.add_child(Kit.label(msg, 8, UITheme.GOLD if nxt != "" else UITheme.DIM))
+	col.add_child(_row("TOTAL", "+%d" % pay.total, UITheme.GOLD))
+	col.add_child(Widgets.MedalRow.new(pay.medals, pay.new_medals, float(pay.par), 0, false, true))
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	var mapb := Kit.button("MAP", 70)
+	mapb.pressed.connect(func(): _go("story", ""))
+	buttons.add_child(mapb)
+	if nxt != "":
+		var nb := Kit.button("NEXT >", 70)
+		nb.pressed.connect(func(): _go("game", nxt))
+		buttons.add_child(nb)
+	col.add_child(buttons)
+	AudioDirector.play("part_get")
 	_show_overlay(col)
 
 

@@ -8,6 +8,7 @@ const Icons := preload("res://scripts/game/icons.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const Kit := preload("res://scripts/ui/kit.gd")
 const Phys := preload("res://scripts/game/bike_physics.gd")
+const BossArt := preload("res://scripts/game/boss_art.gd")
 
 var world: Node2D
 var show_hint := false
@@ -120,11 +121,30 @@ func _draw() -> void:
 	draw_rect(Rect2(x1 - 1, y - 3, 3, 9), UITheme.CREAM)
 	draw_rect(Rect2(x0 + (x1 - x0) * frac - 2, y - 2, 4, 7), UITheme.CREAM)
 
+	# Boss: its name and a pip per hit still to land.
+	if lv.has("boss"):
+		var bname := BossArt.boss_name(String(lv.boss.kind))
+		var hp := int(world.state.boss_hp)
+		var total := int(lv.boss.hp)
+		var bw := font.get_string_size(bname, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x + total * 10.0 + 14.0
+		var bx := floorf((x0 + x1) * 0.5 - bw * 0.5)
+		draw_rect(Rect2(bx, 19, bw, 13), Color(UITheme.INK, 0.75))
+		_text(font, Vector2(bx + 4, 29), bname, Color("ff9a6a") if hp > 0 else UITheme.DIM)
+		for i in total:
+			var px := bx + bw - 6.0 - (total - i) * 10.0 + 4.0
+			var on := i < hp
+			draw_rect(Rect2(px, 22, 7, 7), Color("5a2030") if on else Color("2a2434"))
+			if on:
+				draw_rect(Rect2(px + 1, 23, 5, 5), Color("ff5a5a") if int(_t * 6.0) % 4 != 0 or hp > 1 else Color("ffd0d0"))
+
+	# Crash hint: after a few wrecks in one stretch, a tip (and the dotted line in the world).
+	if world.guide_on and world.guide_tip != "" and world.phase != "crash":
+		_hint_banner(font)
 	if world.phase == "ready" and world.first_ready:
 		var msg := "READY" if world.phase_ticks < 36 else "GO!"
 		_center_text(font, size.y * 0.38, msg, 16, UITheme.GOLD)
 	# First visit: the "?" pulses and a small tag names what's new on this trail.
-	if feature_new and _t < 7.0:
+	if feature_new and _t < 7.0 and not world.guide_on:
 		var pulse := 0.5 + 0.5 * sin(_t * 6.0)
 		var r := _hint_btn.get_rect().grow(2.0 + 2.0 * pulse)
 		draw_rect(r, Color(UITheme.GOLD, 0.35 + 0.5 * pulse), false, 1.0)
@@ -143,6 +163,37 @@ func _draw() -> void:
 		_center_text(font, size.y - 22.0, "TAP TO JUMP - HOLD TO JUMP HIGHER", 8, Color(UITheme.CREAM, a))
 
 
+func _hint_banner(font: Font) -> void:
+	var lines := []
+	# The full tip for the first few seconds back, then just the reminder.
+	if world.ride_time - world.guide_since < 6.0 or (world.guide as Dictionary).is_empty():
+		lines = _wrap(font, "HINT: " + String(world.guide_tip), size.x - 40.0)
+	if not (world.guide as Dictionary).is_empty():
+		lines.append("FOLLOW THE DOTS. BLUE = KEEP HOLDING.")
+	var w := 0.0
+	for l in lines:
+		w = maxf(w, font.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x)
+	var y0 := 36.0
+	var bx := floorf(size.x * 0.5 - w * 0.5) - 6.0
+	draw_rect(Rect2(bx, y0, w + 12.0, lines.size() * 11.0 + 6.0), Color(UITheme.INK, 0.82))
+	draw_rect(Rect2(bx, y0, w + 12.0, lines.size() * 11.0 + 6.0), Color(UITheme.GOLD, 0.6), false, 1.0)
+	for i in lines.size():
+		var legend: bool = i == lines.size() - 1 and not (world.guide as Dictionary).is_empty()
+		var c := Color("7fe0ff") if legend else (UITheme.GOLD if i == 0 else UITheme.CREAM)
+		_text(font, Vector2(bx + 6.0, y0 + 12.0 + i * 11.0), String(lines[i]), c)
+
+
+func _wrap(font: Font, text: String, max_w: float) -> Array:
+	var out := [""]
+	for word in text.split(" "):
+		var trial: String = (out[out.size() - 1] + " " + word).strip_edges()
+		if font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x > max_w and out[out.size() - 1] != "":
+			out.append(word)
+		else:
+			out[out.size() - 1] = trial
+	return out
+
+
 func _mini_letter(font: Font, p: Vector2, ch: String, lit: bool) -> void:
 	draw_rect(Rect2(p.x, p.y, 10, 11), Icons.GOLD_DARK if lit else Color(0.35, 0.32, 0.4, 0.9))
 	draw_rect(Rect2(p.x + 1, p.y + 1, 8, 9), Icons.GOLD if lit else Color(0.16, 0.14, 0.2, 0.9))
@@ -158,7 +209,7 @@ func _ability_active() -> bool:
 		"hop", "dash":
 			return not st.grounded and not bool(st.air_used) and int(st.zip) < 0 and int(st.loop) < 0
 		"glide":
-			return not st.grounded and float(st.vy) > 0.0 and world.held_now
+			return not st.grounded and float(st.vy) > 0.0 and world.held_now and Phys.umbrella_ok(world.level, st)
 		"tough":
 			return int(st.armor) > 0
 	return false

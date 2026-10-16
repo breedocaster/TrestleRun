@@ -398,6 +398,101 @@ def build(kenney_dir):
         place(la, chime(midi_hz(m), 0.6, bright=0.8, decay=0.4) * 0.8, i * 0.07)
     out["letters_all"] = _finish(la, IR_LONG, wet=0.35, tail=0.8, lufs=-18)
 
+    # --- v0.8: hold moves, bosses, story, achievements ------------------------------
+    # Grind rail: a steel clank as the pegs bite, then a seamless scraping hiss loop
+    # (one second, sparks crackling in it).
+    gc = np.zeros(int(0.5 * SR))
+    tt = _t(0.3)
+    clank = sum(a * np.sin(2 * np.pi * f * tt) * np.exp(-tt / d) for f, a, d in ((880, 1.0, 0.08), (1430, 0.7, 0.06), (2310, 0.5, 0.04)))
+    place(gc, 0.45 * clank, 0.0)
+    place(gc, 0.5 * thock(0.2, 160), 0.0)
+    out["grind_on"] = _finish(gc, wet=0.2, tail=0.25, lufs=-22, hp=120)
+    n = int(1.0 * SR)
+    scrape = sosc(sos_bp(2200, 7000), RNG.standard_normal(n))
+    scrape *= 0.75 + 0.25 * np.sin(2 * np.pi * 13 * np.arange(n) / SR)
+    ring = np.sin(2 * np.pi * 1760 * np.arange(n) / SR) * (0.5 + 0.5 * np.sin(2 * np.pi * 7 * np.arange(n) / SR))
+    sparks = np.zeros(n)
+    for _ in range(40):
+        i0 = RNG.integers(0, n - 400)
+        sparks[i0:i0 + 300] += RNG.uniform(-1, 1) * np.exp(-np.arange(300) / 40.0)
+    sparks = sosc(sos_hp(3000), sparks)
+    gr = scrape / (np.abs(scrape).max() + 1e-9) + 0.12 * ring + 0.5 * sparks / (np.abs(sparks).max() + 1e-9)
+    out["grind"] = norm_lufs(gr, -27)
+
+    # Wall-ride: the tyres slap onto the boards and the wall booms under you.
+    wo = np.zeros(int(0.7 * SR))
+    place(wo, 0.9 * thock(0.4, 110), 0.0)
+    place(wo, 0.6 * wood(midi_hz(50), 0.4, decay=0.6), 0.01)
+    place(wo, 0.4 * whoosh(0.5, 300, 900, 0.15), 0.0)
+    out["wall_on"] = _finish(wo, wet=0.3, tail=0.4, lufs=-21, hp=40)
+
+    # Rope: a creak of rope taking the weight, and an airy swing.
+    rg = np.zeros(int(0.8 * SR))
+    tr = _t(0.3)
+    creak = signal.sawtooth(2 * np.pi * np.cumsum(140 + 60 * np.sin(2 * np.pi * 3 * tr)) / SR) * np.exp(-tr / 0.12)
+    place(rg, 0.35 * sosc(sos_bp(300, 2500), creak), 0.0)
+    place(rg, 0.6 * whoosh(0.6, 300, 1200, 0.25), 0.02)
+    out["rope_grab"] = _finish(rg, wet=0.2, tail=0.3, lufs=-24, hp=120)
+
+    # Boss hit: a big hollow metal bong, the glass ringing, and a squeaky alien yelp.
+    bh = np.zeros(int(1.4 * SR))
+    tb = _t(1.0)
+    bong = sum(a * np.sin(2 * np.pi * f * tb) * np.exp(-tb / d) for f, a, d in ((196, 1.0, 0.35), (311, 0.6, 0.25), (523, 0.4, 0.18), (1244, 0.2, 0.08)))
+    place(bh, 0.7 * bong, 0.0)
+    place(bh, 0.6 * thock(0.3, 120), 0.0)
+    ty = _t(0.35)
+    yelp = np.sin(2 * np.pi * np.cumsum(900 + 700 * np.sin(2 * np.pi * 9 * ty) * np.exp(-ty / 0.2)) / SR) * np.exp(-ty / 0.15)
+    place(bh, 0.25 * yelp, 0.08)
+    place(bh, 0.5 * chime(midi_hz(86), 0.5, bright=0.8, decay=0.3), 0.05)
+    out["boss_hit"] = _finish(bh, wet=0.3, tail=0.5, lufs=-18, hp=50)
+
+    # Boss knocked out: a crumpling bang, a falling alien warble, then sparkle.
+    bd = np.zeros(int(3.0 * SR))
+    tn = _t(1.2)
+    boom = sosc(sos_lp(600), RNG.standard_normal(len(tn))) * np.exp(-tn / 0.35)
+    place(bd, 1.2 * boom / (np.abs(boom).max() + 1e-9), 0.0)
+    place(bd, 0.6 * imp / (np.max(np.abs(imp)) + 1e-9), 0.0)
+    tw = _t(1.4)
+    warble = np.sin(2 * np.pi * np.cumsum(700 * np.exp(-tw / 0.6) + 120 + 80 * np.sin(2 * np.pi * 11 * tw)) / SR) * np.exp(-tw / 0.6)
+    place(bd, 0.3 * warble, 0.2)
+    place(bd, sparkle(1.6, 14), 0.9)
+    out["boss_down"] = _finish(bd, IR_LONG, wet=0.35, tail=1.0, lufs=-17, hp=40)
+
+    # It circles round: a rising whoosh with alien beeps.
+    bl = whoosh(1.2, 200, 1600, 0.8)
+    for i in range(4):
+        tq = _t(0.08)
+        place(bl, 0.12 * np.sin(2 * np.pi * (1200 + 300 * i) * tq) * np.exp(-tq / 0.03), 0.15 + i * 0.12)
+    out["boss_loop"] = _finish(bl, wet=0.3, tail=0.4, lufs=-23, hp=150)
+
+    # Part recovered: a bigger cousin of the gear chime, with the guitar.
+    pg = np.zeros(int(3.0 * SR))
+    for i, m in enumerate([62, 66, 69, 74]):
+        place(pg, 0.45 * pluck(midi_hz(m), 2.5, t60=2.2), i * 0.04)
+    for i, m in enumerate([74, 78, 81, 86, 90, 93]):
+        place(pg, chime(midi_hz(m), 1.4, decay=0.9) * 0.75, 0.15 + i * 0.07)
+    place(pg, sparkle(1.8, 16), 0.4)
+    out["part_get"] = _finish(pg, IR_LONG, wet=0.4, tail=1.2, lufs=-17)
+
+    # Saucer hum (loop): a low, wobbling drone for a boss nearby.
+    tt = np.arange(n) / SR
+    hum = sum(a * np.sin(2 * np.pi * f * tt + RNG.random() * 6.28) for f, a in ((55, 1.0), (110, 0.6), (165, 0.25), (440, 0.08)))
+    hum *= 0.7 + 0.3 * np.sin(2 * np.pi * 4 * tt)
+    out["saucer"] = norm_lufs(sosc(sos_lp(900), hum), -30)
+
+    # Achievement: three bright notes up, a little sparkle.
+    ac = np.zeros(int(1.4 * SR))
+    for i, m in enumerate([81, 86, 93]):
+        place(ac, chime(midi_hz(m), 0.6, bright=0.9, decay=0.4) * 0.8, i * 0.09)
+    place(ac, sparkle(0.8, 8), 0.2)
+    out["achievement"] = _finish(ac, wet=0.3, tail=0.5, lufs=-20)
+
+    # Story comic: a paper page turn.
+    pt = whoosh(0.35, 1800, 4200, 0.12) * 0.8
+    tq = _t(0.06)
+    place(pt, 0.2 * sosc(sos_hp(2000), RNG.standard_normal(len(tq))) * np.exp(-tq / 0.015), 0.22)
+    out["page"] = _finish(pt, wet=0.12, tail=0.2, lufs=-28, hp=600)
+
     # Rolling over deck plank joints: front then rear wheel, every 64 px at 128 px/s.
     period, wheelbase, n = 0.5, 0.125, int(4.0 * SR)
     roll = np.zeros(n)

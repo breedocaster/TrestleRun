@@ -189,6 +189,46 @@ static func zip(ci: CanvasItem, z: Dictionary, g0: float, g1: float, th: Diction
 	ci.draw_line(a, b, Color("2a2d36"), -1.0)
 
 
+## A rope swing: the anchor (a beam, branch or crane arm) and the rope, taut down to
+## the rider's hands (end) or hanging loose with a little sway.
+static func rope(ci: CanvasItem, r: Dictionary, end: Vector2, t: float, th: Dictionary, kind: String) -> void:
+	var a := Vector2(r.ax, r.ay)
+	var length := float(r.len)
+	match kind:
+		"branch":
+			# A thick tree limb reaching in from the left, a knot at the rope.
+			var bark: Color = Color("5a3e2a")
+			ci.draw_line(a + Vector2(-60, -14), a + Vector2(6, 0), bark, 5.0)
+			ci.draw_line(a + Vector2(-40, -10), a + Vector2(-48, -26), bark, 3.0)
+			ci.draw_circle(a + Vector2(-20, -16), 9.0, Color("3f7a3a"))
+			ci.draw_circle(a + Vector2(-34, -22), 8.0, Color("4e8a3a"))
+			ci.draw_circle(a + Vector2(-6, -12), 7.0, Color("4e8a3a"))
+		"crane":
+			ci.draw_rect(Rect2(a.x - 40, a.y - 4, 50, 4), STEEL)
+			ci.draw_rect(Rect2(a.x - 40, a.y - 4, 50, 1), STEEL_HI)
+			ci.draw_rect(Rect2(a.x - 3, a.y - 1, 6, 4), HAZARD)
+		_:
+			# A timber beam on a post (a hay-loft hoist).
+			ci.draw_rect(Rect2(a.x - 46, a.y - 4, 54, 5), th.beam)
+			ci.draw_rect(Rect2(a.x - 46, a.y - 4, 54, 1), (th.beam as Color).lightened(0.2))
+			ci.draw_rect(Rect2(a.x - 44, a.y, 4, 160), th.beam)
+			ci.draw_line(a + Vector2(-40, 20), a + Vector2(-16, 0), th.beam_dark, 2.0)
+	var tip := end
+	if tip == Vector2.INF:
+		var sway := 0.07 * sin(t * 1.7 + float(r.ax) * 0.07)
+		tip = a + length * Vector2(sin(sway), cos(sway))
+	var rope_c := Color("c9a46a")
+	ci.draw_line(a, tip, Color("6b5a44"), 2.0)
+	ci.draw_line(a, tip, rope_c, -1.0)
+	# Knots along it, and a handle at the bottom.
+	for k in [0.4, 0.7]:
+		var kp := a.lerp(tip, k)
+		ci.draw_rect(Rect2(kp.x - 1, kp.y - 1, 3, 2), Color("8a6a40"))
+	if end == Vector2.INF:
+		ci.draw_rect(Rect2(tip.x - 3, tip.y - 1, 6, 3), Color("8a6a40"))
+		ci.draw_circle(tip + Vector2(0, -6), 5.0, Color(1.0, 0.95, 0.7, 0.12 + 0.08 * sin(t * 5.0)))
+
+
 ## The trolley a rider hangs from: wheels on the cable, a bar down to the hands.
 static func trolley(ci: CanvasItem, on_cable: Vector2, grip: Vector2) -> void:
 	ci.draw_line(on_cable + Vector2(-2, 2), grip + Vector2(-2, 0), STEEL_HI, -1.0)
