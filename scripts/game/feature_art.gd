@@ -65,20 +65,24 @@ static func tunnel_back(ci: CanvasItem, c: Dictionary, th: Dictionary, bottom: f
 
 
 ## Tunnel roof and portals (drawn after the tracks, still behind the bike).
-static func tunnel_front(ci: CanvasItem, c: Dictionary, th: Dictionary, top: float) -> void:
+static func tunnel_front(ci: CanvasItem, c: Dictionary, th: Dictionary, top: float, t := 0.0) -> void:
 	var x0: float = c.x0
 	var x1: float = c.x1
 	var deck: float = c.deck
 	var cy: float = deck - float(c.h)
 	var rock: Color = (th.mid as Color).darkened(0.25)
 	var rock_hi: Color = (th.mid as Color).lightened(0.08)
-	# Mesa mass over the tunnel with sloped shoulders at both ends.
-	var poly := PackedVector2Array([
-		Vector2(x0 - 14, cy), Vector2(x0 - 6, cy - 40), Vector2(x0 + 18, cy - 70), Vector2(x0 + 30, top),
-		Vector2(x1 - 30, top), Vector2(x1 - 18, cy - 70), Vector2(x1 + 6, cy - 40), Vector2(x1 + 14, cy)])
-	ci.draw_colored_polygon(poly, rock)
-	ci.draw_line(Vector2(x0 - 6, cy - 40), Vector2(x0 + 18, cy - 70), rock_hi, -1.0)
-	ci.draw_line(Vector2(x1 - 18, cy - 70), Vector2(x1 + 6, cy - 40), rock_hi, -1.0)
+	var cliff_top := float(c.get("top", -INF))
+	if cliff_top > -INF:
+		_cliff(ci, x0, x1, cliff_top, cy, rock, rock_hi, t)
+	else:
+		# Mesa mass over the tunnel with sloped shoulders at both ends.
+		var poly := PackedVector2Array([
+			Vector2(x0 - 14, cy), Vector2(x0 - 6, cy - 40), Vector2(x0 + 18, cy - 70), Vector2(x0 + 30, top),
+			Vector2(x1 - 30, top), Vector2(x1 - 18, cy - 70), Vector2(x1 + 6, cy - 40), Vector2(x1 + 14, cy)])
+		ci.draw_colored_polygon(poly, rock)
+		ci.draw_line(Vector2(x0 - 6, cy - 40), Vector2(x0 + 18, cy - 70), rock_hi, -1.0)
+		ci.draw_line(Vector2(x1 - 18, cy - 70), Vector2(x1 + 6, cy - 40), rock_hi, -1.0)
 	# Roof timbers: a lintel along the ceiling and posts every 48 px.
 	var timber: Color = th.beam
 	var dark: Color = th.beam_dark
@@ -92,6 +96,31 @@ static func tunnel_front(ci: CanvasItem, c: Dictionary, th: Dictionary, top: flo
 	for ex in [x0, x1]:
 		ci.draw_rect(Rect2(ex - 5, cy - 6, 4, float(c.h) + 6), timber)
 		ci.draw_rect(Rect2(ex - 7, cy - 8, 8, 3), dark)
+
+
+## A sheer cliff over a tunnel: flat top (a deck rides on it), a vertical face at x0
+## painted with green chevrons (sticky tires climb here), and a rougher back slope.
+static func _cliff(ci: CanvasItem, x0: float, x1: float, top: float, cy: float, rock: Color,
+		rock_hi: Color, t: float) -> void:
+	var body := PackedVector2Array([Vector2(x0, top + 5), Vector2(x1, top + 5), Vector2(x1 + 4, top + 20),
+		Vector2(x1 + 12, cy), Vector2(x0, cy)])
+	ci.draw_colored_polygon(body, rock)
+	ci.draw_rect(Rect2(x0, top + 5, 2, cy - top - 5), rock_hi)
+	# Strata.
+	var yy := top + 14.0
+	while yy < cy - 4.0:
+		var sx := x0 + 6.0 + fposmod(yy * 5.3, 30.0)
+		while sx < x1 - 10.0:
+			ci.draw_rect(Rect2(sx, yy, 12 + fposmod(sx * 2.7, 16.0), 1), rock.darkened(0.15))
+			sx += 40.0
+		yy += 10.0
+	# Climbing marks on the face.
+	var g := Color(0.45, 1.0, 0.35, 0.65 + 0.3 * sin(t * 4.0))
+	var my := cy - 8.0
+	while my > top + 12.0:
+		ci.draw_line(Vector2(x0 + 1, my), Vector2(x0 + 4, my - 4), g, 2.0)
+		ci.draw_line(Vector2(x0 + 4, my - 4), Vector2(x0 + 7, my), g, 2.0)
+		my -= 14.0
 
 
 ## Loop-the-loop ring with plank ticks and a scaffold underneath.

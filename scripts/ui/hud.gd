@@ -80,6 +80,31 @@ func _draw() -> void:
 			for i in 4:
 				var on := gust > (i + 0.5) / 4.0
 				draw_rect(Rect2(bx + 17 + i * 3, 15 - i * 2, 2, 3 + i * 2), UITheme.GOLD if on else Color("4a4058"))
+	# T-R-E-S-T-L-E letters found this run.
+	var word := "TRESTLE"
+	if world.level.pickups.any(func(p): return int(p.type) == 3):
+		draw_rect(Rect2(4, 25, 7 * 12 + 4, 14), Color(UITheme.INK, 0.6))
+		for i in word.length():
+			var lit: bool = world.letters & (1 << i)
+			_mini_letter(font, Vector2(6 + i * 12, 26), word[i], lit)
+	# Power-ups: an icon and a draining bar for each one running; the hard hat waits.
+	var st: Dictionary = world.state
+	var py := 46.0
+	for k in [["sticky", "sticky_t", Phys.STICKY_T], ["rocket", "rocket_t", Phys.ROCKET_T], ["magnet", "magnet_t", Phys.MAGNET_T]]:
+		var left := float(st[k[1]])
+		if left <= 0.0:
+			continue
+		var frac := left / float(k[2])
+		var blink := left > 1.5 or int(_t * 8.0) % 2 == 0
+		draw_rect(Rect2(4, py - 7, 52, 14), Color(UITheme.INK, 0.6))
+		if blink:
+			Icons.power(self, Vector2(12, py), String(k[0]), _t, false)
+		draw_rect(Rect2(21, py - 2, 32, 4), Color("2a2434"))
+		draw_rect(Rect2(21, py - 2, 32 * frac, 4), Color("9fffd0") if String(k[0]) != "rocket" else Color("ffb347"))
+		py += 16.0
+	if int(st.hat) > 0:
+		draw_rect(Rect2(4, py - 7, 18, 14), Color(UITheme.INK, 0.6))
+		Icons.hard_hat(self, Vector2(13, py + 2))
 	# Progress strip.
 	var lv: Dictionary = world.level
 	var x0 := maxf(size.x * 0.36, 160.0)
@@ -116,6 +141,13 @@ func _draw() -> void:
 	if show_hint and world.state.x < lv.start_x + 520.0:
 		var a := 0.6 + 0.4 * sin(_t * 4.0)
 		_center_text(font, size.y - 22.0, "TAP TO JUMP - HOLD TO JUMP HIGHER", 8, Color(UITheme.CREAM, a))
+
+
+func _mini_letter(font: Font, p: Vector2, ch: String, lit: bool) -> void:
+	draw_rect(Rect2(p.x, p.y, 10, 11), Icons.GOLD_DARK if lit else Color(0.35, 0.32, 0.4, 0.9))
+	draw_rect(Rect2(p.x + 1, p.y + 1, 8, 9), Icons.GOLD if lit else Color(0.16, 0.14, 0.2, 0.9))
+	draw_string(font, Vector2(p.x + 1, p.y + 9), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+		Color("4a2a10") if lit else Color(0.55, 0.5, 0.62))
 
 
 func _ability_active() -> bool:

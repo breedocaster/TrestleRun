@@ -62,15 +62,18 @@ func _ready() -> void:
 					stage = a.substr(8)
 			if stage != "":
 				var Demo = load("res://scripts/dev/demo.gd")
-				w.level = load("res://scripts/game/level_library.gd").build_layout(Demo.STAGES[stage], Catalog.level(parts[1]))
-				load("res://scripts/game/bike_physics.gd").apply_weather(w.level, String(w.cond.weather))
-				w.state = load("res://scripts/game/bike_physics.gd").new_state(w.level, 40.0, 0, 0.0, w.ability)
+				w.replace_level(load("res://scripts/game/level_library.gd").build_layout(Demo.STAGES[stage], Catalog.level(parts[1])))
 				var sh = Demo.Showoff.new()
 				sh.bot = Bot.new(w.level)
 				sh.mode = stage
 				w.bot = sh
 			else:
 				w.bot = Bot.new(w.level)
+			if "--ghost" in args:
+				var Demo2 = load("res://scripts/dev/demo.gd")
+				w.set_ghost(Demo2._bot_ghost(parts[1], 300.0, "sport"))
+				Demo2._teleport(w, 300.0)
+				print("GHOST frames=%d view=%s" % [(w.ghost.frames as PackedFloat32Array).size(), w._ghost_view])
 			if parts[0] == "results":
 				while w.result.is_empty() and w.ticks < 60 * 400:
 					w.tick()
@@ -81,6 +84,19 @@ func _ready() -> void:
 					# Ride until the plane's prize sack is just behind the rider.
 					while (w.plane.is_empty() or w.prize_pos().x < w.state.x - 60.0) and w.ticks < 60 * 400:
 						w.tick()
+				elif parts[2].begins_with("flip"):
+					# Ride to the Nth flip, caught mid-spin.
+					var n := int(parts[2].substr(4)) if parts[2].length() > 4 else 1
+					var seen := 0
+					var was := false
+					while w.ticks < 60 * 400:
+						w.tick()
+						var on: bool = int(w.state.flip_dir) != 0 and float(w.state.flip_a) > 2.4
+						if on and not was:
+							seen += 1
+							if seen >= n:
+								break
+						was = on
 				elif parts[2].begins_with("x"):
 					var tx := float(parts[2].substr(1))
 					while w.state.x < tx and w.ticks < 60 * 400:
@@ -117,6 +133,8 @@ func _ready() -> void:
 			await get_tree().process_frame
 			main.current._show_setup(parts[1])
 			main.current._show_hint(parts[1])
+			if parts.size() > 2:
+				main.current._hint.get_child(1).get_child(0)._show_page(int(parts[2]))
 		_:
 			main.navigate(parts[0], "")
 	var frames := 10
@@ -125,6 +143,9 @@ func _ready() -> void:
 			frames = int(a.substr(9))
 	for i in frames:
 		await get_tree().process_frame
+	if "--ghost" in args and main.current.get("world") != null:
+		var gw = main.current.world
+		print("GHOST at ride_time=%.2f rider_x=%.1f ghost_vis=%s pos=%s" % [gw.ride_time, gw.state.x, gw._ghost_view.visible, gw._ghost_view.position])
 	var img := get_viewport().get_texture().get_image()
 	img.save_png(out)
 	print("SHOT saved ", out, " ", img.get_size())

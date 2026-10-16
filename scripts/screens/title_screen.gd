@@ -160,6 +160,12 @@ func _open_settings() -> void:
 	v.add_theme_constant_override("separation", 8)
 	v.add_child(Kit.label("SETTINGS", 16, UITheme.GOLD))
 	v.add_child(Widgets.audio_sliders())
+	var gb := Kit.button("GHOST RUN: %s" % ("ON" if GameState.flag("ghost") else "OFF"), 160, 22)
+	gb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	gb.pressed.connect(func():
+		GameState.set_flag("ghost", not GameState.flag("ghost"))
+		gb.text = "GHOST RUN: %s" % ("ON" if GameState.flag("ghost") else "OFF"))
+	v.add_child(gb)
 	var done := Kit.button("DONE", 100, 26)
 	done.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	done.pressed.connect(_close_settings)

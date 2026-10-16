@@ -14,6 +14,15 @@ var current: Node
 func _ready() -> void:
 	get_tree().set_quit_on_go_back(false)
 	var args := OS.get_cmdline_user_args()
+	# Dev runs: if any game script fails to compile, quit instead of hanging headless.
+	if args.size() > 0 and args[0].begins_with("--") and args[0] != "--input-test":
+		for path in ["res://scripts/game/world.gd", "res://scripts/game/bike_physics.gd", "res://scripts/game/level_library.gd",
+				"res://scripts/game/autopilot.gd", "res://scripts/dev/demo.gd", "res://scripts/dev/probe.gd"]:
+			var sc = load(path)
+			if sc == null or not sc.can_instantiate():
+				push_error("DEV: script failed to load: " + path)
+				get_tree().quit(3)
+				return
 	for a in args:
 		if a == "--verify":
 			add_child(load("res://scripts/dev/verify.gd").new())
@@ -26,6 +35,12 @@ func _ready() -> void:
 			return
 		if a == "--difficulty":
 			add_child(load("res://scripts/dev/difficulty.gd").new())
+			return
+		if a == "--par":
+			add_child(load("res://scripts/dev/par.gd").new())
+			return
+		if a == "--place-letters":
+			add_child(load("res://scripts/dev/place_letters.gd").new())
 			return
 		if a == "--probe":
 			add_child(load("res://scripts/dev/probe.gd").new())

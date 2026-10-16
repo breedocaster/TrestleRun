@@ -20,32 +20,68 @@ func _init(id: String) -> void:
 	level_id = id
 
 
+var _page := 0
+var _box: VBoxContainer
+
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_box = VBoxContainer.new()
+	_box.add_theme_constant_override("separation", 4)
+	add_child(_box)
+	_show_page(0)
+
+
+## One page per thing this trail introduces (main feature first).
+func _show_page(i: int) -> void:
+	_page = i
+	for c in _box.get_children():
+		_box.remove_child(c)
+		c.queue_free()
 	var meta := Catalog.level(level_id)
-	var feat: Array = Catalog.FEATURES.get(String(meta.get("feature", "jump")), ["", "", ""])
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 4)
-	v.add_child(Kit.label("NEW ON TRAIL %d: %s" % [Catalog.level_index(level_id) + 1, String(meta.get("name", ""))], 8, UITheme.DIM))
-	v.add_child(Kit.label(String(feat[0]), 16, UITheme.GOLD))
+	var feats := Catalog.level_features(meta)
+	var key := String(feats[i])
+	var feat: Array = Catalog.FEATURES.get(key, ["", "", ""])
+	var head := "NEW ON TRAIL %d: %s" % [Catalog.level_index(level_id) + 1, String(meta.get("name", ""))]
+	if feats.size() > 1:
+		head += "  (%d/%d)" % [i + 1, feats.size()]
+	_box.add_child(Kit.label(head, 8, UITheme.DIM))
+	_box.add_child(Kit.label(String(feat[0]), 16, UITheme.GOLD))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
-	var demo := DemoView.new(level_id, String(meta.get("feature", "jump")))
-	row.add_child(demo)
+	row.add_child(DemoView.new(level_id, key))
 	var text := VBoxContainer.new()
 	text.add_theme_constant_override("separation", 3)
 	text.custom_minimum_size = Vector2(212, 0)
 	text.add_child(_head("WHAT IT IS"))
 	text.add_child(_body(String(feat[1])))
-	text.add_child(_head("HOW TO GET PAST IT"))
+	var how := "HOW TO GET PAST IT"
+	if key in ["trick", "switch"]:
+		how = "HOW TO DO IT"
+	elif key in ["magnet", "hat", "sticky", "rocket"]:
+		how = "HOW TO USE IT"
+	elif key == "chase":
+		how = "HOW TO STAY AHEAD"
+	text.add_child(_head(how))
 	text.add_child(_body(String(feat[2])))
 	row.add_child(text)
-	v.add_child(row)
-	var ok := Kit.button("GOT IT", 110, 24)
-	ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	ok.pressed.connect(func(): closed.emit())
-	v.add_child(ok)
-	add_child(v)
+	_box.add_child(row)
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 8)
+	if i > 0:
+		var back := Kit.button("< BACK", 80, 24)
+		back.pressed.connect(func(): _show_page(i - 1))
+		btns.add_child(back)
+	if i < feats.size() - 1:
+		var nxt := Kit.button("NEXT: %s >" % String(Catalog.FEATURES.get(String(feats[i + 1]), [""])[0]), 0, 24)
+		nxt.pressed.connect(func(): _show_page(i + 1))
+		btns.add_child(nxt)
+	else:
+		var ok := Kit.button("GOT IT", 110, 24)
+		ok.pressed.connect(func(): closed.emit())
+		btns.add_child(ok)
+	_box.add_child(btns)
 
 
 func _head(s: String) -> Label:
@@ -110,11 +146,20 @@ class DemoView extends SubViewportContainer:
 		# Minimal autopilot: it only jumps when it has to, so it rolls into springs and
 		# loops instead of hopping around for coins.
 		var ap = Autopilot.new(world.level)
-		ap.collect = false
+		ap.collect = feature in ["sticky", "rocket", "magnet"]
+		ap.tricks = feature == "trick"
 		world.bot = ap
+		if feature == "hat":
+			world.bot = RideStraight.new()  # runs into the spiker so the hat can save it
 		world.run_finished.connect(func(_r): _spawn.call_deferred())
 		vp.add_child(world)
 
 	func _process(_delta: float) -> void:
 		if world and world.cam:
 			backdrop.cam = world.cam.position
+
+
+## Demo rider that never presses (shows the hard hat taking a hit).
+class RideStraight extends RefCounted:
+	func decide(_s: Dictionary) -> Array:
+		return [false, false]

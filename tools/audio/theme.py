@@ -16,6 +16,10 @@ BARS = 32
 T = BARS * 4 * BEAT
 N = int(round(T * SR))
 RNG = np.random.default_rng(1978)
+INTRO = 8      # bars of guitar + pad before bass and drums come in
+STYLE = "brush"  # drum feel: brush (theme), train (driving 8ths), sparse (kick + one brush)
+TRANS = 0      # semitones up from D
+GTR_LP = 7500
 
 CHORDS = {  # bass, upper voicing (MIDI)
     "Dmaj7": (50, [57, 61, 66, 69]),
@@ -30,9 +34,13 @@ CHORDS = {  # bass, upper voicing (MIDI)
 A = ["Dmaj7", "F#m7", "Gmaj7", "Gm6", "Dmaj7", "Bm7", "Em9", "A7sus4"]
 B = ["Gmaj7", "A6", "F#m7", "Bm7", "Gmaj7", "Gm6", "Dmaj7", "A7sus4"]
 PROG = A + A + B + A
+CHORDS.update({
+    "Bm9": (47, [57, 61, 62, 66]),
+    "F#7sus4": (42, [59, 61, 64, 66]),
+})
 
 # (bar, beat, beats, midi, glide_from or None)
-MELODY = [
+MELODY_THEME = MELODY = [
     (16, 0, 2, 71, 69), (16, 2, 1, 69, None), (16, 3, 1, 66, None),
     (17, 0, 2, 64, None), (17, 2, 2, 66, 64),
     (18, 0, 3, 69, 66), (18, 3, 1, 73, None),
@@ -49,6 +57,22 @@ MELODY = [
     (29, 0, 2, 66, None), (29, 2, 2, 69, None),
     (30, 0, 3, 71, None), (30, 3, 1, 69, None),
 ]
+
+
+def configure(bpm=78.0, bars=32, prog=None, melody=None, intro=8, style="brush", trans=0,
+              lead_from=16, seed=1978, gtr_lp=7500, mix_db=None):
+    """Re-point the composer at another arrangement (module globals, read at render)."""
+    global BPM, BEAT, BARS, T, N, RNG, PROG, MELODY, INTRO, STYLE, TRANS, ACTIVE, GTR_LP, MIX_DB
+    BPM, BARS, INTRO, STYLE, TRANS, GTR_LP = bpm, bars, intro, style, trans, gtr_lp
+    BEAT = 60.0 / BPM
+    T = BARS * 4 * BEAT
+    N = int(round(T * SR))
+    RNG = np.random.default_rng(seed)
+    PROG = prog if prog is not None else A + A + B + A
+    MELODY = melody if melody is not None else MELODY_THEME
+    ACTIVE = {"gtr": (0, bars), "pad": (0, bars), "bass": (intro, bars), "drums": (intro, bars - 1),
+              "lead": (lead_from, bars - 1)}
+    MIX_DB = dict(MIX_DB_THEME, **(mix_db or {}))
 
 
 def seamless(f):
@@ -73,11 +97,13 @@ def guitar():
     g = np.zeros(N)
     for bar, name in enumerate(PROG):
         bass, up = CHORDS[name]
-        alt = bass + 7 if bass + 7 <= 52 else bass - 5
+        bass += TRANS
+        up = [u + TRANS for u in up]
+        alt = bass + 7 if bass + 7 <= 52 + TRANS else bass - 5
         pattern = [bass, up[1], up[0], up[2], alt, up[3], up[1], up[2]]
-        intro = bar < 8
+        intro = bar < INTRO
         for i, m in enumerate(pattern):
-            if intro and i in (5, 7) and bar < 4:
+            if intro and i in (5, 7) and bar < INTRO // 2:
                 continue  # sparser first bars
             vel = (1.0 if i in (0, 4) else 0.72) * RNG.uniform(0.88, 1.08) * (0.85 if intro else 1.0)
             at = bar_t(bar, i * 0.5) + RNG.normal(0, 0.006)
@@ -85,7 +111,7 @@ def guitar():
             add_wrapped(g, vel * pluck(midi_hz(m), dur, bright=0.28, t60=2.6 if i in (0, 4) else 2.0, pick=0.2), at)
     g = sosc(peak(115, 2.0, 1.0), g)
     g = sosc(peak(2800, -3.0, 0.8), g)
-    g = sosc(sos_lp(7500), g)
+    g = sosc(sos_lp(GTR_LP), g)
     t = np.arange(N) / SR
     trem = 1.0 - 0.28 * (0.5 + 0.5 * np.sin(2 * np.pi * seamless(4.6) * t))
     g *= trem
@@ -122,9 +148,9 @@ def pad():
     env = np.where(t_note > rel_start, env * np.exp(-(t_note - rel_start) / 0.45), env)
     for bar, name in enumerate(PROG):
         _, up = CHORDS[name]
-        lvl = 0.5 if bar < 8 else 0.7
+        lvl = 0.5 if bar < INTRO else 0.7
         for j, m in enumerate(up):
-            f = midi_hz(m)
+            f = midi_hz(m + TRANS)
             for k, det in enumerate((-6, 0, 6)):
                 ff = f * 2 ** (det / 1200)
                 ph = (ff * t_note + RNG.random()) % 1.0
@@ -142,10 +168,14 @@ def bass():
     env = (1 - np.exp(-t / 0.008)) * (0.5 + 0.5 * np.exp(-t / 0.6))
     env[-int(0.08 * SR):] *= np.linspace(1, 0, int(0.08 * SR))
     for bar, name in enumerate(PROG):
-        if bar < 8:
+        if bar < INTRO:
             continue
         root, _ = CHORDS[name]
-        for beat, m in ((0, root), (2, root + 7 if name not in ("Gm6", "Em9") else root)):
+        root += TRANS
+        beats = ((0, root), (2, root + 7 if name not in ("Gm6", "Em9") else root))
+        if STYLE == "train":  # root-fifth on every beat
+            beats = ((0, root), (1, root + 7), (2, root), (3, root + 7))
+        for beat, m in beats:
             f = midi_hz(m - 12 if m > 47 else m)
             v = (np.sin(2 * np.pi * f * t) + 0.35 * np.sin(4 * np.pi * f * t) + 0.12 * np.sin(6 * np.pi * f * t)) * env
             add_wrapped(b, v * RNG.uniform(0.9, 1.0), bar_t(bar, beat) + RNG.normal(0, 0.004))
@@ -159,19 +189,29 @@ def drums():
     ts = np.arange(int(0.35 * SR)) / SR
     brush_env = (1 - np.exp(-ts / 0.012)) * np.exp(-ts / 0.16)
     th = np.arange(int(0.08 * SR)) / SR
-    for bar in range(8, BARS):
+    bp = signal.butter(2, [900, 5200], "bandpass", fs=SR, output="sos")
+    for bar in range(INTRO, BARS):
         last = bar == BARS - 1
         add_wrapped(d, 0.9 * kick, bar_t(bar, 0))
-        if not last:
+        if not last and STYLE != "sparse":
             add_wrapped(d, 0.75 * kick, bar_t(bar, 2))
-        if 16 <= bar < 24 and bar % 2 == 1:
+        if INTRO * 2 <= bar < INTRO * 3 and bar % 2 == 1 and STYLE == "brush":
             add_wrapped(d, 0.4 * kick, bar_t(bar, 1.5))
-        for beat in (1, 3):
+        if STYLE == "train":  # brushed snare on every 8th, accents on 2 and 4
+            for e in range(8):
+                if last and e >= 6:
+                    continue
+                br = sosc(bp, RNG.standard_normal(len(ts))) * brush_env
+                acc = 0.38 if e in (2, 6) else 0.16
+                add_wrapped(d, acc * br, bar_t(bar, e * 0.5) + RNG.normal(0, 0.004))
+            continue
+        for beat in ((2,) if STYLE == "sparse" else (1, 3)):
             if last and beat == 3:
                 continue
-            br = sosc(signal.butter(2, [900, 5200], "bandpass", fs=SR, output="sos"),
-                      RNG.standard_normal(len(ts))) * brush_env
+            br = sosc(bp, RNG.standard_normal(len(ts))) * brush_env
             add_wrapped(d, 0.35 * br, bar_t(bar, beat) + RNG.normal(0, 0.005))
+        if STYLE == "sparse":
+            continue
         for e in range(8):
             sh = sosc(sos_hp(5500), RNG.standard_normal(len(th))) * np.exp(-th / 0.035)
             add_wrapped(d, (0.2 if e % 2 else 0.12) * sh, bar_t(bar, e * 0.5) + RNG.normal(0, 0.004))
@@ -179,13 +219,13 @@ def drums():
     swirl = sosc(signal.butter(2, [1200, 4500], "bandpass", fs=SR, output="sos"), RNG.standard_normal(N))
     t = np.arange(N) / SR
     swirl *= 0.02 * (0.6 + 0.4 * np.sin(2 * np.pi * seamless(BPM / 60.0) * t))
-    swirl *= (t >= bar_t(8)) * (t < bar_t(BARS - 1))
+    swirl *= (t >= bar_t(INTRO)) * (t < bar_t(BARS - 1))
     return d + swirl
 
 
 def lead():
     t = np.arange(N) / SR
-    f = np.full(N, midi_hz(62))
+    f = np.full(N, midi_hz(62 + TRANS))
     a = np.zeros(N)
     vib = np.zeros(N)
     for bar, beat, beats, m, glide in MELODY:
@@ -193,9 +233,9 @@ def lead():
         t1 = t0 + beats * BEAT
         i0, i1 = int(t0 * SR), min(N, int((t1 + 0.35) * SR))
         tt = t[i0:i1] - t0
-        target = midi_hz(m)
+        target = midi_hz(m + TRANS)
         if glide is not None:
-            src = midi_hz(glide)
+            src = midi_hz(glide + TRANS)
             gl = np.clip(tt / 0.11, 0, 1)
             gl = gl * gl * (3 - 2 * gl)
             f[i0:i1] = src * (target / src) ** gl
@@ -226,7 +266,8 @@ def crackle():
 
 # Each stem is normalised over the bars where it plays, then mixed at these levels
 # (dB relative to the guitar). Balanced so sections sit within ~3 dB.
-MIX_DB = {"gtr": 0, "pad": -7, "bass": -8, "drums": -10, "lead": -6}
+MIX_DB_THEME = {"gtr": 0, "pad": -7, "bass": -8, "drums": -10, "lead": -6}
+MIX_DB = dict(MIX_DB_THEME)
 ACTIVE = {"gtr": (0, 32), "pad": (0, 32), "bass": (8, 32), "drums": (8, 31), "lead": (16, 31)}
 
 
@@ -262,3 +303,46 @@ def mixdown(st, mix=None):
 
 def render():
     return mixdown(stems())
+
+
+# --- trail variants -------------------------------------------------------------
+# "Lantern Low": the theme's guitar turned dark and slow in B minor, for the night
+# trestle and the mine. Kick and one brush per bar, the slide lead sighing above.
+LOW_PROG = ["Bm9", "Gmaj7", "Em9", "F#7sus4", "Bm9", "Gmaj7", "Dmaj7", "F#7sus4",
+            "Gmaj7", "A6", "Bm9", "Em9", "Gmaj7", "Em9", "F#7sus4", "F#7sus4"]
+LOW_MELODY = [
+    (8, 0, 3, 71, 69), (8, 3, 1, 74, None),
+    (9, 0, 4, 73, 74),
+    (10, 0, 2, 66, None), (10, 2, 2, 69, 66),
+    (11, 0, 4, 67, 69),
+    (12, 0, 2, 71, None), (12, 2, 1, 74, None), (12, 3, 1, 73, None),
+    (13, 0, 4, 71, 73),
+    (14, 0, 3, 73, 71), (14, 3, 1, 70, None),
+]
+# "Ridge Runner": up a tone in E, quicker, with a train beat, for the high trails.
+HIGH_PROG = ["Dmaj7", "Bm7", "Gmaj7", "A6", "Dmaj7", "F#m7", "Gmaj7", "A7sus4",
+             "Gmaj7", "A6", "F#m7", "Bm7", "Em9", "Gmaj7", "A7sus4", "A6"]
+HIGH_MELODY = [
+    (8, 0, 1, 74, None), (8, 1, 1, 76, None), (8, 2, 2, 78, 76),
+    (9, 0, 2, 76, 78), (9, 2, 2, 73, None),
+    (10, 0, 3, 69, 71), (10, 3, 1, 73, None),
+    (11, 0, 2, 74, 73), (11, 2, 2, 78, None),
+    (12, 0, 2, 79, 78), (12, 2, 1, 78, None), (12, 3, 1, 76, None),
+    (13, 0, 3, 74, 76), (13, 3, 1, 71, None),
+    (14, 0, 2, 74, None), (14, 2, 2, 76, 74),
+    (15, 0, 4, 73, 74),
+]
+VARIANTS = {
+    "trestle_dreams": {},
+    "lantern_low": dict(bpm=68.0, bars=16, prog=LOW_PROG, melody=LOW_MELODY, intro=4, style="sparse",
+                        lead_from=8, seed=2031, gtr_lp=4200, mix_db={"drums": -14, "pad": -5}),
+    "ridge_runner": dict(bpm=96.0, bars=16, prog=HIGH_PROG, melody=HIGH_MELODY, intro=2, style="train",
+                         trans=2, lead_from=8, seed=1890, mix_db={"drums": -9, "bass": -7}),
+}
+
+
+def render_variant(name):
+    configure(**VARIANTS[name])
+    y = render()
+    configure()
+    return y

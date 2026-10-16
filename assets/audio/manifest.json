@@ -1,48 +1,88 @@
 {
- "ambience/creek.ogg": {
-  "kb": 332.3,
-  "loop": true,
-  "lufs": -36.0,
-  "peak_db": -13.3,
-  "seam_score": 0.001,
-  "seconds": 36.0,
-  "start": 42.5
- },
- "ambience/day_birds.ogg": {
-  "kb": 374.7,
+ "ambience/alpine.ogg": {
+  "kb": 64.9,
   "loop": true,
   "lufs": -33.0,
-  "peak_db": -17.0,
-  "seam_score": 0.086,
-  "seconds": 48.0,
+  "peak_db": -21.9,
+  "seconds": 16.0,
+  "synth": true
+ },
+ "ambience/canyon.ogg": {
+  "kb": 54.4,
+  "loop": true,
+  "lufs": -33.0,
+  "peak_db": -16.5,
+  "seconds": 16.0,
+  "synth": true
+ },
+ "ambience/collapse.ogg": {
+  "kb": 55.9,
+  "loop": true,
+  "lufs": -32.0,
+  "peak_db": -16.4,
+  "seconds": 16.0,
+  "synth": true
+ },
+ "ambience/creek.ogg": {
+  "kb": 109.4,
+  "loop": true,
+  "lufs": -36.0,
+  "peak_db": -14.3,
+  "seam_score": 0.003,
+  "seconds": 22.0,
   "start": 58.0
  },
- "ambience/night_crickets.ogg": {
-  "kb": 285.0,
+ "ambience/day_birds.ogg": {
+  "kb": 101.5,
+  "loop": true,
+  "lufs": -33.0,
+  "peak_db": -16.6,
+  "seam_score": 0.033,
+  "seconds": 26.0,
+  "start": 31.0
+ },
+ "ambience/mine.ogg": {
+  "kb": 55.5,
   "loop": true,
   "lufs": -34.0,
-  "peak_db": -20.5,
-  "seam_score": 0.006,
-  "seconds": 42.0,
-  "start": 3.5
+  "peak_db": -18.0,
+  "seconds": 16.0,
+  "synth": true
+ },
+ "ambience/night_crickets.ogg": {
+  "kb": 93.0,
+  "loop": true,
+  "lufs": -34.0,
+  "peak_db": -20.6,
+  "seam_score": 0.005,
+  "seconds": 24.0,
+  "start": 5.5
  },
  "ambience/rain.ogg": {
-  "kb": 360.2,
+  "kb": 88.1,
   "loop": true,
   "lufs": -28.0,
-  "peak_db": -3.5,
-  "seam_score": 0.004,
-  "seconds": 44.0,
-  "start": 41.0
+  "peak_db": -6.0,
+  "seam_score": 0.017,
+  "seconds": 22.0,
+  "start": 57.0
  },
  "ambience/wind.ogg": {
-  "kb": 82.5,
+  "kb": 38.9,
   "loop": true,
   "lufs": -30.0,
   "peak_db": -13.7,
   "seam_score": 0.421,
   "seconds": 10.34,
   "start": 1.0
+ },
+ "ambience/yard.ogg": {
+  "kb": 56.2,
+  "loop": true,
+  "lufs": -34.0,
+  "peak_db": -18.5,
+  "seconds": 16.0,
+  "synth": true
  },
  "engines/cafe_cruise.ogg": {
   "cycles": 187,
@@ -184,10 +224,28 @@
   "rpm": 1300,
   "seconds": 3.969
  },
+ "music/lantern_low.ogg": {
+  "bars": 16,
+  "bpm": 68.0,
+  "kb": 495.7,
+  "loop": true,
+  "lufs": -16.0,
+  "peak_db": -6.2,
+  "seconds": 56.471
+ },
+ "music/ridge_runner.ogg": {
+  "bars": 16,
+  "bpm": 96.0,
+  "kb": 365.4,
+  "loop": true,
+  "lufs": -16.0,
+  "peak_db": -5.5,
+  "seconds": 40.0
+ },
  "music/trestle_dreams.ogg": {
   "bars": 32,
   "bpm": 78.0,
-  "kb": 1468.6,
+  "kb": 890.8,
   "loop": true,
   "lufs": -16.0,
   "peak_db": -4.6,
@@ -214,6 +272,13 @@
   "peak_db": -12.9,
   "seconds": 2.4
  },
+ "sfx/climb.ogg": {
+  "kb": 14.7,
+  "loop": false,
+  "lufs": -23.0,
+  "peak_db": -9.6,
+  "seconds": 0.85
+ },
  "sfx/coin.ogg": {
   "kb": 7.8,
   "loop": false,
@@ -228,6 +293,13 @@
   "peak_db": -7.4,
   "seconds": 3.4
  },
+ "sfx/crumble.ogg": {
+  "kb": 12.7,
+  "loop": false,
+  "lufs": -26.0,
+  "peak_db": -7.6,
+  "seconds": 0.6
+ },
  "sfx/dash.ogg": {
   "kb": 10.7,
   "loop": false,
@@ -236,10 +308,10 @@
   "seconds": 0.6
  },
  "sfx/deck_roll.ogg": {
-  "kb": 31.7,
+  "kb": 32.0,
   "loop": true,
   "lufs": -30.0,
-  "peak_db": -11.0,
+  "peak_db": -11.3,
   "seconds": 4.0
  },
  "sfx/deny.ogg": {
@@ -256,12 +328,26 @@
   "peak_db": -7.6,
   "seconds": 5.5
  },
+ "sfx/flip.ogg": {
+  "kb": 10.0,
+  "loop": false,
+  "lufs": -27.0,
+  "peak_db": -16.5,
+  "seconds": 0.52
+ },
  "sfx/gear.ogg": {
   "kb": 49.4,
   "loop": false,
   "lufs": -19.0,
   "peak_db": -8.3,
   "seconds": 3.6
+ },
+ "sfx/hat.ogg": {
+  "kb": 12.2,
+  "loop": false,
+  "lufs": -20.0,
+  "peak_db": -2.0,
+  "seconds": 0.8
  },
  "sfx/jump.ogg": {
   "kb": 11.6,
@@ -277,6 +363,20 @@
   "peak_db": -6.5,
   "seconds": 0.8
  },
+ "sfx/letter.ogg": {
+  "kb": 15.0,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -13.4,
+  "seconds": 1.1
+ },
+ "sfx/letters_all.ogg": {
+  "kb": 35.0,
+  "loop": false,
+  "lufs": -18.0,
+  "peak_db": -7.6,
+  "seconds": 2.6
+ },
  "sfx/loop.ogg": {
   "kb": 25.3,
   "loop": false,
@@ -290,6 +390,27 @@
   "lufs": -28.0,
   "peak_db": -14.8,
   "seconds": 1.0
+ },
+ "sfx/power.ogg": {
+  "kb": 18.4,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -9.2,
+  "seconds": 1.2
+ },
+ "sfx/power_rocket.ogg": {
+  "kb": 27.8,
+  "loop": false,
+  "lufs": -20.0,
+  "peak_db": -2.2,
+  "seconds": 1.9
+ },
+ "sfx/power_sticky.ogg": {
+  "kb": 19.2,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -7.5,
+  "seconds": 1.2
  },
  "sfx/prize.ogg": {
   "kb": 40.3,
@@ -333,6 +454,13 @@
   "peak_db": -5.2,
   "seconds": 1.0
  },
+ "sfx/switch.ogg": {
+  "kb": 21.9,
+  "loop": false,
+  "lufs": -24.0,
+  "peak_db": -8.6,
+  "seconds": 1.4
+ },
  "sfx/tap.ogg": {
   "kb": 7.5,
   "loop": false,
@@ -360,6 +488,13 @@
   "lufs": -24.9,
   "peak_db": -15.2,
   "seconds": 6.2
+ },
+ "sfx/trick.ogg": {
+  "kb": 21.3,
+  "loop": false,
+  "lufs": -21.0,
+  "peak_db": -9.2,
+  "seconds": 1.55
  },
  "sfx/wheelie.ogg": {
   "kb": 13.1,

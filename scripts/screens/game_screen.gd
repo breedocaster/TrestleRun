@@ -38,12 +38,15 @@ func _ready() -> void:
 	var cond: Dictionary = GameState.conditions().duplicate()
 	world = World.new()
 	world.setup(level_id, GameState.loadout(), GameState.level_record(level_id).gears, cond)
+	if GameState.flag("ghost"):
+		world.ghost = GameState.load_ghost(level_id)
 	world.run_finished.connect(_on_finished)
 	add_child(world)
 	backdrop.theme_index = world.level.theme
 	backdrop.time_mode = String(cond.time)
 	backdrop.weather = String(cond.weather)
 	AudioDirector.set_context("game")
+	AudioDirector.set_track(String(Catalog.level(level_id).get("music", "trestle_dreams")))
 	AudioDirector.set_ambience(String(cond.time), String(cond.weather), level_id)
 	AudioDirector.engine_start(GameState.equipped("bike"))
 
@@ -73,7 +76,7 @@ func _ready() -> void:
 	hud.pause_pressed.connect(pause)
 	hud.hint_pressed.connect(show_hint)
 	var meta := Catalog.level(level_id)
-	hud.feature = String((Catalog.FEATURES.get(String(meta.get("feature", "")), [""]) as Array)[0])
+	hud.feature = Catalog.feature_names(meta)
 	hud.feature_new = not GameState.level_record(level_id).cleared
 	hud.ability_title = String(Catalog.ability_text(GameState.equipped("bike"))[0])
 	hl.add_child(hud)
@@ -165,18 +168,28 @@ func resume() -> void:
 
 func _on_finished(r: Dictionary) -> void:
 	var pay := GameState.record_result(r)
+	if (pay.new_best or pay.first_clear) and r.has("ghost") and (r.ghost as PackedFloat32Array).size() > 0:
+		GameState.save_ghost(level_id, r.get("rig", {}), r.ghost, float(r.get("time", 0.0)))
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 3)
 	col.add_child(Kit.label("TRAIL CLEAR!", 16, UITheme.GOLD))
 	col.add_child(Widgets.GearRow.new(GameState.level_record(level_id).gears))
+	var tc := int(r.get("trick_coins", 0))
+	var lb := int(r.get("letter_bonus", 0))
 	var rows := [
-		["COINS", pay.coins],
+		["COINS", pay.coins - tc - lb],
+		["TRICKS x%d" % int(r.get("tricks", 0)), tc],
+		["T-R-E-S-T-L-E", lb],
 		["CONDITIONS +%d%%" % pay.cond_pct, pay.cond_pay],
 		["NEW GEARS x%d" % pay.new_gears, pay.gear_pay],
 		["CLEAR BONUS", pay.bonus],
 		["NO-CRASH BONUS", pay.perfect],
 	]
 	if pay.cond_pct == 0:
+		rows.remove_at(3)
+	if lb == 0:
+		rows.remove_at(2)
+	if tc == 0:
 		rows.remove_at(1)
 	for row in rows:
 		col.add_child(_row(row[0], "+%d" % row[1], UITheme.CREAM if row[1] > 0 else UITheme.DIM))
@@ -199,6 +212,7 @@ func _on_finished(r: Dictionary) -> void:
 	if r.crashes > 0:
 		extras.append("CRASHES %d" % r.crashes)
 	col.add_child(Kit.label("   ".join(extras), 8, UITheme.DIM))
+	col.add_child(Widgets.MedalRow.new(pay.medals, pay.new_medals, float(pay.par), int(r.get("letters", 0))))
 
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER

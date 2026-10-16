@@ -80,6 +80,7 @@ func _ready() -> void:
 	panel.add_theme_stylebox_override("panel", UITheme.box(Color(UITheme.PANEL, 0.92), Color("5a4a6e"), 2, 6))
 	panel.add_child(list)
 	scroll.add_child(panel)
+	Kit.pass_drags(panel)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_child(scroll)
 	add_child(Kit.full_rect(Kit.margin(col, 8)))

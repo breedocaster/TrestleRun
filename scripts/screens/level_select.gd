@@ -79,6 +79,7 @@ func _build_cards() -> void:
 	var ls := Catalog.levels()
 	for i in ls.size():
 		_row.add_child(_card(i, ls[i]))
+	Kit.pass_drags(_row)
 
 
 func _card(i: int, meta: Dictionary) -> Control:
@@ -95,8 +96,12 @@ func _card(i: int, meta: Dictionary) -> Control:
 	title_l.custom_minimum_size = Vector2(92, 20)
 	v.add_child(title_l)
 	v.add_child(Widgets.LevelThumb.new(int(meta.theme), not unlocked))
-	v.add_child(Widgets.GearRow.new(rec.gears))
-	var feat := String((Catalog.FEATURES.get(String(meta.get("feature", "")), [""]) as Array)[0])
+	var gm := HBoxContainer.new()
+	gm.alignment = BoxContainer.ALIGNMENT_CENTER
+	gm.add_child(Widgets.GearRow.new(rec.gears))
+	gm.add_child(Widgets.MedalRow.new(GameState.medals(id), [false, false, false], 0.0, 0, true))
+	v.add_child(gm)
+	var feat := Catalog.feature_names(meta, ", ")
 	var fl := Kit.label("NEW: " + feat, 8, UITheme.GOLD if unlocked and not rec.cleared else UITheme.DIM)
 	fl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	fl.custom_minimum_size = Vector2(92, 0)

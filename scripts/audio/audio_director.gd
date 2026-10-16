@@ -22,9 +22,24 @@ const TIME_LAYERS := {
 	"dusk": {"night_crickets": -3.0, "day_birds": -12.0},
 	"night": {"night_crickets": 0.0},
 }
-const LEVEL_LAYERS := {"copper_canyon": {"creek": -2.0}, "mesa_springs": {"creek": -7.0}}
+## Each trail's own bed on top of the time-of-day layer. -60 mutes a time layer there.
+const LEVEL_LAYERS := {
+	"copper_canyon": {"canyon": -3.0, "creek": -9.0},
+	"rustyard": {"yard": -2.0, "day_birds": -14.0},
+	"night_trestle": {"night_crickets": -1.0, "canyon": -12.0},
+	"mesa_springs": {"creek": -4.0},
+	"lantern_mine": {"mine": 0.0, "day_birds": -60.0, "night_crickets": -16.0},
+	"hoodoo_loops": {"canyon": -4.0},
+	"hoist_yard": {"yard": 0.0, "day_birds": -60.0},
+	"skyline_pass": {"alpine": -2.0, "day_birds": -12.0, "night_crickets": -60.0},
+	"quarry_cliffs": {"canyon": -6.0, "yard": -12.0},
+	"rocket_ridge": {"yard": -9.0, "canyon": -9.0, "day_birds": -14.0},
+	"last_trestle": {"collapse": -3.0, "canyon": -6.0, "day_birds": -60.0},
+}
 
 var music: AudioStreamPlayer
+var _track := "trestle_dreams"
+var _menu_req := 0
 var eng_idle: AudioStreamPlayer
 var eng_cruise: AudioStreamPlayer
 var deck: AudioStreamPlayer
@@ -145,8 +160,31 @@ func _apply_volume(bus_name: String, v: float) -> void:
 	AudioServer.set_bus_volume_db(i, slider_db(v))
 
 
+## Crossfade to another music loop (each trail picks one; menus use the theme).
+func set_track(track: String) -> void:
+	_menu_req += 1  # cancels a pending switch back to the menu theme (retry keeps the trail's loop going)
+	if track == _track or _is_headless():
+		return
+	_track = track
+	var old := music
+	music = _player("Music", Node.PROCESS_MODE_ALWAYS)
+	music.stream = _stream("music/%s.ogg" % track, true)
+	music.volume_db = -30.0
+	music.play()
+	_fade(music, 0.0, 1.6)
+	_fade(old, -60.0, 1.4, true)
+	get_tree().create_timer(1.6, true).timeout.connect(old.queue_free)
+
+
 ## "menu": theme up front. "game": theme tucked under the engine and ambience.
 func set_context(ctx: String) -> void:
+	if ctx == "menu" and is_inside_tree():
+		# Wait a moment: on RETRY the next run asks for its track right away.
+		_menu_req += 1
+		var req := _menu_req
+		get_tree().create_timer(0.3, true).timeout.connect(func():
+			if req == _menu_req:
+				set_track("trestle_dreams"))
 	var target := MUSIC_GAME_DB if ctx == "game" else MUSIC_MENU_DB
 	var bus := AudioServer.get_bus_index("Music")
 	_tween_value("music_bus", AudioServer.get_bus_volume_db(bus), target, 1.2,
@@ -354,6 +392,8 @@ func set_ambience(time_mode: String, weather: String, level_id: String) -> void:
 	var want: Dictionary = (TIME_LAYERS.get(time_mode, {}) as Dictionary).duplicate()
 	for k in LEVEL_LAYERS.get(level_id, {}):
 		want[k] = LEVEL_LAYERS[level_id][k]
+		if want[k] <= -60.0:
+			want.erase(k)
 	if weather == "rain":
 		want["rain"] = -3.0
 		if want.has("day_birds"):

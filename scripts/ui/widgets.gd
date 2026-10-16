@@ -21,6 +21,58 @@ class GearRow extends Control:
 			Icons.gear(self, Vector2(x0 + i * 14, size.y * 0.5), 4.5, 0.2, bool(flags[i]))
 
 
+## Bronze (clear), silver (all letters in one run), gold (par time, no crashes).
+## Full: icons with what each is for (results). Compact: three icons (trail cards).
+class MedalRow extends Control:
+	const UITheme := preload("res://scripts/ui/ui_theme.gd")
+	var have: Array = [false, false, false]
+	var fresh: Array = [false, false, false]
+	var par := 0.0
+	var letters := 0
+	var compact := false
+	var _t := 0.0
+
+	func _init(h: Array, f: Array = [false, false, false], p := 0.0, l := 0, small := false) -> void:
+		have = h
+		fresh = f
+		par = p
+		letters = l
+		compact = small
+		custom_minimum_size = Vector2(44, 14) if small else Vector2(280, 16)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		if not compact and fresh.has(true):
+			_t += delta
+			queue_redraw()
+
+	func _draw() -> void:
+		if compact:
+			var x0 := (size.x - 40.0) * 0.5
+			for i in 3:
+				Icons.medal(self, Vector2(x0 + 6 + i * 14, 9), i, bool(have[i]))
+			return
+		var font: Font = GameState.font
+		var labels := ["CLEAR", "LETTERS" if have[1] else "LETTERS %d/7" % letters,
+			"PAR %.1fs" % par if par > 0.0 else "PAR"]
+		var widths := []
+		var total := 0.0
+		for l in labels:
+			var w := font.get_string_size(String(l), HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x + 14.0
+			widths.append(w)
+			total += w
+		var gap := maxf(8.0, (size.x - total) / 2.0)
+		var x := maxf(0.0, (size.x - total - gap * 2.0) * 0.5)
+		for i in 3:
+			var c := UITheme.CREAM if have[i] else UITheme.DIM
+			if fresh[i]:
+				c = UITheme.GOLD if int(_t * 4.0) % 2 == 0 else UITheme.CREAM
+				draw_circle(Vector2(x + 6, 9), 7.0 + sin(_t * 6.0), Color(UITheme.GOLD, 0.25))
+			Icons.medal(self, Vector2(x + 6, 9), i, bool(have[i]))
+			draw_string(font, Vector2(x + 14, 13), String(labels[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, c)
+			x += float(widths[i]) + gap
+
+
 class RigPreview extends Control:
 	var rig: Dictionary
 	var px_scale := 2.0

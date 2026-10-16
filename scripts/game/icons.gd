@@ -39,3 +39,72 @@ static func bag(ci: CanvasItem, p: Vector2) -> void:
 	ci.draw_rect(Rect2(p.x - 1, p.y - 1, 2, 5), GOLD)
 	ci.draw_rect(Rect2(p.x - 2, p.y, 4, 1), GOLD)
 	ci.draw_rect(Rect2(p.x - 2, p.y + 2, 4, 1), GOLD)
+
+
+## Power-up icons: "sticky" (green tire), "rocket", "magnet", "hat" (hard hat).
+## bubble: draw the floating pickup bubble around it (HUD icons skip it).
+static func power(ci: CanvasItem, p: Vector2, kind: String, t: float, bubble := true) -> void:
+	if bubble:
+		var glow := 0.25 + 0.12 * sin(t * 5.0)
+		ci.draw_circle(p, 9.0, Color(1, 1, 1, glow * 0.5))
+		ci.draw_arc(p, 8.0, 0.0, TAU, 18, Color(1, 1, 1, 0.75), -1.0)
+		ci.draw_rect(Rect2(p.x - 5, p.y - 6, 2, 2), Color(1, 1, 1, 0.7))
+	match kind:
+		"sticky":
+			ci.draw_circle(p, 5.0, Color("2a4a1c"))
+			ci.draw_circle(p, 4.0, Color("7dff5a"))
+			ci.draw_circle(p, 2.0, Color("2a4a1c"))
+			ci.draw_rect(Rect2(p.x - 1, p.y + 4, 2, 2 + int(t * 3.0) % 2), Color("7dff5a"))
+			ci.draw_rect(Rect2(p.x + 3, p.y + 3, 1, 2), Color("7dff5a"))
+		"rocket":
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(5, 0), p + Vector2(2, -3), p + Vector2(-4, -3),
+				p + Vector2(-4, 3), p + Vector2(2, 3)]), Color("e8e2d0"))
+			ci.draw_rect(Rect2(p.x + 1, p.y - 3, 2, 6), Color("e04848"))
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-4, -3), p + Vector2(-6, -5), p + Vector2(-6, -2)]), Color("e04848"))
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-4, 3), p + Vector2(-6, 5), p + Vector2(-6, 2)]), Color("e04848"))
+			var f := 2.0 + float(int(t * 12.0) % 2)
+			ci.draw_rect(Rect2(p.x - 5 - f, p.y - 1, f, 2), Color("ffb347"))
+		"magnet":
+			var c := Color("e04848")
+			ci.draw_rect(Rect2(p.x - 5, p.y - 4, 3, 7), c)
+			ci.draw_rect(Rect2(p.x + 2, p.y - 4, 3, 7), c)
+			ci.draw_rect(Rect2(p.x - 5, p.y + 2, 10, 3), c)
+			ci.draw_rect(Rect2(p.x - 5, p.y - 5, 3, 2), Color("e8e2d0"))
+			ci.draw_rect(Rect2(p.x + 2, p.y - 5, 3, 2), Color("e8e2d0"))
+		"hat":
+			hard_hat(ci, p + Vector2(0, 2))
+
+
+static func hard_hat(ci: CanvasItem, p: Vector2) -> void:
+	ci.draw_rect(Rect2(p.x - 5, p.y, 10, 2), Color("c99a1a"))
+	ci.draw_circle(p + Vector2(0, -0.5), 3.5, Color("f0c040"))
+	ci.draw_rect(Rect2(p.x - 4, p.y - 1, 8, 1), Color("f0c040"))
+	ci.draw_rect(Rect2(p.x - 1, p.y - 4, 2, 4), Color("ffe08a"))
+
+
+## Medal: kind 0 bronze, 1 silver, 2 gold; dim outline if not earned.
+static func medal(ci: CanvasItem, p: Vector2, kind: int, earned: bool) -> void:
+	var cols := [Color("c8803a"), Color("c8d0dc"), Color("f7c948")]
+	var dark := [Color("7a4a1e"), Color("6e7684"), Color("b7791f")]
+	if not earned:
+		ci.draw_circle(p, 5.0, Color(0.2, 0.18, 0.24, 0.85))
+		ci.draw_arc(p, 5.0, 0.0, TAU, 14, Color(0.45, 0.42, 0.5), -1.0)
+		return
+	ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-4, -9), p + Vector2(-1, -9), p + Vector2(1, -4), p + Vector2(-2, -4)]), Color("4a7ad0"))
+	ci.draw_colored_polygon(PackedVector2Array([p + Vector2(4, -9), p + Vector2(1, -9), p + Vector2(-1, -4), p + Vector2(2, -4)]), Color("d04a4a"))
+	ci.draw_circle(p, 5.0, dark[kind])
+	ci.draw_circle(p, 4.0, cols[kind])
+	ci.draw_rect(Rect2(p.x - 2, p.y - 3, 1, 2), Color(1, 1, 1, 0.6))
+
+
+## A T-R-E-S-T-L-E letter tile. lit = collected (HUD) / shown in the world.
+static func letter(ci: CanvasItem, p: Vector2, ch: String, lit := true, t := 0.0) -> void:
+	var font: Font = GameState.font
+	var body := GOLD if lit else Color(0.2, 0.18, 0.24, 0.85)
+	var edge := GOLD_DARK if lit else Color(0.45, 0.42, 0.5)
+	ci.draw_rect(Rect2(p.x - 6, p.y - 6, 12, 12), edge)
+	ci.draw_rect(Rect2(p.x - 5, p.y - 5, 10, 10), body)
+	if lit:
+		ci.draw_rect(Rect2(p.x - 5, p.y - 5, 10, 1), GOLD_LIGHT)
+	ci.draw_string(font, Vector2(p.x - 4, p.y + 4), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 8,
+		Color("4a2a10") if lit else Color(0.6, 0.56, 0.66))

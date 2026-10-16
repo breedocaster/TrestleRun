@@ -63,11 +63,19 @@ func _run(level_id: String, weather: String, bike: String, trace: Vector2) -> bo
 		"deaths": w.death_log,
 		"coins": "%d/%d" % [w.run_coins, lv.coin_total],
 		"gears": "%d/%d" % [w.gears.count(true), lv.gear_total],
+		"letters": "%d/7" % w.letter_count(),
+		"powers": (w.state.got as Dictionary).size(),
 		"stomps": w.stomps,
 		"time": snappedf(w.ticks / 60.0, 0.1),
 		"sim_ms": Time.get_ticks_msec() - t0,
 	}))
 	var ok: bool = not w.result.is_empty() and w.crashes == 0
+	if w.letter_count() < 7:
+		var lmiss := []
+		for p in lv.pickups:
+			if int(p.type) == 3 and not (w.letters & (1 << int(p.letter))):
+				lmiss.append(p.pos)
+		print("MISSED_LETTERS %s" % str(lmiss))
 	if w.gears.count(true) < lv.gear_total:
 		var miss := []
 		for p in lv.pickups:

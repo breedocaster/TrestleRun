@@ -339,6 +339,7 @@ func draw_far(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horizon: 
 
 
 func draw_mid(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horizon: float, vy: float) -> void:
+	_ambient_far(ci, vs, c, th, horizon, vy)
 	if not _bats.is_empty():
 		var bx: float = _bats.wx - c.x * P_MID
 		for i in int(_bats.n):
@@ -362,6 +363,80 @@ func draw_mid(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horizon: 
 			p = q
 	if _flash > 0.0:
 		ci.draw_rect(Rect2(Vector2.ZERO, vs), Color(0.85, 0.9, 1.0, 0.28 * _flash))
+
+
+## Each trail's distant life: dust devils, smokestacks, geysers, snow plumes off peaks.
+func _ambient_far(ci: CanvasItem, vs: Vector2, c: Vector2, th: Dictionary, horizon: float, vy: float) -> void:
+	var base_y := floorf(horizon + 8.0 + vy * 0.2)
+	match theme_index:
+		0, 1, 6:  # dust devils wandering across the valley floor
+			for d in (1 if theme_index == 0 else 2):
+				var wx := fposmod(d * 260.0 + t * (6.0 + d * 3.0) - c.x * P_MID, vs.x + 200.0) - 100.0
+				var col := (th.mid as Color).lightened(0.25)
+				for k in 16:
+					var h := k / 16.0
+					var ang := t * 7.0 + k * 0.8
+					var p := Vector2(wx + sin(h * 3.0 + t) * 3.0 + cos(ang) * (1.5 + h * 7.0), base_y - h * 36.0)
+					ci.draw_rect(Rect2(floorf(p.x), floorf(p.y), 1, 1), Color(col, 0.55 * (1.0 - h * 0.6)))
+		2, 7:  # smokestacks on the horizon
+			var col := (th.far as Color).darkened(0.25)
+			for d in 3:
+				var sx := fposmod(d * 190.0 + 70.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
+				var top := base_y - 34.0 - d * 6.0
+				ci.draw_rect(Rect2(floorf(sx), top, 3, base_y - top), col)
+				for k in 7:
+					var age := fmod(t * 0.18 + k / 7.0 + d * 0.3, 1.0)
+					var pp := Vector2(sx + 1.0 + age * 30.0 + sin(age * 6.0 + d) * 2.0, top - 2.0 - age * 26.0)
+					ci.draw_circle(pp.floor(), 1.5 + age * 5.0, Color((th.sky[3] as Color).darkened(0.2), 0.5 * (1.0 - age)))
+		4:  # a geyser that erupts every few seconds
+			var cyc := fmod(t, 7.0)
+			if cyc < 2.4:
+				var gx := fposmod(220.0 - c.x * P_MID, vs.x + 120.0) - 60.0
+				var hgt := 30.0 * sin(minf(cyc, 1.2) / 1.2 * PI * 0.5) * (1.0 if cyc < 1.6 else (2.4 - cyc) / 0.8)
+				var col := Color(1, 1, 1, 0.5)
+				for k in 10:
+					var h := k / 10.0
+					ci.draw_circle(Vector2(floorf(gx + sin(t * 5.0 + k) * 1.5 + h * 4.0), floorf(base_y - h * hgt)), 1.5 + h * 2.5, Color(col, 0.6 * (1.0 - h * 0.5)))
+		9:  # quarry blasting: a dust plume rises from a far bench now and then
+			var cyc := fmod(t, 9.0)
+			if cyc < 3.5:
+				var bx := fposmod(260.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
+				var col := (th.far as Color).lightened(0.25)
+				for k in 10:
+					var h := k / 10.0
+					var grow := minf(1.0, cyc / 1.2)
+					ci.draw_circle(Vector2(floorf(bx + sin(k * 1.7) * 6.0 * grow + cyc * 4.0), floorf(base_y - 6.0 - h * 40.0 * grow)),
+						3.0 + h * 6.0 * grow, Color(col, 0.5 * (1.0 - cyc / 3.5)))
+		10:  # a test rocket climbs off a far pad every few seconds
+			var cyc := fmod(t, 11.0)
+			if cyc < 5.0:
+				var rx := fposmod(330.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
+				var ry := base_y - 20.0 - cyc * cyc * 14.0
+				ci.draw_rect(Rect2(floorf(rx), floorf(ry), 2, 5), Color("e8e2d0"))
+				ci.draw_rect(Rect2(floorf(rx), floorf(ry) + 5, 2, 2), Color("ffb347"))
+				for k in 14:
+					var sy := ry + 8.0 + k * 5.0
+					if sy > base_y - 18.0:
+						break
+					ci.draw_circle(Vector2(floorf(rx + 1 + sin(k * 0.9 + t) * k * 0.3), floorf(sy)), 1.0 + k * 0.25,
+						Color(1, 1, 1, 0.35 * (1.0 - k / 14.0)))
+		11:  # dust from bents giving way somewhere down the gorge
+			var cyc := fmod(t, 6.0)
+			var gx := fposmod(140.0 + floorf(t / 6.0) * 170.0 - c.x * P_MID, vs.x + 160.0) - 80.0
+			if cyc < 2.5:
+				var col := (th.mid as Color).lightened(0.3)
+				for k in 8:
+					var h := k / 8.0
+					ci.draw_circle(Vector2(floorf(gx + h * 10.0), floorf(base_y - h * 26.0 * minf(1.0, cyc))), 2.0 + h * 5.0,
+						Color(col, 0.45 * (1.0 - cyc / 2.5)))
+		8:  # snow blowing off the far peaks
+			var col := Color(1, 1, 1, 0.35)
+			for d in 3:
+				var px := fposmod(d * 170.0 + 40.0 - c.x * P_FAR, vs.x + 160.0) - 80.0
+				var py := floorf(horizon * 0.42 + d * 9.0 + vy * 0.06)
+				for k in 8:
+					var age := fmod(t * 0.4 + k / 8.0 + d * 0.37, 1.0)
+					ci.draw_rect(Rect2(floorf(px + age * 46.0), floorf(py - sin(age * 3.0) * 4.0 + age * 6.0), 2, 1), Color(col, col.a * (1.0 - age)))
 
 
 static func _h(n: float) -> float:
@@ -533,6 +608,29 @@ func _draw_front_prop(ci: CanvasItem, base: Vector2, s: float, col: Color, kind:
 				var tx := x + k * 26.0 * s
 				var h := floorf((70.0 + 30.0 * _h(c * 4.0 + k)) * s)
 				ci.draw_colored_polygon(PackedVector2Array([Vector2(tx - 16 * s, y), Vector2(tx, y - h), Vector2(tx + 16 * s, y)]), col)
+		"quarry":
+			ci.draw_rect(Rect2(x, y - 34 * s, 46 * s, 34 * s), col)
+			ci.draw_rect(Rect2(x + 40 * s, y - 20 * s, 36 * s, 20 * s), col)
+		"gantry":
+			if _h(c * 3.3) < 0.4:
+				var see := Color(col, 0.55)
+				ci.draw_rect(Rect2(x, y - 140, 8, 140), see)
+				var yy := y - 130.0
+				while yy < y - 10:
+					ci.draw_line(Vector2(x, yy), Vector2(x + 8, yy + 10), see, 2.0)
+					yy += 20.0
+			else:
+				ci.draw_rect(Rect2(x, y - 14 * s, 70 * s, 14 * s), col)
+				for k in 6:
+					ci.draw_rect(Rect2(x + k * 12 * s, y - 24 * s, 2, 10 * s), col)
+		"ruin":
+			if _h(c * 3.3) < 0.5:
+				var see := Color(col, 0.7)
+				ci.draw_line(Vector2(x, y), Vector2(x + 14, y - 120), see, 6.0)
+				ci.draw_line(Vector2(x + 40, y), Vector2(x + 30, y - 80), see, 6.0)
+				ci.draw_line(Vector2(x + 4, y - 50), Vector2(x + 36, y - 60), see, 3.0)
+			else:
+				_bush(ci, Vector2(x, y), 20.0 * s, col)
 		_:
 			_bush(ci, Vector2(x, y), 20.0 * s, col)
 

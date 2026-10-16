@@ -4,7 +4,8 @@ extends Node
 signal money_changed(amount: int)
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
+const DEFAULT_MUSIC := 0.5
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.woff"
 const Catalog := preload("res://scripts/catalog.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
@@ -78,13 +79,14 @@ func loadout() -> Dictionary:
 
 ## "music" / "sound" volume, 0..1.
 func volume(key: String) -> float:
-	return clampf(float((data.get("settings", {}) as Dictionary).get(key, 1.0)), 0.0, 1.0)
+	var dflt := DEFAULT_MUSIC if key == "music" else 1.0
+	return clampf(float((data.get("settings", {}) as Dictionary).get(key, dflt)), 0.0, 1.0)
 
 
 ## Live while dragging; pass save=false and call save_settings() on release.
 func set_volume(key: String, v: float, save := true) -> void:
 	if not data.has("settings"):
-		data.settings = {"music": 1.0, "sound": 1.0}
+		data.settings = {"music": DEFAULT_MUSIC, "sound": 1.0}
 	data.settings[key] = clampf(v, 0.0, 1.0)
 	AudioDirector.apply_settings()
 	if save:
@@ -93,6 +95,45 @@ func set_volume(key: String, v: float, save := true) -> void:
 
 func save_settings() -> void:
 	save_game()
+
+
+## On/off settings (e.g. "ghost": show your best run's ghost).
+func flag(key: String, dflt := true) -> bool:
+	return bool((data.get("settings", {}) as Dictionary).get(key, dflt))
+
+
+func set_flag(key: String, v: bool) -> void:
+	data.settings[key] = v
+	save_game()
+
+
+# --- ghost of your best run -------------------------------------------------
+
+func _ghost_path(id: String) -> String:
+	return "user://ghost_%s.dat" % id
+
+
+## frames: [x, y, rot, lane_z] per 1/30 s of riding.
+func save_ghost(id: String, rig: Dictionary, frames: PackedFloat32Array, t: float) -> void:
+	var f := FileAccess.open(_ghost_path(id), FileAccess.WRITE)
+	if f:
+		f.store_var({"rig": rig, "time": t, "frames": frames})
+
+
+func load_ghost(id: String) -> Dictionary:
+	if not FileAccess.file_exists(_ghost_path(id)):
+		return {}
+	var f := FileAccess.open(_ghost_path(id), FileAccess.READ)
+	if f == null:
+		return {}
+	var v = f.get_var()
+	return v if v is Dictionary and (v as Dictionary).has("frames") else {}
+
+
+## Bronze: cleared. Silver: all T-R-E-S-T-L-E letters in one run. Gold: par time, no crashes.
+func medals(id: String) -> Array:
+	var rec := level_record(id)
+	return [bool(rec.cleared), bool(rec.get("letters", false)), bool(rec.get("gold", false))]
 
 
 # --- ride conditions -------------------------------------------------------
@@ -147,8 +188,19 @@ func record_result(r: Dictionary) -> Dictionary:
 	var new_best := t > 0.0 and (float(rec.get("best_time", 0.0)) <= 0.0 or t < float(rec.best_time))
 	if new_best:
 		rec.best_time = snappedf(t, 0.1)
+	var old_medals := medals(id)
+	if r.get("letters_all", false):
+		rec.letters = true
+	var par := float(meta.get("par", 0.0))
+	if String((r.get("conditions", {}) as Dictionary).get("weather", "clear")) == "wind":
+		par = ceilf(par * 1.18 * 2.0) / 2.0  # headwind costs ~15% on every trail
+	if int(r.crashes) == 0 and par > 0.0 and t > 0.0 and t <= par:
+		rec.gold = true
+	var now_medals := medals(id)
 	var pct := Catalog.condition_bonus(r.get("conditions", {}))
 	var payout := {
+		"medals": now_medals, "new_medals": [now_medals[0] and not old_medals[0], now_medals[1] and not old_medals[1],
+			now_medals[2] and not old_medals[2]], "par": par,
 		"coins": int(r.coins),
 		"cond_pct": pct,
 		"cond_pay": int(round(int(r.coins) * pct / 100.0)),
@@ -187,7 +239,7 @@ func _defaults() -> Dictionary:
 		"levels_unlocked": [Catalog.levels()[0].id],
 		"levels": {},
 		"conditions": {"time": "dusk", "weather": "clear"},
-		"settings": {"music": 1.0, "sound": 1.0},
+		"settings": {"music": DEFAULT_MUSIC, "sound": 1.0},
 	}
 
 
@@ -215,6 +267,10 @@ func load_game() -> void:
 		var v = (data.settings as Dictionary).get(k, 1.0)
 		if typeof(v) == TYPE_BOOL:
 			data.settings[k] = 1.0 if v else 0.0
+	# 0.6.0: music starts at half volume. Saves from before that whose slider was
+	# never moved off 100% get the new default once.
+	if int(parsed.get("version", 1)) < 3 and float((data.settings as Dictionary).get("music", 1.0)) >= 0.999:
+		data.settings.music = DEFAULT_MUSIC
 	data.version = SAVE_VERSION
 	data.money = int(data.money)
 

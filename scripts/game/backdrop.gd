@@ -122,6 +122,30 @@ static func _build() -> void:
 				"2e3a5a", "1a2a34", "0c161c", "pines", true, "5e4a38", "8e745a", "2e261e", "1c1812"),
 		},
 	]
+	_base.append({ # Quarry Cliffs: pale sandstone benches cut into the hills
+		"day": _t(["3f86d8", "5c9ae0", "80b2e8", "a8cbef", "d6e8f6"], "fffbe6", 13.0, 0.2,
+			"c8b090", "a88e6c", "6e5a44", "quarry", false, "b89a6a", "ecd2a0", "5e4a36", "3c2e22"),
+		"dusk": _t(["241a34", "4a2a48", "8a4a50", "d07a50", "f0b070"], "ffe0a8", 16.0, 0.42,
+			"8a6a60", "684c48", "3a2a28", "quarry", false, "b89a6a", "ecd2a0", "5e4a36", "3c2e22"),
+		"night": _t(["040410", "0a0c22", "141a3a", "1e2a52", "2c3a6a"], "e8edf7", 10.0, 0.25,
+			"3a3440", "28242e", "141218", "quarry", true, "6a5a46", "9a8668", "2e261e", "1c1812"),
+	})
+	_base.append({ # Rocket Ridge: red desert test range, launch towers on the skyline
+		"day": _t(["2a6ad0", "4a86dc", "70a4e6", "9cc4ee", "d8e8f8"], "fffbe6", 12.0, 0.2,
+			"d07848", "a84a34", "5a2a22", "gantry", false, "c8ccd4", "f4f6f8", "9a3a30", "5a221c"),
+		"dusk": _t(["1a1030", "3a1848", "7a2850", "c84a48", "f09a58"], "ffd0a0", 15.0, 0.42,
+			"8a3a40", "602836", "301420", "gantry", false, "c8ccd4", "f4f6f8", "9a3a30", "5a221c"),
+		"night": _t(["020208", "060818", "0c1230", "141c48", "1e2860"], "e8edf7", 10.0, 0.25,
+			"302438", "201a2a", "100c16", "gantry", true, "7a7e88", "b0b4bc", "5a2620", "341612"),
+	})
+	_base.append({ # Last Trestle: the old line over the gorge, broken bents in the distance
+		"day": _t(["4a5a70", "62728a", "7c8ca2", "9aa8ba", "c0c8d2"], "f4f0e0", 12.0, 0.22,
+			"6a7280", "4a5260", "282c34", "ruin", false, "8a7a62", "bcae94", "4a3e30", "2c241c"),
+		"dusk": _t(["160c18", "34142a", "6a2030", "b23a2a", "e8783a"], "ffb070", 18.0, 0.45,
+			"5a2a2e", "3c1c24", "1c0e12", "ruin", false, "8a7a62", "bcae94", "4a3e30", "2c241c"),
+		"night": _t(["020204", "06060e", "0c0c1a", "141426", "1e1e36"], "e8edf7", 10.0, 0.25,
+			"2a2430", "1c1822", "0e0c12", "ruin", true, "5a5044", "8a7e6c", "2e261e", "1a1612"),
+	})
 	for i in [8]:
 		for k in TIMES:
 			_base[i][k].snow = true
@@ -303,6 +327,37 @@ static func _props(ci: CanvasItem, vs: Vector2, off: float, base: float, th: Dic
 					var tx := px + k * 9.0 * sz
 					var h := floorf((18.0 + 8.0 * _hash(c * 2.0 + k)) * sz)
 					ci.draw_colored_polygon(PackedVector2Array([Vector2(tx - 5, base), Vector2(tx, base - h), Vector2(tx + 5, base)]), col)
+			"quarry":
+				# Stepped benches cut into the rock, sometimes a derrick.
+				var w := floorf(40.0 * sz)
+				for k in 3:
+					ci.draw_rect(Rect2(px + k * 6, base - 8 - k * 7, w - k * 12, 8 + k * 7), col)
+				if _hash(c * 6.6) < 0.4:
+					var h := floorf(30.0 * sz + 6.0)
+					ci.draw_line(Vector2(px + w, base), Vector2(px + w, base - h), col, 2.0)
+					ci.draw_line(Vector2(px + w, base - h), Vector2(px + w - 22, base - h * 0.55), col, -1.0)
+					ci.draw_line(Vector2(px + w - 18, base - h * 0.6), Vector2(px + w - 18, base - h * 0.3), col, -1.0)
+			"gantry":
+				if _hash(c * 3.7) < 0.5:
+					# Launch tower with a rocket beside it; a red light blinks on top.
+					var h := floorf(40.0 * sz + 10.0)
+					ci.draw_rect(Rect2(px, base - h, 6, h), col)
+					ci.draw_rect(Rect2(px + 9, base - h * 0.8, 5, h * 0.8), col)
+					ci.draw_colored_polygon(PackedVector2Array([Vector2(px + 9, base - h * 0.8), Vector2(px + 11.5, base - h * 0.8 - 6),
+						Vector2(px + 14, base - h * 0.8)]), col)
+					if int(Time.get_ticks_msec() / 600) % 2 == 0:
+						ci.draw_rect(Rect2(px + 2, base - h - 2, 2, 2), Color("ff5040"))
+				else:
+					ci.draw_rect(Rect2(px, base - 6, 30 * sz, 6), col)
+					ci.draw_rect(Rect2(px + 4, base - 12, 10, 6), col)
+			"ruin":
+				# Broken trestle bents: legs that end in splinters, one leaning.
+				var h := floorf(30.0 * sz + 10.0)
+				ci.draw_line(Vector2(px, base), Vector2(px + 6, base - h), col, 2.0)
+				ci.draw_line(Vector2(px + 16, base), Vector2(px + 10, base - h * 0.7), col, 2.0)
+				ci.draw_line(Vector2(px + 2, base - h * 0.4), Vector2(px + 14, base - h * 0.45), col, -1.0)
+				if _hash(c * 2.9) < 0.5:
+					ci.draw_line(Vector2(px + 26, base), Vector2(px + 40, base - h * 0.8), col, 2.0)
 			"poles":
 				ci.draw_rect(Rect2(px, base - 34, 2, 34), col)
 				ci.draw_rect(Rect2(px - 5, base - 32, 12, 2), col)

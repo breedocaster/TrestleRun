@@ -17,23 +17,30 @@ const STAGES := {
 	"glide": [["start", 160.0], ["gap", 96.0], ["flat", 120.0, 0], ["gap", 110.0], ["flat", 120.0, 0], ["gap", 104.0], ["flat", 300.0], ["finish"]],
 	"hop": [["start", 160.0], ["gap", 66.0], ["flat", 240.0, 0], ["gap", 70.0], ["flat", 240.0, 0], ["gap", 72.0], ["flat", 300.0], ["finish"]],
 	"dash": [["start", 160.0], ["gap", 66.0], ["flat", 240.0, 0], ["gap", 70.0], ["flat", 240.0, 0], ["gap", 72.0], ["flat", 300.0], ["finish"]],
+	"flips": [["start", 160.0], ["spring_gap", 84.0], ["flat", 220.0, 0], ["spring_up", 0, ""], ["flat", 260.0, 0],
+		["spring_gap", 84.0], ["flat", 200.0, 0], ["stairs_down", 3], ["flat", 200.0], ["finish"]],
+	"lanes": [["start"], ["flat", 100.0], ["fork", 1, [["crawler", 170.0], ["gap", 40.0], ["flat", 100.0]], [["spiker"], ["flat", 120.0]], 1],
+		["flat", 150.0], ["fork", -1, [["gap", 50.0], ["crawler", 170.0]], [], 0, 1], ["flat", 200.0], ["finish"]],
+	"sticky": [["start"], ["flat", 100.0], ["cliff", 300.0, 110.0, 1], ["flat", 200.0], ["cliff", 300.0, 110.0, 0, 0], ["flat", 200.0], ["finish"]],
+	"rocket": [["start"], ["flat", 100.0], ["tri_ramp", 1, "c"], ["flat", 200.0], ["finish"]],
+	"crumble": [["start"], ["flat", 100.0], ["crumble"], ["flat", 100.0], ["crumble", [44.0, 76.0, 44.0, 96.0, 44.0, 44.0, 88.0]], ["flat", 200.0], ["finish"]],
+	"chase": [["chase"], ["start"], ["flat", 100.0], ["gap", 40.0], ["hops", 3, 28.0], ["crumble"], ["loop"], ["gap", 50.0], ["flat", 300.0], ["finish"]],
+	"magnet": [["start"], ["flat", 60.0], ["power", "magnet"], ["high_coins"], ["hops", 2, 28.0], ["power", "hat"], ["crawler", 170.0], ["spiker"], ["flat", 200.0], ["finish"]],
+	"hat": [["start", 160.0], ["power", "hat", 120.0], ["flat", 60.0], ["spiker"], ["flat", 300.0], ["finish"]],
 	"tough": [["start", 160.0], ["spiker"], ["checkpoint", 60.0], ["crawler", 170.0], ["checkpoint", 60.0], ["spiker"], ["flat", 300.0], ["finish"]],
 }
 const Library := preload("res://scripts/game/level_library.gd")
 
 const TOUR := [
-	["hoodoo_loops", 250.0, 6.5, "scrambler", "day", "clear", "TRAIL 7: LOOP-THE-LOOP", ""],
-	["mesa_springs", 250.0, 6.0, "scrambler", "day", "clear", "TRAIL 5: SPRINGS", ""],
-	["lantern_mine", 280.0, 7.0, "scrambler", "dusk", "clear", "TRAIL 6: LOW CEILINGS", ""],
-	["hoist_yard", 230.0, 6.0, "dirt", "day", "clear", "TRAIL 8: LIFTS", ""],
-	["skyline_pass", 220.0, 7.5, "scrambler", "dusk", "clear", "TRAIL 9: ZIPLINES", ""],
-	["dusty_trail", 300.0, 8.0, "scrambler", "day", "clear", "BONUS PLANE", "plane"],
-	["dusty_trail", 60.0, 6.5, "sport", "day", "clear", "SPORTBIKE: POWER WHEELIE", "wheelie"],
-	["dusty_trail", 60.0, 7.0, "scooter", "dusk", "clear", "SCOOTER: UMBRELLA", "glide"],
-	["copper_canyon", 60.0, 6.0, "minibike", "day", "clear", "MINIBIKE: DOUBLE HOP", "hop"],
-	["rustyard", 60.0, 6.0, "cafe", "day", "clear", "CAFE RACER: AIR DASH", "dash"],
-	["night_trestle", 60.0, 6.5, "chopper", "night", "clear", "CHOPPER: IRON HIDE", "tough"],
-	["mesa_springs", 250.0, 6.5, "scrambler", "dusk", "clear", "? HINT CARD (LIVE DEMO)", "hint"],
+	["quarry_cliffs", 300.0, 8.0, "scrambler", "day", "clear", "NEW: STICKY TIRES - JUMP AT THE GREEN FACE", ""],
+	["rocket_ridge", 330.0, 7.0, "scrambler", "day", "clear", "NEW: ROCKET + THREE-WAY RAMP: TOP ROUTE", ""],
+	["rocket_ridge", 330.0, 6.0, "scrambler", "dusk", "clear", "NO ROCKET: A FULL JUMP TAKES THE MIDDLE", "norocket"],
+	["last_trestle", 200.0, 9.0, "dirt", "dusk", "clear", "NEW: CRUMBLING PLANKS + THE COLLAPSE BEHIND YOU", ""],
+	["copper_canyon", 380.0, 6.0, "scrambler", "day", "clear", "COIN MAGNET", ""],
+	["night_trestle", 60.0, 5.5, "scrambler", "night", "clear", "HARD HAT: TAKES ONE HIT", "hat"],
+	["dusty_trail", 300.0, 7.0, "scrambler", "day", "clear", "T-R-E-S-T-L-E LETTERS ON EVERY TRAIL", ""],
+	["hoodoo_loops", 400.0, 7.0, "scrambler", "day", "clear", "GHOST OF YOUR BEST RUN", "ghost"],
+	["last_trestle", 150.0, 8.0, "scrambler", "dusk", "clear", "? TIPS: ONE PAGE PER NEW THING", "hint"],
 ]
 
 
@@ -48,6 +55,7 @@ class Showoff:
 	func decide(s: Dictionary) -> Array:
 		if mode == "tough":
 			return [false, false]  # ride straight through: the armour takes the hits
+		bot.tricks = mode == "flips"
 		var d: Array = bot.decide(s)
 		if (mode == "hop" or mode == "dash") and not s.grounded and not bool(s.air_used) \
 				and absf(float(s.vy)) < 40.0 and float(s.coyote) <= 0.0 and int(s.zip) < 0:
@@ -93,31 +101,62 @@ func _tour() -> void:
 		var w = gs.world
 		if STAGES.has(sg[7]):
 			var meta: Dictionary = Catalog.level(sg[0]).duplicate()
-			w.level = Library.build_layout(STAGES[sg[7]], meta)
-			Phys.apply_weather(w.level, String(sg[5]))
+			w.replace_level(Library.build_layout(STAGES[sg[7]], meta))
 		var ap = Bot.new(w.level)
-		if sg[7] in ["wheelie", "glide", "hop", "dash", "tough"]:
+		ap.tricks = sg[7] == "tricks"
+		if sg[7] in ["wheelie", "glide", "hop", "dash", "tough", "flips", "hat"]:
 			var sh := Showoff.new()
 			sh.bot = ap
-			sh.mode = sg[7]
+			sh.mode = "tough" if sg[7] == "hat" else sg[7]
 			w.bot = sh
 		else:
 			w.bot = ap
 		_teleport(w, float(sg[1]))
+		if sg[7] == "norocket":
+			for i in w.level.powerups.size():
+				w.state.got[i] = true
+		if sg[7] == "ghost":
+			w.set_ghost(_bot_ghost(sg[0], float(sg[1]), "sport"))
 		if sg[7] == "plane":
 			w._next_plane_t = 0.0
 		cap.text = sg[6]
 		if sg[7] == "hint":
 			await get_tree().create_timer(1.6).timeout
 			gs.show_hint()
-			await get_tree().create_timer(float(sg[2]) - 1.6).timeout
+			await get_tree().create_timer(3.4).timeout
+			var cards: Array = gs.find_children("*", "PanelContainer", true, false).filter(func(n): return n.has_method("_show_page"))
+			if not cards.is_empty():
+				cards[0]._show_page(1)
+			await get_tree().create_timer(float(sg[2]) - 5.0).timeout
 			gs.resume()
 		else:
 			await get_tree().create_timer(float(sg[2])).timeout
 
 
+## A ghost recorded from a headless bot run on another bike (for showing ghosts).
+static func _bot_ghost(level_id: String, x: float, bike: String) -> Dictionary:
+	var World = load("res://scripts/game/world.gd")
+	var w = World.new()
+	w.headless = true
+	w.setup(level_id, {"bike": bike}, [], {"time": "day", "weather": "clear"})
+	var sh := Showoff.new()
+	sh.bot = Bot.new(w.level)
+	sh.mode = "wheelie"
+	w.bot = sh
+	_teleport(w, x)
+	w.phase = "ride"
+	var fr := PackedFloat32Array()
+	for i in 60 * 20:
+		w.tick()
+		if i % 2 == 0:
+			var rot: float = atan(float(w.state.slope)) if w.state.grounded else clampf(float(w.state.vy) * 0.0011, -0.42, 0.5)
+			fr.append_array(PackedFloat32Array([w.state.x, w.state.y, rot, w.state.lane_z]))
+	w.free()
+	return {"rig": {"rider": "zorp", "bike": bike, "paint": "stock"}, "frames": fr}
+
+
 ## Start the run at x on the main deck (as if respawning there).
-func _teleport(w, x: float) -> void:
+static func _teleport(w, x: float) -> void:
 	for ti in Phys.tracks_near(w.level, x):
 		var tr: Dictionary = w.level.tracks[ti]
 		if x >= tr.x0 and x <= tr.x1 and not tr.side:
@@ -171,6 +210,69 @@ func _ready() -> void:
 		print("SAVED settings=", (JSON.parse_string(f.get_as_text()) as Dictionary).get("settings"))
 		get_tree().quit()
 		return
+	if p[0] == "scroll":  # can a finger drag the trail picker sideways from each part of a card?
+		main.navigate("levels", "")
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var ls = main.current
+		Input.emulate_touch_from_mouse = true  # desktop: makes DisplayServer report a touchscreen, as on the phone
+		print("SCROLL touchscreen=%s" % DisplayServer.is_touchscreen_available())
+		var got := {"n": 0}
+		ls._scroll.gui_input.connect(func(e): got.n += 1)
+		ls._scroll.scroll_started.connect(func(): print("SCROLL started"))
+		var xf: Transform2D = get_tree().root.get_final_transform()
+		var card: Control = ls._row.get_child(1)
+		var chain := []
+		var nn: Node = card.find_children("*", "Label", true, false)[0]
+		while nn != null and nn != main:
+			if nn is Control:
+				chain.append("%s:%s" % [nn.get_class(), ["STOP", "PASS", "IGNORE"][nn.mouse_filter]])
+			nn = nn.get_parent()
+		print("SCROLL chain ", chain)
+		var hit = get_viewport().gui_get_hovered_control() if get_viewport().has_method("gui_get_hovered_control") else null
+		var spots := {}
+		for n in card.find_children("*", "Control", true, false):
+			var nm := "%s(%s)" % [n.get_class(), ["STOP", "PASS", "IGNORE"][n.mouse_filter]]
+			if n is Button:
+				nm = "Button:" + n.text
+			if not spots.has(nm) and n.size.x > 10 and n.size.y > 6:
+				spots[nm] = n.get_global_rect().get_center()
+		for nm in spots:
+			ls._scroll.scroll_horizontal = 0
+			await get_tree().process_frame
+			var a: Vector2 = spots[nm]
+			_mouse(xf * a, true)
+			await get_tree().process_frame
+			for k in 8:
+				_mouse_move(xf * (a - Vector2(12.0 * (k + 1), 0)), xf.basis_xform(Vector2(-12, 0)))
+				await get_tree().process_frame
+			_mouse(xf * (a - Vector2(96, 0)), false)
+			await get_tree().process_frame
+			await get_tree().process_frame
+			print("SCROLL from %-28s -> scroll_x=%d  events_at_scroll=%d confirm=\"%s\"" % [nm, ls._scroll.scroll_horizontal, got.n, ls._confirm])
+			got.n = 0
+			if main.current != ls:
+				main.navigate("levels", "")
+				await get_tree().process_frame
+				await get_tree().process_frame
+				ls = main.current
+			if ls._setup != null:
+				ls._setup.queue_free()
+				ls._setup = null
+		print("SCROLL max=%d viewport=%s" % [ls._scroll.get_h_scroll_bar().max_value - ls._scroll.size.x, get_viewport().get_visible_rect().size])
+		# A plain tap on trail 1's RIDE must still open the conditions picker.
+		ls._scroll.scroll_horizontal = 0
+		await get_tree().process_frame
+		var ride: Button = ls._row.get_child(0).find_children("*", "Button", true, false)[-1]
+		var rp := ride.get_global_rect().get_center()
+		_mouse(xf * rp, true)
+		await get_tree().process_frame
+		_mouse(xf * rp, false)
+		await get_tree().process_frame
+		print("SCROLL tap %s -> setup_open=%s" % [ride.text, ls._setup != null])
+		get_tree().quit()
+		return
 	if p[0] == "crash":  # engine dies on crash, comes back on respawn
 		main.navigate("game", "dusty_trail")
 		await get_tree().create_timer(2.5).timeout
@@ -187,10 +289,13 @@ func _ready() -> void:
 		return
 	if p[0] == "retry":  # RETRY path must keep the new run's audio alive
 		GameState.data.conditions = {"time": "dusk", "weather": "wind"}
-		main.navigate("game", "dusty_trail")
+		main.navigate("game", "rustyard")
 		await get_tree().create_timer(2.5).timeout
-		main.navigate("game", "dusty_trail")
+		var first_player = AudioDirector.music
+		main.navigate("game", "rustyard")
 		await get_tree().create_timer(3.0).timeout
+		print("RETRY track=%s same_player=%s pos=%.1fs" % [AudioDirector._track, AudioDirector.music == first_player,
+			AudioDirector.music.get_playback_position()])
 		var ad = AudioDirector
 		var live := []
 		for k in ad.amb:
@@ -205,8 +310,8 @@ func _ready() -> void:
 		for k in ad.amb:
 			if ad.amb[k].playing:
 				live.append(k)
-		print("TITLE engine=%s ambience=%s music_bus=%.1fdB" % [ad.eng_cruise.playing or ad.eng_idle.playing, live,
-			AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))])
+		print("TITLE engine=%s ambience=%s music_bus=%.1fdB track=%s" % [ad.eng_cruise.playing or ad.eng_idle.playing, live,
+			AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music")), ad._track])
 		get_tree().quit()
 		return
 	if p[0] == "tour":
@@ -248,6 +353,25 @@ func _touch(pos: Vector2, pressed: bool, idx: int) -> void:
 	ev.index = idx
 	ev.position = pos
 	ev.pressed = pressed
+	Input.parse_input_event(ev)
+
+
+func _mouse(pos: Vector2, pressed: bool) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.position = pos
+	ev.global_position = pos
+	ev.pressed = pressed
+	ev.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+	Input.parse_input_event(ev)
+
+
+func _mouse_move(pos: Vector2, rel: Vector2) -> void:
+	var ev := InputEventMouseMotion.new()
+	ev.position = pos
+	ev.global_position = pos
+	ev.relative = rel
+	ev.button_mask = MOUSE_BUTTON_MASK_LEFT
 	Input.parse_input_event(ev)
 
 

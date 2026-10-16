@@ -6,7 +6,8 @@ Sources (fetched with git, licenses verified):
   KenneyNL/Starter-Kit-* (CC0)        -> impact, land, break, UI clicks
   rafaelmardojai/blanket sounds       -> birds (CC0), crickets (PD), wind (CC0),
                                          rain (CC BY 4.0), creek (CC0)
-Everything else (engines, chimes, whooshes, theme) is synthesized here.
+Everything else (engines, chimes, whooshes, theme + variants, mine/yard/canyon/alpine
+beds) is synthesized here.
 """
 import json
 import os
@@ -28,9 +29,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "assets", "audio")
 
 
-def save(rel, x, q=4, loop=False, meta=None, manifest=None):
+def save(rel, x, q=4, loop=False, meta=None, manifest=None, rate=None):
     path = os.path.join(OUT, rel)
-    write_ogg(path, x, q)
+    write_ogg(path, x, q, rate)
     entry = {"seconds": round(x.shape[0] / SR, 3), "lufs": round(float(lufs(x)), 1),
              "peak_db": round(float(20 * np.log10(np.max(np.abs(x)) + 1e-12)), 1),
              "loop": loop, "kb": round(os.path.getsize(path) / 1024, 1)}
@@ -58,10 +59,15 @@ def main():
     if want("ambience"):
         amb, info = ambience.build(f"{SRC}/blanket/data/resources/sounds")
         for name, y in amb.items():
-            save(f"ambience/{name}.ogg", y, q=2, loop=True, meta=info[name], manifest=manifest)
+            # Beds at 22.05 kHz: nothing in them needs the top octave, and it buys APK room.
+            save(f"ambience/{name}.ogg", y, q=0 if info[name].get("synth") else 1, loop=True,
+                 meta=info[name], manifest=manifest, rate=22050)
     if want("music"):
-        save("music/trestle_dreams.ogg", theme.render(), q=3, loop=True,
-             meta={"bpm": theme.BPM, "bars": theme.BARS}, manifest=manifest)
+        # One theme and two trail variants; q1 keeps all three in the APK budget.
+        for name, cfg in theme.VARIANTS.items():
+            y = theme.render_variant(name)
+            save(f"music/{name}.ogg", y, q=1, loop=True,
+                 meta={"bpm": cfg.get("bpm", 78.0), "bars": cfg.get("bars", 32)}, manifest=manifest)
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)
     total = sum(v["kb"] for v in manifest.values())

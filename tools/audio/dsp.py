@@ -168,13 +168,15 @@ def loop_xfade(x, start, length, xf):
     return body
 
 
-def write_ogg(path, x, quality=4):
+def write_ogg(path, x, quality=4, rate=None):
+    """rate: resample on the way out (beds with no top end don't need 44.1 kHz)."""
     x = np.clip(x, -1.0, 1.0)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
         wavfile.write(tf.name, SR, (x * 32767).astype(np.int16))
         tmp = tf.name
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-c:a", "libvorbis", "-q:a", str(quality), path],
+    resample = ["-ar", str(rate)] if rate else []
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, *resample, "-c:a", "libvorbis", "-q:a", str(quality), path],
                    check=True)
     os.unlink(tmp)
 

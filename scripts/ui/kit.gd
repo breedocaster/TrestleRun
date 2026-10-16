@@ -36,6 +36,19 @@ static func spacer(h := true) -> Control:
 	return c
 
 
+## Content inside a ScrollContainer: let finger drags through to the scroller.
+## Panels and buttons default to STOP, which swallows the touch, so a drag that starts
+## on a card never scrolls. PASS lets them react and still hands the drag up; once the
+## drag passes the deadzone the ScrollContainer sends NOTIFICATION_SCROLL_BEGIN, which
+## cancels the button's press, so dragging across a button doesn't click it.
+static func pass_drags(root: Control) -> void:
+	if root.mouse_filter == Control.MOUSE_FILTER_STOP and not root is ScrollBar:
+		root.mouse_filter = Control.MOUSE_FILTER_PASS
+	for c in root.get_children():
+		if c is Control:
+			pass_drags(c)
+
+
 static func full_rect(c: Control) -> Control:
 	c.set_anchors_preset(Control.PRESET_FULL_RECT)
 	c.offset_left = 0

@@ -5,6 +5,7 @@
 extends Node2D
 
 const Catalog := preload("res://scripts/catalog.gd")
+const Icons := preload("res://scripts/game/icons.gd")
 
 const LIGHT := Color("ffe9a8")
 const TAIL := Color("ff4a3a")
@@ -21,6 +22,13 @@ var flutter := 0.4    # 0..1: how hard scarves/tails/flames stream
 var anim_t := 0.0
 var umbrella := 0.0   # 0..1: scooter's umbrella opening while gliding
 var hanging := false  # on a zipline
+var sticky := false   # sticky tires: green, gooey
+var rocket := 0.0     # rocket flame 0..1
+var hat := false      # hard hat on
+
+## Set while one rig draws (draw_rig reads them), so menus never see them.
+static var _tire_override := Color(0, 0, 0, 0)
+static var _hat := false
 
 
 func _draw() -> void:
@@ -28,7 +36,13 @@ func _draw() -> void:
 		return
 	if squash > 0.01:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 + 0.12 * squash, 1.0 - 0.14 * squash))
+	if rocket > 0.02:
+		_rocket_flame(self, Vector2(-13, -7), rocket, anim_t)
+	_tire_override = Color("6fe84a") if sticky else Color(0, 0, 0, 0)
+	_hat = hat
 	var a := draw_rig(self, Vector2.ZERO, rig, wheel_angle, anim_t, lean, flutter)
+	_tire_override = Color(0, 0, 0, 0)
+	_hat = false
 	if umbrella > 0.02:
 		draw_umbrella(self, Vector2.ZERO + a.grip, umbrella, Catalog.paint(String(rig.get("paint", "stock"))), anim_t)
 
@@ -36,6 +50,9 @@ func _draw() -> void:
 static func draw_rig(ci: CanvasItem, o: Vector2, r: Dictionary, wa: float, t: float,
 		lean := 0.0, flutter := 0.4) -> Dictionary:
 	var paint := Catalog.paint(String(r.get("paint", "stock")))
+	if _tire_override.a > 0.0:
+		paint = paint.duplicate()
+		paint.tire = _tire_override
 	var a := draw_bike(ci, o, String(r.get("bike", "scrambler")), paint, wa)
 	draw_rider(ci, o, String(r.get("rider", "dusty")), a, t, lean, flutter)
 	return a
@@ -317,7 +334,17 @@ static func draw_rider(ci: CanvasItem, o: Vector2, id: String, a: Dictionary, t:
 			_head_frosty(ci, head)
 		_:
 			_head_dusty(ci, head)
+	if _hat:
+		Icons.hard_hat(ci, head + Vector2(0, -3))
 
+
+## Rocket strapped behind the seat: a flickering flame pointing back.
+static func _rocket_flame(ci: CanvasItem, o: Vector2, k: float, t: float) -> void:
+	ci.draw_rect(Rect2(o.x - 1, o.y - 2, 7, 4), Color("e8e2d0"))
+	ci.draw_rect(Rect2(o.x + 3, o.y - 2, 2, 4), Color("e04848"))
+	var L := (8.0 + 5.0 * sin(t * 40.0)) * k
+	ci.draw_colored_polygon(PackedVector2Array([o + Vector2(-1, -2), o + Vector2(-1 - L, 0), o + Vector2(-1, 2)]), Color("ff7a2a"))
+	ci.draw_colored_polygon(PackedVector2Array([o + Vector2(-1, -1), o + Vector2(-1 - L * 0.55, 0), o + Vector2(-1, 1)]), Color("fff1a8"))
 
 static func _rider_colors(id: String) -> Dictionary:
 	match id:

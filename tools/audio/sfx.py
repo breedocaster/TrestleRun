@@ -326,6 +326,78 @@ def build(kenney_dir):
     saw = signal.sawtooth(2 * np.pi * np.cumsum(fw) / SR) * np.minimum(1, tt / 0.03) * np.exp(-tt / 0.2)
     out["wheelie"] = _finish(signal.sosfilt(sos_lp(1400), saw) + 0.3 * whoosh(0.4, 400, 900, 0.1), wet=0.1, tail=0.2, lufs=-26)
 
+    # Switch ramp: a rail-points clack and a swoop as the track swings across lanes.
+    sw = np.zeros(int(1.0 * SR))
+    place(sw, 0.8 * wood(midi_hz(62), 0.2, decay=0.5), 0.0)
+    place(sw, 0.6 * wood(midi_hz(69), 0.2, decay=0.5), 0.07)
+    tt = _t(0.12)
+    clk = sum(np.sin(2 * np.pi * 1900 * r * tt) * np.exp(-tt / 0.02) for r in (1.0, 1.6))
+    place(sw, 0.2 * clk, 0.0)
+    place(sw, 0.5 * whoosh(0.8, 300, 1100, 0.35), 0.05)
+    out["switch"] = _finish(sw, wet=0.25, tail=0.4, lufs=-24, hp=100)
+
+    # Flip: a quick airy spin.
+    out["flip"] = _finish(whoosh(0.32, 700, 2400, 0.08) + 0.5 * whoosh(0.32, 2400, 900, 0.2), wet=0.15, tail=0.2, lufs=-27, hp=250)
+
+    # Landed trick: a bright rising triad in D.
+    tk = np.zeros(int(1.2 * SR))
+    for i, m in enumerate([81, 85, 88, 93]):
+        place(tk, chime(midi_hz(m), 0.45, bright=0.8, decay=0.3) * (0.7 + 0.1 * i), i * 0.045)
+    out["trick"] = _finish(tk, wet=0.22, tail=0.35, lufs=-21, fade=0.25)
+
+    # Power-up pickup: a quick upward sparkle arpeggio (D pentatonic).
+    pw = np.zeros(int(0.9 * SR))
+    for i, m in enumerate([74, 78, 81, 86]):
+        place(pw, chime(midi_hz(m), 0.4, bright=0.9, decay=0.25) * 0.8, i * 0.035)
+    out["power"] = _finish(pw, wet=0.25, tail=0.3, lufs=-21)
+
+    # Rocket: ignition thump, then a roaring hiss that fades over ~1.5 s.
+    t = _t(1.6)
+    roar = sosc(sos_bp(120, 2400), RNG.standard_normal(len(t))) * np.minimum(1.0, t / 0.05) * np.exp(-t / 0.9)
+    roar += 0.6 * np.sin(2 * np.pi * np.cumsum(60 + 30 * np.exp(-t / 0.3)) / SR) * np.exp(-t / 0.5)
+    rk = roar.copy()
+    place(rk, 0.6 * pw[: int(0.5 * SR)], 0.0)
+    out["power_rocket"] = _finish(rk, wet=0.12, tail=0.3, lufs=-20, hp=50)
+
+    # Sticky tires: a gooey squelch (pitch-bent low pop) plus the pickup chime.
+    tq = _t(0.35)
+    sq = np.sin(2 * np.pi * np.cumsum(420 * np.exp(-tq / 0.08) + 90) / SR) * np.exp(-tq / 0.12)
+    sq += 0.4 * sosc(sos_bp(300, 1400), RNG.standard_normal(len(tq))) * np.exp(-tq / 0.05)
+    st = np.zeros(int(0.9 * SR))
+    place(st, sq * 0.9, 0.0)
+    place(st, 0.6 * pw[: int(0.8 * SR)], 0.05)
+    out["power_sticky"] = _finish(st, wet=0.2, tail=0.3, lufs=-21)
+
+    # Climb: tires gripping rock, a wet squelch and a rising grind.
+    tc = _t(0.6)
+    grind = sosc(sos_bp(200, 1600), RNG.standard_normal(len(tc))) * (0.5 + 0.5 * np.sin(2 * np.pi * 18 * tc)) * np.exp(-tc / 0.35)
+    cl = np.zeros(len(tc))
+    place(cl, sq * 0.8, 0.0)
+    out["climb"] = _finish(cl + 0.5 * grind, wet=0.15, tail=0.25, lufs=-23, hp=80)
+
+    # Hard hat takes the hit: a hollow plastic clonk with a ring.
+    th2 = _t(0.5)
+    clonk = (np.sin(2 * np.pi * 520 * th2) * np.exp(-th2 / 0.05) + 0.6 * np.sin(2 * np.pi * 1240 * th2) * np.exp(-th2 / 0.03)
+             + 0.3 * np.sin(2 * np.pi * 2650 * th2) * np.exp(-th2 / 0.08))
+    out["hat"] = _finish(clonk * (1 - np.exp(-th2 / 0.001)), wet=0.18, tail=0.3, lufs=-20)
+
+    # Crumbling plank: a dry crack and splinters.
+    tcr = _t(0.4)
+    crack = sosc(sos_hp(900), RNG.standard_normal(len(tcr))) * np.exp(-tcr / 0.02)
+    for k in range(5):
+        place(crack, 0.4 * wood(RNG.uniform(500, 900), 0.1, decay=0.15), RNG.uniform(0.02, 0.2))
+    out["crumble"] = _finish(crack, wet=0.15, tail=0.2, lufs=-26, hp=200)
+
+    # Letter: two quick bright notes; all seven: the theme's rising fanfare.
+    lt = np.zeros(int(0.8 * SR))
+    place(lt, chime(midi_hz(86), 0.4, bright=0.9, decay=0.3), 0.0)
+    place(lt, chime(midi_hz(93), 0.45, bright=0.9, decay=0.35), 0.07)
+    out["letter"] = _finish(lt, wet=0.25, tail=0.3, lufs=-21)
+    la = np.zeros(int(1.8 * SR))
+    for i, m in enumerate([74, 78, 81, 86, 90, 93, 98]):
+        place(la, chime(midi_hz(m), 0.6, bright=0.8, decay=0.4) * 0.8, i * 0.07)
+    out["letters_all"] = _finish(la, IR_LONG, wet=0.35, tail=0.8, lufs=-18)
+
     # Rolling over deck plank joints: front then rear wheel, every 64 px at 128 px/s.
     period, wheelbase, n = 0.5, 0.125, int(4.0 * SR)
     roll = np.zeros(n)

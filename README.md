@@ -6,47 +6,82 @@ One-button motorcycle runner for Android/iOS, built in **Godot 4.7** (GL Compati
 
 - The bike rides automatically along canyon trestles. **Tap = short hop, hold = full jump** (variable height, with coyote time and jump buffering).
 - **Branching routes:** upper decks you reach by jumping (or a spring), and hidden lower decks that merge back up.
-- **Enemies**
-  - *Crawler* (orange shell): stomp it from above for a bounce and +2 coins; touching its side crashes you.
-  - *Spiker* (spiked ball): can't be stomped, jump over it.
-  - *Drone* (spiked top, hovering): can't be stomped, stay low and ride under it.
+- **Switch tracks (2.5D):** some trails run parallel tracks behind and in front of the main one. Roll onto a signed switch ramp to swing onto the other track; hop over the ramp to stay. A wide striped plate at the end merges you back. Some switches are optional (coins, a gear, a way round hazards); on others the main deck breaks off and the switch is the way on. The track you're on is drawn at its depth (smaller and hazed behind, bigger in front), and any track in front of you fades so you can see yourself behind tunnels.
+- **Tricks:** tap in the air for a flip. Rising = backflip, falling = front flip. A tap only starts a flip if you'll stay airborne long enough to finish one (0.38 s), so it's a big-air move: kickers, drops, springs, stomp bounces. On a short hop the tap is just a press, so tapping again and holding to wheelie on landing works. Tapping again mid-flip adds another flip, and that one isn't checked: land upright (within ~35 degrees) for coins, 2 per backflip and 3 per front flip, times the number of flips (a double backflip is 8); land mid-flip and it's a sketchy landing, a wobble and 28% of your speed lost, never a crash. Double hop and air dash take priority over flips, the scooter's press while falling is always its umbrella, and a press just above the deck still counts as a buffered jump. Results show tricks and their coins on their own row.
+- **Enemies** (each trail has its own look for them, same hitboxes)
+  - *Crawler* (beetle, scorpion, rustbot, mole, marmot): stomp it from above for a bounce and +2 coins; touching its side crashes you.
+  - *Spiker* (cactus, mine, urchin, crystal, ice spike): can't be stomped, jump over it.
+  - *Flyer* (vulture, drone, bat, owl): can't be stomped, stay low and ride under it.
 - **Pickups:** coins, money bags (+10), and 3 hidden **gears** per trail (25 coins each, paid once).
+- **Power-ups** (bubbles floating over the deck; ride or hop through one). The HUD shows a draining bar for each timed one:
+  - *Sticky tires* (10 s): jump at a cliff face painted with green chevrons and you stick and drive straight up it to the route on top (coins, often a gear), then drop off the far end for big air. Without them the face bonks you back down onto the main deck, which runs through a tunnel under the cliff. A late jump right at the tunnel mouth also counts as the face (no crash).
+  - *Rocket* (2.5 s): +75% speed and jumps take off 20% harder. Three-way ramps (a steep kicker): rocket + full jump at the lip reaches the top deck, a full jump alone the middle deck, a tap or no jump drops you to the bottom road. All three routes are safe and rejoin; the higher ones pay more.
+  - *Coin magnet* (8 s): coins within 60 px fly to you. Gears and letters you still grab yourself.
+  - *Hard hat* (one hit): the next crawler or spiker you hit breaks the hat instead of you. It doesn't help with falls.
+- **T-R-E-S-T-L-E letters:** seven per trail, shown in the HUD as you find them. All seven in one run pays +50. They roll back with coins if you crash past a checkpoint.
+- **Medals per trail:** bronze for a clear, silver for all seven letters in one run, gold for a run under par with no crashes (par is the dev bot's clean time + about a second; +18% in wind). Shown on the trail cards and the results screen.
+- **Ghost:** your best-time run rides alongside you as a see-through rider. GHOST RUN on/off in Settings.
 - Checkpoints mid-trail; crashes respawn you there. Coins only bank when you finish.
 - **Payout** per clear = coins + conditions bonus + new gears + clear bonus + no-crash bonus. Results also show your time and best time.
 
 ### Trails
 
-Nine trails, each adding one new thing on top of the earlier ones. Speed, gap widths and hazard density climb from trail to trail.
+Twelve trails, each adding one new thing on top of the earlier ones. Speed, gap widths and hazard density climb from trail to trail.
 
 | # | Trail | Speed | New feature | How to get past it |
 |---|---|---|---|---|
-| 1 | Dusty Trail | 118 | Jumping | Tap for a hop, hold for a big jump |
-| 2 | Copper Canyon | 122 | Crawlers | Land on top to stomp; hold during the bounce to go higher |
-| 3 | Rustyard | 126 | Spikers | Jump clean over; land between pairs and hop again |
-| 4 | Night Trestle | 130 | Drones | Stay low; over a gap use a quick tap so you stay under |
+| 1 | Dusty Trail | 118 | Jumping, tricks | Tap for a hop, hold for a big jump; tap again in the air to flip |
+| 2 | Copper Canyon | 122 | Crawlers, coin magnet | Land on top to stomp; hold during the bounce to go higher |
+| 3 | Rustyard | 126 | Spikers, switch tracks | Jump clean over; roll onto a switch ramp to change tracks |
+| 4 | Night Trestle | 130 | Flyers, hard hat | Stay low; over a gap use a quick tap so you stay under |
 | 5 | Mesa Springs | 134 | Springs | Roll onto the pad to fly high and far; hop over it to stay low |
 | 6 | Lantern Mine | 138 | Low ceilings | Taps only: a big jump bonks your head and drops you short |
 | 7 | Hoodoo Loops | 142 | Loop-the-loops | Keep rolling; press as you come out if there's a gap |
 | 8 | Hoist Yard | 146 | Bobbing lifts | Time the jump to come down on the next lift |
 | 9 | Skyline Pass | 150 | Ziplines | Long hold to grab the cable, keep holding, let go over the far deck |
+| 10 | Quarry Cliffs | 154 | Sticky tires | Grab them, jump at the green face, ride the top; or take the tunnel |
+| 11 | Rocket Ridge | 156 | Rocket | Rocket + full jump at a ramp's lip for the top route |
+| 12 | Last Trestle | 158 | Crumbling planks, collapse | Hop straight off long grey planks; keep your speed up ahead of the collapse |
 
-**Hints:** the in-run **?** button (top right) pauses and opens a card explaining the trail's new feature, with a live demo of the autopilot riding it. On a first visit the button pulses and a small "NEW: ..." tag shows for a few seconds; there is no splash screen. The trail picker has the same card behind **? TIPS**, and each trail card names its feature.
+Trails 6–9 also carry bonus routes for the new power-ups: a sticky-tire cliff on Lantern Mine and Hoist Yard, a rocket three-way ramp on Hoodoo Loops and Skyline Pass. Magnets and hard hats turn up from Trail 2 on.
+
+**Hints:** the in-run **?** button (top right) pauses and opens a card explaining the trail's new feature, with a live demo of the autopilot riding it. Trails that introduce two things get two pages (NEXT / BACK). On a first visit the button pulses and a small "NEW: ..." tag shows for a few seconds; there is no splash screen. The trail picker has the same card behind **? TIPS**, and each trail card names its feature.
+
+**Each trail has its own identity:**
+
+| # | Trail | Track build | Critters (crawler / spiker / flyer) | Ambient | Sound bed | Music | Pacing |
+|---|---|---|---|---|---|---|---|
+| 1 | Dusty Trail | Wooden trestle | Beetle / cactus / vulture | Dust motes, dust devil | Birds / crickets | Trestle Dreams | Rolling dunes, two kickers for first flips |
+| 2 | Copper Canyon | Stone arches | Scorpion / cactus / vulture | Copper glints, dust devils | Canyon wind, creek | Trestle Dreams | Long drops and climbs |
+| 3 | Rustyard | Riveted girders | Rustbot / mine / drone | Welding sparks under the deck, smokestacks | Machine yard | Ridge Runner | Hazard clusters, two switch-track forks (one optional, one forced) |
+| 4 | Night Trestle | Steel truss with lamps | Beetle / urchin / bat | Low fog banks | Crickets | Lantern Low | One long bridge; a forced rush along the foreground track |
+| 5 | Mesa Springs | Adobe piers | Beetle / cactus / vulture | Steam from the springs, a geyser | Creek | Trestle Dreams | Bouncy: springs between hills |
+| 6 | Lantern Mine | Mine cribbing and rail | Mole / crystal / bat | Water drips, lantern dust | Mine rumble and drips | Lantern Low | Tunnels, with side shafts in the back lane |
+| 7 | Hoodoo Loops | Rock columns | Scorpion / cactus / vulture | Blowing red sand, dust devils | Canyon wind | Trestle Dreams | Flowing: loops linked by hills and a kicker |
+| 8 | Hoist Yard | Catwalk with hazard stripe | Rustbot / mine / drone | Arc-weld sparks, vent steam, smokestacks | Machine yard | Ridge Runner | Stacked: lifts on a back gantry, a front catwalk rush |
+| 9 | Skyline Pass | Log bridge, snow, rope rail | Marmot / ice / owl | Snow, spindrift off the peaks | Mountain wind | Ridge Runner | Mountain descent with big airs and ziplines |
+| 10 | Quarry Cliffs | Timber scaffolding | Mole / dynamite / vulture | Grit trickling down, a blast plume on a far bench | Canyon wind, yard | Trestle Dreams | Five cliffs to climb, tunnels underneath |
+| 11 | Rocket Ridge | White lattice towers, red and white grating | Rustbot / mine / drone | Exhaust haze, a test rocket climbing off a far pad | Yard, canyon wind | Ridge Runner | Four three-way ramps, lifts, a zipline |
+| 12 | Last Trestle | Old grey timber over a gorge | Beetle / urchin / bat | Splinters and ash, dust where far bents give way | The collapse (rumble, snapping timbers) | Ridge Runner | The trestle falls away behind you; crumbling plank runs |
 
 **Difficulty ramp**, measured by `--difficulty` (see Dev checks). For every jump a trail forces, it finds how long the window of frames is in which pressing still gets you past (pressing in the middle of the window, like a person would):
 
 | # | Trail | Speed | Tightest window: clear / rain / wind | 10th percentile (clear) | Forced jumps per 10 s |
 |---|---|---|---|---|---|
-| 1 | Dusty Trail | 118 | 333 / 283 / 233 ms | 350 ms | 3.4 |
-| 2 | Copper Canyon | 122 | 183 / 183 / 166 ms | 233 ms | 4.4 |
-| 3 | Rustyard | 126 | 183 / 166 / 133 ms | 216 ms | 5.8 |
-| 4 | Night Trestle | 130 | 166 / 183 / 133 ms | 183 ms | 3.6 |
-| 5 | Mesa Springs | 134 | 166 / 166 / 83 ms | 183 ms | 2.6 |
-| 6 | Lantern Mine | 138 | 116 / 83 / 83 ms | 166 ms | 3.5 |
-| 7 | Hoodoo Loops | 142 | 100 / 133 / 133 ms | 150 ms | 4.1 |
-| 8 | Hoist Yard | 146 | 116 / 100 / 66 ms | 166 ms | 5.7 |
-| 9 | Skyline Pass | 150 | 166 / 83 / 83 ms | 166 ms | 4.6 |
+| 1 | Dusty Trail | 118 | 333 / 283 / 250 ms | 350 ms | 2.6 |
+| 2 | Copper Canyon | 122 | 233 / 200 / 200 ms | 233 ms | 3.3 |
+| 3 | Rustyard | 126 | 166 / 166 / 133 ms | 216 ms | 5.0 |
+| 4 | Night Trestle | 130 | 183 / 183 / 150 ms | 200 ms | 2.7 |
+| 5 | Mesa Springs | 134 | 133 / 166 / 133 ms | 150 ms | 2.5 |
+| 6 | Lantern Mine | 138 | 166 / 150 / 100 ms | 200 ms | 2.8 |
+| 7 | Hoodoo Loops | 142 | 150 / 100 / 83 ms | 166 ms | 3.5 |
+| 8 | Hoist Yard | 146 | 150 / 150 / 100 ms | 183 ms | 4.2 |
+| 9 | Skyline Pass | 150 | 166 / 83 / 133 ms | 183 ms | 3.7 |
+| 10 | Quarry Cliffs | 154 | 150 / 166 / 166 ms | 233 ms | 2.1 |
+| 11 | Rocket Ridge | 156 | 150 / 83 / 133 ms | 166 ms | 2.8 |
+| 12 | Last Trestle | 158 | 200 / 150 / 150 ms | 200 ms | 4.6 |
 
-Speed climbs every trail and each one adds a mechanic on top of the timing; the tightest windows shrink from a third of a second to around 0.1 s, and no spot needs frame-perfect timing in any weather (the tightest anywhere is 66 ms, Hoist Yard in wind). For comparison, the v0.4 trails measured the same way: Trail 2 (Copper Canyon at 136 px/s) had a 16 ms, one-frame spot at its split-deck section, and Trail 3 had a stretch the careful rider couldn't get through at all.
+Speed climbs every trail and each one adds a mechanic on top of the timing; the tightest windows shrink from a third of a second to around 0.1 s, and no spot needs frame-perfect timing in any weather (the tightest anywhere is 83 ms, five frames; v0.5's was 66 ms). Trails 10-12 keep their windows near Trails 7-9 on purpose: their step up is route choice (climb or tunnel, top/middle/low road) and, on Last Trestle, the collapse behind you. The careful rider's closest call with the collapse there is 55 px in clear, 80 in rain and 71 in wind (`--probe`); the collapse starts 80 px behind you and runs at 99% of the trail's speed (84% in wind, since gusts slow you in the air) with a small surge every 10 s, so losing speed (a bonk, a sketchy landing) is what lets it catch up. Tricks are never forced, so they don't count here. For comparison, the v0.4 trails measured the same way: Trail 2 (Copper Canyon at 136 px/s) had a 16 ms, one-frame spot at its split-deck section, and Trail 3 had a stretch the careful rider couldn't get through at all.
 
 ### Bike specialties
 
@@ -85,7 +120,7 @@ Tapping RIDE opens a picker; the choice is remembered.
 - **Time:** day, dusk, night. Each trail has its own palette for all three. At night your headlight lights the deck ahead and enemy eyes glow.
 - **Weather:**
   - *Clear*
-  - *Rain:* jumps are ~5% shorter (weaker takeoff on a wet deck) and you slide forward ~13 px after landing before the tyre grips again.
+  - *Rain:* jumps are ~5% shorter (weaker takeoff on a wet deck) and you slide forward ~13 px after landing before the tire grips again.
   - *Wind:* gusty headwind slows you only while airborne; full jumps come up 8–15% short depending on the gust. The HUD gauge shows the current gust.
 - **Coin bonus:** night +10%, rain +25%, wind +25% on run coins.
 
@@ -100,7 +135,7 @@ Layers in front of and behind the play plane scroll at their own rates, and thin
 | Far | 0.18x | A high trestle bridge across the far valley. Every 30–55 s a train crosses it (lit windows at dusk/night, smoke by day), with a soft distant horn in the theme's key. Hot-air balloon and a circling hawk by day. |
 | Mid | 0.35x | Bats at dusk. In rain: lightning forks behind the hills, the sky flashes, thunder rolls in 1–2 s later. |
 | Valley lane | 0.6x | A lower trestle in the valley. Two rival riders (other garage characters, hazed by distance) race you, drifting ahead and behind, jumping its gaps and sometimes backflipping. |
-| Play plane | 1.0x | You. Drones now swoop in from the background (small, hazed, high) and settle into their real spot at least 190 px before you reach them, with a shadow on the deck marking where they'll be. |
+| Play plane | 1.0x | You, plus the switch tracks behind (smaller, hazed) and in front (bigger) on trails that have them. Flyers swoop in from the background (small, hazed, high) and settle into their real spot at least 190 px before you reach them, with a shadow on the deck marking where they'll be. |
 | Foreground | 1.6x | Dark silhouettes per trail (saguaros, boulders, scrap, telegraph poles), grass tufts, fireflies at dusk/night, dust motes by day, tumbleweeds in wind. Kept to the bottom quarter, plus an occasional see-through post whipping past. |
 
 The title screen runs the far and valley layers too, so rivals race behind the menu.
@@ -108,11 +143,16 @@ The title screen runs the far and valley layers too, so rivals race behind the m
 ### Sound
 
 - **Engines:** every bike model has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. Equipping a bike in the garage blips its throttle.
-- **Ambience:** birds by day; crickets at dusk and night; a creek under Copper Canyon. Rain adds a rain bed. In wind, the wind recording's volume follows the same gust curve that pushes the bike.
+- **Ambience:** birds by day; crickets at dusk and night. On top of that each trail has its own bed (table above): synthesized canyon wind, machine yard (hum, distant clanks in a shed, steam hiss), mine (rumble, echoing drips, timber creaks), mountain wind and, on Last Trestle, the collapse (low rumble, snapping timbers), plus the creek at Copper Canyon and Mesa Springs. The mine and the hoist yard drop the birds; Skyline Pass drops the crickets. Rain adds a rain bed. In wind, the wind recording's volume follows the same gust curve that pushes the bike.
 - **Foley:** soft chimes tuned to the theme's key (coin streaks climb a pentatonic ladder), a soft whoosh on jumps, wooden thock on landings, splash in rain, plank-joint "ta-dak" while rolling, gentle crash with a falling two-note chime. Springs boing up a fifth, roof bonks knock, loops swoop, ziplines clink on and whine along the cable, and the bonus biplane drones in from behind with a Doppler drop as it passes.
 - **Coins:** each coin is a short, dry chime (rings out in about 0.3 s, down from 1.1 s), and two coin voices alternate with each new coin damping the last, so a fast streak plays as separate notes.
-- **Theme:** "Trestle Dreams", an original dreamy desert-Americana loop (tremolo guitar, pad, brushes, slide melody).
-- **Settings:** MUSIC and SOUND sliders (0–100%, squared taper so 50% sounds about half as loud) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
+- **Music:** three original loops from the same code-built band, crossfading when you enter a trail and back to the theme in menus (RETRY keeps the trail's loop going):
+  - "Trestle Dreams", the theme: dreamy desert Americana in D, 78 BPM (tremolo guitar, pad, brushes, slide melody). Menus, Dusty Trail, Copper Canyon, Mesa Springs, Hoodoo Loops, Quarry Cliffs.
+  - "Lantern Low": the same guitar turned dark and slow, B minor, 68 BPM, kick and a single brush. Night Trestle, Lantern Mine.
+  - "Ridge Runner": up a tone in E, 96 BPM, driving train beat and walking bass. Rustyard, Hoist Yard, Skyline Pass, Rocket Ridge, Last Trestle.
+- **Power-ups and letters:** a sparkle arpeggio for a pickup (a squelch for sticky tires, an ignition roar for the rocket), a tire-grip grind on the climb, a plastic clonk when the hard hat saves you, a dry crack as a plank gives way, two bright notes per letter and a seven-note run for the full word.
+- **Tricks and tracks:** a quick whoosh per flip, rising chimes for a landed trick, a wobble knock for a sketchy one, and a rail clack when a switch ramp swings you across.
+- **Settings:** MUSIC and SOUND sliders (0–100%, squared taper so 50% sounds about half as loud). Music now starts at 50% (existing saves still at the old 100% default move to 50% once; any other level you set is kept) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
 - **Mix:** set from Movie Maker captures of real gameplay with each bus soloed: engine and theme near -24 LUFS, chimes -24, nature bed -33, about -19 LUFS overall.
 - **Swapping sounds:** replace any file in `assets/audio/` with one of the same name. Engine files should loop cleanly. To use real engine recordings later, drop in `<bike>_idle.ogg` / `<bike>_cruise.ogg`.
 
@@ -164,12 +204,14 @@ scripts/
   game/
     bike_physics.gd      deterministic 60 Hz physics, track features, bike specialties <- feel knobs
     level_library.gd     chunk builders (gaps, enemies, springs, tunnels, loops, lifts, ziplines)
-    level_layouts.gd     the 9 trail layouts + short hint-demo layouts   <- level design
+    level_layouts.gd     the 12 trail layouts + short hint-demo layouts   <- level design
     autopilot.gd         lookahead bot: dev verify and the hint-card demos
     world.gd             one run: sim, pickups, checkpoints, bonus plane, camera, drawing
     feature_art.gd       pixel art for springs, tunnels, loops, lifts, ziplines, biplane
     backdrop.gd          parallax themes: day/dusk/night palettes per trail, weather skies
-    weather_fx.gd        screen-space rain and wind layer
+    weather_fx.gd        screen-space rain and wind layer, per-trail ambient particles
+    letter_spots.gd      where each trail's T-R-E-S-T-L-E letters sit (generated, see Dev checks)
+    world_art.gd         per-trail track builds and critter skins, switch-ramp signs
     bike_view.gd         bike models + riders drawn from primitives (paint = palette)
   screens/               title, trail select, garage, game (pause/results)
   ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport)
@@ -178,7 +220,7 @@ scripts/
 tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio
 ```
 
-Levels are lists of chunks, e.g. `["gap", 56.0]`, `["branch_upper", 1]` (1 = put a gear on it), `["lifts", [[56, 18, 2.2, 0]], 48]`, `["zip", 300, 62, 30, 1]`. Adding a trail means a layout in `level_layouts.gd` plus an entry in `catalog.gd` (speed, price, theme, feature); new feature text goes in `Catalog.FEATURES`.
+Levels are lists of chunks, e.g. `["gap", 56.0]`, `["branch_upper", 1]` (1 = put a gear on it), `["lifts", [[56, 18, 2.2, 0]], 48]`, `["zip", 300, 62, 30, 1]`, `["hills", 2, 14.0]`, `["kicker", 76.0, 40.0]`. A switch-track fork is `["fork", to_lane, [inner chunks], [main chunks], gear, forced]` with to_lane 1 = behind, -1 = in front; forced = 1 ends the main deck so the switch is the only way on. Adding a trail means a layout in `level_layouts.gd` plus an entry in `catalog.gd` (speed, price, theme, feature); new feature text goes in `Catalog.FEATURES`.
 
 ## Dev checks
 
@@ -188,6 +230,9 @@ godot --headless --path . -- --verify --level=rustyard --weather=wind  # one com
 godot --headless --path . -- --verify --bike=all                       # every bike's specialty too
 godot --headless --path . -- --difficulty [--weather=rain] [--old]     # timing-window ramp
 godot --headless --path . -- --physics-report                          # jump table, weather, specialties
+godot --headless --path . -- --place-letters                           # regenerate letter_spots.gd after layout changes
+godot --headless --path . -- --par                                     # par times for the gold medal
+godot --headless --path . -- --probe                                   # collapse-chase margin on Last Trestle
 ```
 
 - `--headless` runs with no window or audio
@@ -196,11 +241,15 @@ godot --headless --path . -- --physics-report                          # jump ta
 - `--level=` / `--weather=` narrow it to one trail / one weather
 - `--bike=` picks a bike (its specialty is active); `all` runs all seven
 - `--difficulty` rides each trail like a careful person and prints the timing windows and forced jumps per 10 s; `--old` adds the v0.4 trails for comparison
+- `--place-letters` runs the bot on every trail in clear and rain with no letters, then puts each letter on the most airborne coin it collected in both, one per seventh of the trail, and rewrites `scripts/game/letter_spots.gd`
+- `--probe` rides Last Trestle in each weather and prints how close the collapse came
+- `--par` prints each trail's par time (the bot's clean clear-weather time + 1 s, rounded up to the half second) for `Catalog.PARS`
 
-Current result (v0.5.0):
-- Plain bike: all 27 runs (9 trails x 3 weathers) cleared with 0 crashes and 3/3 gears each, so every route and gear is reachable in every weather.
-- Every bike with its specialty active: all 189 runs cleared with 0 crashes (in 3 of them the specialty carries the bot past one gear).
+Current result (v0.7.0):
+- Plain bike: all 36 runs (12 trails x 3 weathers) cleared with 0 crashes and 3/3 gears each, so every route, cliff top, ramp road, switch track and gear is reachable in every weather. Letters: 7/7 in 34 of 36 runs; the other two (Night Trestle in wind, Hoodoo Loops in clear) miss one letter that the same bot picks up in the other two weathers.
+- Every bike with its specialty active: all 252 runs cleared with 0 crashes. Gears: 3/3 in every run except five scooter runs, where the umbrella floats it past one gear. Letters: 7/7 in 233 of 252 runs.
 - `--input-test`: taps and holds jump through the real touch pipeline; the pause and **?** buttons never leak a jump.
+- `--demo=scroll`: finger drags that start anywhere on a trail card (panel, text, thumbnail, button) scroll the trail picker, a drag across a button doesn't press it, and a plain tap on RIDE still opens the picker. Same fix in the garage and credits lists.
 
 ## Not done yet
 

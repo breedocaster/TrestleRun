@@ -112,6 +112,7 @@ func _build() -> void:
 		c.queue_free()
 	for it in Catalog.items(tab):
 		_grid.add_child(_tile(it))
+	Kit.pass_drags(_grid)
 
 
 func _tile(it: Dictionary) -> Control:
