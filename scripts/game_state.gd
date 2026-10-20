@@ -20,6 +20,31 @@ func _ready() -> void:
 	font = _load_font()
 	theme = UITheme.build(font)
 	load_game()
+	apply_display()
+
+
+## SHARP PIXELS (on by default): draw at a whole-number zoom so every game pixel is the
+## same size on screen. On the Fold's inner screen that's 4x with a 552 x 460 view; off,
+## 480 x 399 is stretched 4.6x, so some pixel columns come out wider than others and
+## edges shimmer as the trail scrolls. Screens that are already a whole multiple of
+## 480 x 270 (the outer screen at 4x) look the same either way.
+const BASE_VIEW := Vector2i(480, 270)
+
+
+func apply_display() -> void:
+	var win := get_tree().root
+	if not win.size_changed.is_connected(apply_display):
+		win.size_changed.connect(apply_display)
+	var size := BASE_VIEW
+	var stretch := Window.CONTENT_SCALE_STRETCH_FRACTIONAL
+	if flag("sharp") and DisplayServer.get_name() != "headless":
+		var k := maxi(1, mini(win.size.x / BASE_VIEW.x, win.size.y / BASE_VIEW.y))
+		size = Vector2i(maxi(BASE_VIEW.x, win.size.x / k), maxi(BASE_VIEW.y, win.size.y / k))
+		stretch = Window.CONTENT_SCALE_STRETCH_INTEGER
+	if win.content_scale_size != size:
+		win.content_scale_size = size
+	if win.content_scale_stretch != stretch:
+		win.content_scale_stretch = stretch
 
 
 # --- wallet ----------------------------------------------------------------

@@ -57,6 +57,8 @@ func _ready() -> void:
 	add_child(Kit.full_rect(Kit.margin(col, 8)))
 	_build()
 	_scroll_to_current.call_deferred()
+	# The map plays the loop of the area you're up to (the boss's area loop, not its fight).
+	AudioDirector.set_track(String(Catalog.MUSIC_BY_THEME[int(Catalog.level(GameState.story_current()).theme)]))
 
 
 func _bike_panel() -> Control:
@@ -286,3 +288,7 @@ class PartIcon extends Control:
 
 	func _draw() -> void:
 		IconsC.part(self, (size * 0.5).floor(), part, 1.0, not got)
+
+
+func _exit_tree() -> void:
+	AudioDirector.set_context("menu")  # back to the theme unless the next screen picks a loop

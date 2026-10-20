@@ -191,7 +191,8 @@ static func zip(ci: CanvasItem, z: Dictionary, g0: float, g1: float, th: Diction
 
 ## A rope swing: the anchor (a beam, branch or crane arm) and the rope, taut down to
 ## the rider's hands (end) or hanging loose with a little sway.
-static func rope(ci: CanvasItem, r: Dictionary, end: Vector2, t: float, th: Dictionary, kind: String) -> void:
+## cue 0..1: you could catch it right now (see World._rope_cue); lights the rope up.
+static func rope(ci: CanvasItem, r: Dictionary, end: Vector2, t: float, th: Dictionary, kind: String, cue := 0.0) -> void:
 	var a := Vector2(r.ax, r.ay)
 	var length := float(r.len)
 	match kind:
@@ -225,8 +226,14 @@ static func rope(ci: CanvasItem, r: Dictionary, end: Vector2, t: float, th: Dict
 		var kp := a.lerp(tip, k)
 		ci.draw_rect(Rect2(kp.x - 1, kp.y - 1, 3, 2), Color("8a6a40"))
 	if end == Vector2.INF:
-		ci.draw_rect(Rect2(tip.x - 3, tip.y - 1, 6, 3), Color("8a6a40"))
-		ci.draw_circle(tip + Vector2(0, -6), 5.0, Color(1.0, 0.95, 0.7, 0.12 + 0.08 * sin(t * 5.0)))
+		var glow := 0.12 + 0.08 * sin(t * 5.0)
+		if cue > 0.0:
+			# In reach: the stretch you can grab glows, and the handle brightens.
+			ci.draw_line(a.lerp(tip, Phys.ROPE_REACH_TOP), tip, Color(1.0, 0.86, 0.45, 0.45 * cue), 4.0)
+			ci.draw_line(a.lerp(tip, Phys.ROPE_REACH_TOP), tip, Color(1.0, 0.96, 0.78, 0.9 * cue), -1.0)
+			glow = 0.2 + 0.35 * cue + 0.08 * sin(t * 14.0)
+		ci.draw_rect(Rect2(tip.x - 3, tip.y - 1, 6, 3), Color("8a6a40").lerp(Color("ffe08a"), cue))
+		ci.draw_circle(tip + Vector2(0, -6), 5.0 + 2.0 * cue, Color(1.0, 0.95, 0.7, glow))
 
 
 ## The trolley a rider hangs from: wheels on the cable, a bar down to the hands.

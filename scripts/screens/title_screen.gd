@@ -176,13 +176,19 @@ func _open_settings() -> void:
 	v.add_theme_constant_override("separation", 8)
 	v.add_child(Kit.label("SETTINGS", 16, UITheme.GOLD))
 	v.add_child(Widgets.audio_sliders())
-	var flags := GridContainer.new()
-	flags.columns = 2
-	flags.add_theme_constant_override("h_separation", 6)
-	flags.add_theme_constant_override("v_separation", 4)
-	flags.add_child(Widgets.flag_button("GHOST RUN", "ghost", 150))
-	flags.add_child(Widgets.flag_button("CRASH HINTS", "hints", 150))
-	flags.add_child(Widgets.flag_button("VIBRATION", "vibrate", 150))
+	# On/off settings, two to a row (a lone last one sits in the middle).
+	var flags := VBoxContainer.new()
+	flags.add_theme_constant_override("separation", 4)
+	var buttons := [Widgets.flag_button("GHOST RUN", "ghost", 150), Widgets.flag_button("CRASH HINTS", "hints", 150),
+		Widgets.flag_button("VIBRATION", "vibrate", 150), Widgets.flag_button("SCREEN SHAKE", "shake", 150),
+		Widgets.flag_button("SHARP PIXELS", "sharp", 150, func(_v): GameState.apply_display())]
+	for i in range(0, buttons.size(), 2):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		for b in buttons.slice(i, i + 2):
+			row.add_child(b)
+		flags.add_child(row)
 	flags.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(flags)
 	var done := Kit.button("DONE", 100, 26)

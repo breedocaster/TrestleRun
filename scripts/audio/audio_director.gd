@@ -35,6 +35,24 @@ const LEVEL_LAYERS := {
 	"quarry_cliffs": {"canyon": -6.0, "yard": -12.0},
 	"rocket_ridge": {"yard": -9.0, "canyon": -9.0, "day_birds": -14.0},
 	"last_trestle": {"collapse": -3.0, "canyon": -6.0, "day_birds": -60.0},
+	# Story areas (v0.8.2): farm wind chimes and windmill, the rail yard, orchard leaves
+	# and an owl, the speedway crowd.
+	"s1_hayfield": {"farm": -2.0},
+	"s1_clothesline": {"farm": -2.5},
+	"s1_powerlines": {"farm": -2.5},
+	"s1_boss": {"farm": -6.0},
+	"s2_siding": {"yard": -2.0, "day_birds": -14.0},
+	"s2_chutes": {"yard": -2.0},
+	"s2_roundhouse": {"yard": 0.0, "night_crickets": -10.0},
+	"s2_boss": {"yard": -5.0, "night_crickets": -14.0},
+	"s3_apple_row": {"orchard": 0.0},
+	"s3_creek": {"orchard": -3.0, "creek": -5.0},
+	"s3_hollow_oak": {"orchard": -1.0},
+	"s3_boss": {"orchard": -5.0},
+	"s4_fairgrounds": {"speedway": 0.0, "day_birds": -10.0},
+	"s4_drome": {"speedway": -1.0},
+	"s4_grandstand": {"speedway": 0.0, "night_crickets": -12.0},
+	"s4_boss": {"speedway": -4.0, "night_crickets": -14.0},
 }
 
 var music: AudioStreamPlayer
@@ -460,7 +478,7 @@ func set_ambience(time_mode: String, weather: String, level_id: String) -> void:
 			amb[k] = p
 		if not p.playing:
 			p.volume_db = -60.0
-			p.play(randf() * 8.0)
+			p.play(randf() * maxf(1.0, p.stream.get_length() - 1.0) if p.stream else 0.0)  # anywhere in the loop
 		_fade(p, want[k], 1.5)
 
 

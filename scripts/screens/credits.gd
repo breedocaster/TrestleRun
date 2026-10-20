@@ -11,6 +11,7 @@ const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const SECTIONS := [
 	["MUSIC", [
 		["TRESTLE DREAMS", "Original theme, composed and synthesized for this game"],
+		["TRAIL LOOPS", "Lantern Low, Ridge Runner, Hayloft Shuffle, Coal Smoke, Windfall, County Fair, Saucer Stomp: the same band, original"],
 	]],
 	["ENGINES", [
 		["ALL 7 BIKES", "Original physical models: real firing orders, synthesized"],
@@ -27,6 +28,7 @@ const SECTIONS := [
 		["IMPACTS, UI CLICKS", "Kenney, kenney.nl (CC0)"],
 		["CHIMES, WHOOSHES", "Original, synthesized for this game"],
 		["TRAIN HORN, THUNDER", "Original, synthesized for this game"],
+		["TRAIL BEDS", "Mine, yard, canyon, mountain wind, collapse, farm, orchard, speedway: original, synthesized"],
 		["SPRINGS, BONKS, ZIPLINE, BIPLANE", "Original, synthesized for this game"],
 	]],
 	["FONT", [

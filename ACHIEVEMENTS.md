@@ -140,9 +140,9 @@ Steps:
    ACHIEVEMENTS shows **SIGN IN: GOOGLE PLAY GAMES**. After signing in, everything
    you'd already unlocked is sent up, and the button opens Play's own list.
 
-**Size warning.** A Gradle build pulls in Google Play services libraries, so the APK
-will grow. v0.8 without them is close to the 30 MiB limit (see the README), so check
-the size after the first Gradle export before relying on it.
+**Size.** A Gradle build pulls in Google Play services libraries, so the APK will grow
+past 0.8.1's 29.8 MiB. That's fine: there's no size cap on this project, and Google
+Play allows up to 4 GB for an app bundle's install download.
 
 ## iOS: Game Center
 

@@ -258,10 +258,11 @@ const PARS := {
 }
 
 
-## Music loop per trail: the theme, a slow minor one for dark trails, a quick one up high.
+## Music loop per trail: the theme, a slow minor one for dark trails, a quick one up high;
+## each story area has its own (farm, rail yard, orchard, speedway). Bosses: saucer_stomp.
 const MUSIC_BY_THEME := ["trestle_dreams", "trestle_dreams", "ridge_runner", "lantern_low", "trestle_dreams",
 	"lantern_low", "trestle_dreams", "ridge_runner", "ridge_runner", "trestle_dreams", "ridge_runner", "ridge_runner",
-	"trestle_dreams", "ridge_runner", "lantern_low", "ridge_runner"]
+	"hayloft_shuffle", "coal_smoke", "windfall", "county_fair"]
 
 
 ## Everything a trail introduces (main feature first), e.g. ["spiker", "switch"].
@@ -321,7 +322,7 @@ const FEATURES := {
 	"rail2": ["RAIL HOPS", "RAILS IN A ROW, AND RAILS THAT RUN DOWNHILL.",
 		"KEEP HOLDING OFF THE END OF A RAIL: YOU POP UP AND LAND ON THE NEXT ONE. SOME RAILS HAVE A LOWER ROAD UNDER THEM IF YOU LET GO.", "RAIL HOPS"],
 	"rope": ["ROPE SWINGS", "ROPES HANGING OVER GAPS TOO WIDE TO JUMP.",
-		"JUMP AND HOLD TO CATCH THE ROPE (PRESSING JUST AFTER YOU PASS IT STILL CATCHES IT). KEEP HOLDING, THEN LET GO WHILE IT SWINGS YOU FORWARD TO FLY ACROSS.", "ROPES"],
+		"JUMP AND HOLD TO CATCH THE ROPE. IT GLOWS WHEN IT'S IN REACH, AND A PRESS JUST AFTER YOU PASS IT STILL CATCHES IT. KEEP HOLDING, THEN LET GO WHILE IT SWINGS YOU FORWARD.", "ROPES"],
 	"wallride": ["WALL-RIDES", "CURVED BOARD WALLS THAT ARC UP OVER A PIT.",
 		"JUMP ON AND HOLD ALL THE WAY ROUND. LET GO AND YOU FALL OFF. A WALL THAT ENDS GOING UP THROWS YOU INTO THE AIR.", "WALL-RIDES"],
 	"wallride2": ["WALL OF DEATH", "BIG WALLS, STEEP LIPS, AND RAILS AND ROPES MIXED IN.",

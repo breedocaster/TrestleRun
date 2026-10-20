@@ -78,6 +78,8 @@ var _angle := 0.0
 var _wheel := 0.0
 var _squash := 0.0
 var _shake := 0.0
+## SCREEN SHAKE setting: off keeps the camera still on bonks, crashes and boss hits.
+var shake_on := true
 var _focus_y := 0.0
 var _particles: Array = []
 var _floaters: Array = []
@@ -1138,7 +1140,23 @@ func _sync_visuals() -> void:
 	bike.queue_redraw()
 	_sync_ghost()
 	if cam:
-		cam.offset = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0.3 else Vector2.ZERO
+		cam.offset = Vector2(randf_range(-_shake, _shake), randf_range(-_shake, _shake)) if _shake > 0.3 and shake_on else Vector2.ZERO
+
+
+## 0..1: how strongly to light up a rope you could catch right now: in the air, hands
+## at catch height (Phys.ROPE_REACH_*), the rope just ahead or a moment behind (the
+## late catch). Brighter while you're holding.
+func _rope_cue(ri: int, rp: Dictionary) -> float:
+	if phase != "ride" or state.grounded or int(state.rope) >= 0 or ri == int(state.rope_last) \
+			or int(rp.lane) != int(state.lane):
+		return 0.0
+	var hy := float(state.y) - Phys.HEIGHT - 2.0
+	if hy < float(rp.ay) + float(rp.len) * Phys.ROPE_REACH_TOP or hy > float(rp.ay) + float(rp.len) + Phys.ROPE_REACH_LOW:
+		return 0.0
+	var dx := float(rp.ax) - (float(state.x) + 4.0)
+	if dx > 72.0 or dx < -Phys.ROPE_LATE_DX:
+		return 0.0
+	return clampf(1.0 - maxf(dx, 0.0) / 72.0, 0.3, 1.0) * (1.0 if held_now else 0.65)
 
 
 ## Swap in a ghost after the world is in the tree (dev/demo).
@@ -1256,7 +1274,7 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 		if int(state.rope) == ri:
 			var a := float(state.rope_a)
 			end = Vector2(rp.ax, rp.ay) + float(state.rope_r) * Vector2(sin(a), cos(a))
-		Art.rope(ci, rp, end, _vis_t, theme, String(_style.get("rope", "beam")))
+		Art.rope(ci, rp, end, _vis_t, theme, String(_style.get("rope", "beam")), _rope_cue(ri, rp))
 	_draw_markers(ci, lane, left, right)
 	_draw_pickups(ci, lane, left, right)
 	for i in level.powerups.size():

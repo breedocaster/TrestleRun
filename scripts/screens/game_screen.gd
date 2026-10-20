@@ -42,6 +42,7 @@ func _ready() -> void:
 	world = World.new()
 	world.setup(level_id, GameState.loadout(), GameState.level_record(level_id).gears, cond)
 	world.hints = GameState.flag("hints")
+	world.shake_on = GameState.flag("shake")
 	GameState.set_last_level(level_id)
 	if GameState.flag("ghost"):
 		world.ghost = GameState.load_ghost(level_id)

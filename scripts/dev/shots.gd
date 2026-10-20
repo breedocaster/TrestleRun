@@ -128,6 +128,13 @@ func _ready() -> void:
 							if seen >= n:
 								break
 						was = on
+				elif parts[2] == "rope":
+					# Ride until a rope is lit up as catchable (the cue at its brightest).
+					var lit := false
+					while not lit and w.ticks < 60 * 400:
+						w.tick()
+						for ri in w.level.get("ropes", []).size():
+							lit = lit or w._rope_cue(ri, w.level.ropes[ri]) > 0.6
 				elif parts[2].begins_with("x"):
 					var tx := float(parts[2].substr(1))
 					while w.state.x < tx and w.ticks < 60 * 400:
