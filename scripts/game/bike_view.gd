@@ -29,13 +29,21 @@ var hat := false      # hard hat on
 ## Set while one rig draws (draw_rig reads them), so menus never see them.
 static var _tire_override := Color(0, 0, 0, 0)
 static var _hat := false
+## BIG HEAD cheat (Challenges.apply_cheats): every rider's head drawn twice the size.
+static var big_head := false
+const BIG_HEAD := 2.0
+## The canvas transform the current draw_rig call sits under (callers that scale or
+## move the rig set it), so a big head can be scaled about its own centre.
+static var xf := Transform2D.IDENTITY
 
 
 func _draw() -> void:
 	if rig.is_empty():
 		return
+	xf = Transform2D.IDENTITY
 	if squash > 0.01:
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0 + 0.12 * squash, 1.0 - 0.14 * squash))
+		xf = Transform2D(0.0, Vector2(1.0 + 0.12 * squash, 1.0 - 0.14 * squash), 0.0, Vector2.ZERO)
+		draw_set_transform_matrix(xf)
 	if rocket > 0.02:
 		_rocket_flame(self, Vector2(-13, -7), rocket, anim_t)
 	_tire_override = Color("6fe84a") if sticky else Color(0, 0, 0, 0)
@@ -45,6 +53,7 @@ func _draw() -> void:
 	_hat = false
 	if umbrella > 0.02:
 		draw_umbrella(self, Vector2.ZERO + a.grip, umbrella, Catalog.paint(String(rig.get("paint", "stock"))), anim_t)
+	xf = Transform2D.IDENTITY
 
 
 static func draw_rig(ci: CanvasItem, o: Vector2, r: Dictionary, wa: float, t: float,
@@ -283,6 +292,8 @@ static func draw_rider(ci: CanvasItem, o: Vector2, id: String, a: Dictionary, t:
 	var up := Vector2(sin(ang), -cos(ang))
 	var shoulder := hip + up * tl
 	var head := shoulder + up * (4.5 if big else 3.5) + Vector2(0.5, 0)
+	if big_head:
+		head = shoulder + up * ((4.5 if big else 3.5) * BIG_HEAD * 0.85) + Vector2(0.5, 0)
 	var knee := hip.lerp(peg, 0.5) + Vector2(3, -2)
 	var fl := clampf(flutter, 0.0, 1.0)
 	var R := _rider_colors(id)
@@ -316,26 +327,35 @@ static func draw_rider(ci: CanvasItem, o: Vector2, id: String, a: Dictionary, t:
 			Color("5bd1ff") if int(t * 3.0) % 2 == 0 else Color("2a6a8a"))
 	ci.draw_line(shoulder, grip, R.arms, 3.0 if big else 2.0)
 	ci.draw_rect(Rect2(grip.x - 1, grip.y - 1, 2, 2), R.hands)
-	# Head.
-	match id:
-		"granny":
-			_head_granny(ci, head)
-		"bandit":
-			_head_bandit(ci, head)
-		"bones":
-			_head_bones(ci, head)
-		"zorp":
-			_head_zorp(ci, head, t)
-		"robo":
-			_head_robo(ci, head, t)
-		"finn":
-			_head_finn(ci, head)
-		"frosty":
-			_head_frosty(ci, head)
-		_:
-			_head_dusty(ci, head)
+	# Head (BIG HEAD: scaled about its centre under the caller's transform).
+	if big_head:
+		ci.draw_set_transform_matrix(xf * Transform2D(0.0, Vector2(BIG_HEAD, BIG_HEAD), 0.0, head * (1.0 - BIG_HEAD)))
+	draw_head(ci, head, id, t)
 	if _hat:
 		Icons.hard_hat(ci, head + Vector2(0, -3))
+	if big_head:
+		ci.draw_set_transform_matrix(xf)
+
+
+## One rider's head centred on h (also used for the league table's little faces).
+static func draw_head(ci: CanvasItem, h: Vector2, id: String, t: float) -> void:
+	match id:
+		"granny":
+			_head_granny(ci, h)
+		"bandit":
+			_head_bandit(ci, h)
+		"bones":
+			_head_bones(ci, h)
+		"zorp":
+			_head_zorp(ci, h, t)
+		"robo":
+			_head_robo(ci, h, t)
+		"finn":
+			_head_finn(ci, h)
+		"frosty":
+			_head_frosty(ci, h)
+		_:
+			_head_dusty(ci, h)
 
 
 ## Rocket strapped behind the seat: a flickering flame pointing back.

@@ -63,6 +63,25 @@ func _ready() -> void:
 		elif a.begins_with("--ach="):
 			for id in a.substr(6).split(","):
 				Achievements._store()[id] = 1
+		elif a.begins_with("--cheats="):
+			var cc: Dictionary = Challenges.data().cheats
+			cc.unlocked = Array(a.substr(9).split(","))
+			cc.on = Array(a.substr(9).split(","))
+			Challenges.apply_cheats()
+		elif a == "--streak-demo":
+			Challenges.data().streak = {"last": Challenges.today() - 1, "count": 2, "claimed": Challenges.today() - 1}
+		elif a == "--chal-demo":
+			# Challenges mid-week: a streak, some missions under way, a league best, season XP.
+			var c: Dictionary = Challenges.data()
+			c.streak = {"last": Challenges.today(), "count": 3, "claimed": Challenges.today()}
+			var ms: Array = Challenges.missions()
+			ms[0].prog = int(ms[0].goal)
+			ms[0].done = true
+			ms[1].prog = int(ms[1].goal) / 2
+			c.endless = {"best_m": 1460, "runs": 6, "total_m": 5200}
+			c.league = {"week": Challenges.week(), "div": 1, "best_m": 1120, "runs": 3}
+			Challenges._season_state().xp = 740
+			Challenges._season_state().free = [1, 2, 3]
 		elif a == "--own-all":
 			for kind in Catalog.KINDS:
 				for it in Catalog.items(kind):
@@ -76,6 +95,8 @@ func _ready() -> void:
 			await get_tree().process_frame
 			var gs = main.current
 			var w = gs.world
+			if "--no-window" in args:
+				w.win_half = 1.0e9
 			var stage := ""
 			for a in args:
 				if a.begins_with("--stage="):
@@ -142,7 +163,14 @@ func _ready() -> void:
 				else:
 					for i in int(parts[2]):
 						w.tick()
-				if parts.size() > 3 and parts[3] == "crash":
+				if parts.size() > 3 and parts[3] == "wipeout":
+					# One-life run: crash here and let it play out to the results.
+					w.bot = null
+					w.state.death = "hit"
+					w._crash()
+					for i in w.CRASH_TICKS + 2:
+						w.tick()
+				elif parts.size() > 3 and parts[3] == "crash":
 					# Mid-wreck, past the point where a tap skips it (the HUD says so).
 					w.bot = null
 					w.state.death = "hit"
@@ -204,6 +232,13 @@ func _ready() -> void:
 			main.navigate("title", "")
 			await get_tree().process_frame
 			main.current._open_settings()
+		"league_table":
+			main.navigate("challenges", "league")
+		"cheats":
+			main.navigate("title", "")
+			await get_tree().process_frame
+			main.current._open_settings()
+			main.current._open_cheats()
 		"setup":
 			main.navigate("levels", "")
 			await get_tree().process_frame

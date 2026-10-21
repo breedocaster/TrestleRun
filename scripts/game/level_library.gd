@@ -30,6 +30,8 @@ var chase := false
 var level_id := ""
 ## Dev (--place-letters): build without letters so every coin is a coin.
 static var no_letters := false
+## This build only: no letters (endless courses).
+var no_letters_here := false
 ## Lane new things go into: -1 foreground, 0 main, 1 background.
 var lane := 0
 var x := 0.0
@@ -1192,7 +1194,7 @@ func _finalize(meta: Dictionary) -> Dictionary:
 ## letter_spots.gd (chosen by --place-letters from coins the dev bot really picks up);
 ## anything else falls back to choose_letters() over all coins.
 func _place_letters() -> void:
-	if no_letters or not boss.is_empty():
+	if no_letters or no_letters_here or not boss.is_empty():
 		return  # boss arenas end when the boss goes down, so no letters there
 	var spots: Array = LetterSpots.SPOTS.get(level_id, [])
 	if spots.size() == LETTERS.length():

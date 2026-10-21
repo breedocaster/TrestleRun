@@ -42,15 +42,17 @@ static func _h(n: float) -> float:
 # --- tracks -----------------------------------------------------------------------
 
 ## Supports first (behind every deck in the lane), then the decks.
+## idx: only these track indices (the world passes the ones near the view); [] = all.
 static func draw_tracks(ci: CanvasItem, tracks: Array, lane: int, left: float, right: float,
-		bottom: float, th: Dictionary, st: Dictionary, t: float, sim_t: float, night: bool) -> void:
+		bottom: float, th: Dictionary, st: Dictionary, t: float, sim_t: float, night: bool, idx: Array = []) -> void:
 	var kind: String = st.track
-	for tr in tracks:
+	var list: Array = tracks if idx.is_empty() else idx.map(func(i): return tracks[i])
+	for tr in list:
 		if int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right or tr.has("lift") \
 				or tr.has("crumble") or tr.get("no_supports", false):
 			continue
 		_supports(ci, tr, left, right, bottom, th, kind)
-	for tr in tracks:
+	for tr in list:
 		if int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right or tr.has("crumble") or tr.has("hold"):
 			continue
 		if tr.has("lift"):
@@ -62,12 +64,12 @@ static func draw_tracks(ci: CanvasItem, tracks: Array, lane: int, left: float, r
 ## Grind rails (a steel pipe on posts) and wall-rides (a curved board wall). The one
 ## you're on glows, so you can see it only holds while you hold.
 static func draw_holds(ci: CanvasItem, tracks: Array, lane: int, left: float, right: float, bottom: float,
-		th: Dictionary, st: Dictionary, t: float, active: int) -> void:
-	for ti in tracks.size():
+		th: Dictionary, st: Dictionary, t: float, active: int, idx: Array = []) -> void:
+	for ti in (range(tracks.size()) if idx.is_empty() else idx):
 		var tr: Dictionary = tracks[ti]
 		if not tr.has("hold") or int(tr.get("lane", 0)) != lane or tr.x1 < left or tr.x0 > right:
 			continue
-		var on := ti == active
+		var on: bool = ti == active
 		if String(tr.hold) == "wall":
 			_wall_ride(ci, tr, bottom, th, st, t, on)
 		else:

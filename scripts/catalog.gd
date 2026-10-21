@@ -85,7 +85,79 @@ static func paints() -> Array:
 			_paint("swamp", "SWAMP GREEN", 400, "4e7a3a", "2c4722", "e3c25b"),
 			_paint("flame", "HOT ROD", 600, "1e1a1f", "0d0b0e", "ff8a1f", true),
 		]
+		# Season pass paints: five per trail theme (two on the free track, three gold).
+		for t in SEASON_PAINTS.size():
+			var sp: Array = SEASON_PAINTS[t]
+			var a := Color.html(String(sp[1]))
+			var b := Color.html(String(sp[2]))
+			var c := Color.html(String(sp[3]))
+			var looks := [
+				["DUST", a, a.darkened(0.45), c, false],
+				["DRIFT", b, b.darkened(0.45), a.lightened(0.3), false],
+				["GOLD", c, c.darkened(0.5), b, false],
+				["NIGHT", Color.html("1e1a24"), Color.html("0e0c12"), a.lightened(0.15), false],
+				["FLAMES", a.darkened(0.35), a.darkened(0.65), c, true],
+			]
+			for k in looks.size():
+				var lk: Array = looks[k]
+				var pt := _paint(season_paint_id(t, k), "%s %s" % [String(sp[0]), String(lk[0])], 0,
+					(lk[1] as Color).to_html(false), (lk[2] as Color).to_html(false), (lk[3] as Color).to_html(false), bool(lk[4]))
+				pt.season = t
+				pt.slot = k
+				_paints.append(pt)
 	return _paints
+
+
+static func season_paint_id(theme: int, slot: int) -> String:
+	return "season_%d_%d" % [theme, slot]
+
+
+## Per trail theme: the word in its season paints' names, then three colours
+## (main, second, accent).
+const SEASON_PAINTS := [
+	["DUNE", "d9b26f", "8a6a4a", "f2e2b0"],
+	["COPPER", "b8653a", "4f8f8a", "f2c27a"],
+	["RUST", "9a4a2a", "5a6470", "e8a040"],
+	["MOONLIT", "3a4a7a", "6a5a8a", "cfe0ff"],
+	["MESA", "c87a5a", "6a9a5a", "f0d8a0"],
+	["LANTERN", "6a4a2a", "3a3a48", "ffcf6a"],
+	["HOODOO", "c8603a", "8a3a2a", "ffb070"],
+	["HOIST", "c89a2a", "3a4a5a", "f0f0e0"],
+	["SKYLINE", "4a7ab8", "e8f0f8", "ff8a5a"],
+	["QUARRY", "8a8a7a", "5a7a3a", "e0d0a0"],
+	["ROCKET", "c8323c", "2a2a3a", "ffd040"],
+	["LAST LINE", "5a4030", "8a2a2a", "f0a050"],
+	["HAYLOFT", "c8a03a", "8a3a2a", "f8f0d0"],
+	["COAL", "2a2a30", "6a3a2a", "ff7a3a"],
+	["ORCHARD", "a83a3a", "4a7a3a", "f0d070"],
+	["SPEEDWAY", "e8e8f0", "c8323c", "3a6ae0"],
+]
+
+
+## Display name of a trail theme (Backdrop index): the Free Ride trail or story area.
+static func theme_name(t: int) -> String:
+	if t < levels().size():
+		return String(levels()[t].name)
+	return String(STORY_AREAS[clampi(t - levels().size(), 0, STORY_AREAS.size() - 1)].name)
+
+
+## A trail that uses theme t (its sound beds and scenery stand in for courses built in
+## that look).
+static func theme_level(t: int) -> String:
+	if t < levels().size():
+		return String(levels()[t].id)
+	return String((STORY_AREAS[clampi(t - levels().size(), 0, STORY_AREAS.size() - 1)].trails as Array)[0])
+
+
+## GoldenEye-style cheats: beat the time on that trail in that weather (any bike, any
+## time of day, crashes allowed: just the clock) and the cheat unlocks for good.
+## Cosmetic only. [id, name, what it does, trail, weather, seconds]. Each target is the
+## dev bot's clean time there plus a second (it doesn't wheelie, so a wheelie bike helps).
+const CHEATS := [
+	["bighead", "BIG HEAD", "EVERY RIDER'S HEAD, TWICE THE SIZE.", "dusty_trail", "rain", 49.5],
+	["rainbow", "RAINBOW TRAIL", "A RAINBOW STREAMS BEHIND YOU IN THE AIR.", "copper_canyon", "wind", 63.5],
+	["paintball", "PAINTBALL", "LANDINGS AND CRASHES SPLAT PAINT ON THE DECK.", "rustyard", "rain", 48.5],
+]
 
 
 static func items(kind: String) -> Array:

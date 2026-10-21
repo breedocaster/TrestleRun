@@ -12,12 +12,19 @@ const BossArt := preload("res://scripts/game/boss_art.gd")
 
 var world: Node2D
 var show_hint := false
+## Built courses (endless, daily, league): no "?" card, there's no one feature to explain.
+var no_help := false
 ## This trail's new feature; on a first visit the "?" button pulses for a while.
 var feature := ""
 var feature_new := false
 var ability_title := ""
 var _t := 0.0
 var _hint_btn: Button
+var _has_letters := -1
+## Endless and league: your best to beat, and (league) the rivals' distances
+## [[name, metres], ...] best last, for the "next up" readout.
+var best_m := 0
+var rivals: Array = []
 
 
 func _ready() -> void:
@@ -40,6 +47,7 @@ func _ready() -> void:
 	hb.pressed.connect(func(): hint_pressed.emit())
 	add_child(hb)
 	_hint_btn = hb
+	hb.visible = not no_help
 
 
 func _process(delta: float) -> void:
@@ -83,7 +91,9 @@ func _draw() -> void:
 				draw_rect(Rect2(bx + 17 + i * 3, 15 - i * 2, 2, 3 + i * 2), UITheme.GOLD if on else Color("4a4058"))
 	# T-R-E-S-T-L-E letters found this run.
 	var word := "TRESTLE"
-	if world.level.pickups.any(func(p): return int(p.type) == 3):
+	if _has_letters < 0:
+		_has_letters = 1 if world.level.pickups.any(func(p): return int(p.type) == 3) else 0
+	if _has_letters == 1:
 		draw_rect(Rect2(4, 25, 7 * 12 + 4, 14), Color(UITheme.INK, 0.6))
 		for i in word.length():
 			var lit: bool = world.letters & (1 << i)
@@ -106,11 +116,43 @@ func _draw() -> void:
 	if int(st.hat) > 0:
 		draw_rect(Rect2(4, py - 7, 18, 14), Color(UITheme.INK, 0.6))
 		Icons.hard_hat(self, Vector2(13, py + 2))
-	# Progress strip.
+	# Progress strip (endless: the distance instead).
 	var lv: Dictionary = world.level
 	var x0 := maxf(size.x * 0.36, 160.0)
 	var x1 := size.x - 82.0
 	var y := 12.0
+	if world.one_life:
+		_distance(font, x0, x1)
+	else:
+		_progress(lv, x0, x1, y)
+
+	# Boss: its name and a pip per hit still to land.
+	_boss(font, lv, x0, x1)
+	_overlays(font, lv)
+
+
+func _distance(font: Font, x0: float, x1: float) -> void:
+	var m: int = world.metres()
+	var txt := "%d M" % m
+	var cx := floorf((x0 + x1) * 0.5)
+	var tw := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	draw_rect(Rect2(cx - tw * 0.5 - 6, 4, tw + 12, 20), Color(UITheme.INK, 0.75))
+	_text(font, Vector2(cx - tw * 0.5, 21), txt, UITheme.GOLD, 16)
+	var sub := ""
+	var beat := best_m > 0 and m > best_m
+	for r in rivals:
+		if int(r[1]) > m:
+			sub = "NEXT: %s %d M" % [String(r[0]), int(r[1])]
+			break
+	if sub == "" and best_m > 0:
+		sub = "BEST %d M" % best_m if not beat else "NEW BEST!"
+	if sub != "":
+		var sw := font.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+		draw_rect(Rect2(cx - sw * 0.5 - 4, 26, sw + 8, 12), Color(UITheme.INK, 0.6))
+		_text(font, Vector2(cx - sw * 0.5, 35), sub, UITheme.GOLD if beat else UITheme.CREAM)
+
+
+func _progress(lv: Dictionary, x0: float, x1: float, y: float) -> void:
 	draw_rect(Rect2(x0, y, x1 - x0, 3), Color(UITheme.INK, 0.8))
 	var span: float = lv.finish_x - lv.start_x
 	var frac := clampf((world.state.x - lv.start_x) / span, 0.0, 1.0)
@@ -121,7 +163,8 @@ func _draw() -> void:
 	draw_rect(Rect2(x1 - 1, y - 3, 3, 9), UITheme.CREAM)
 	draw_rect(Rect2(x0 + (x1 - x0) * frac - 2, y - 2, 4, 7), UITheme.CREAM)
 
-	# Boss: its name and a pip per hit still to land.
+
+func _boss(font: Font, lv: Dictionary, x0: float, x1: float) -> void:
 	if lv.has("boss"):
 		var bname := BossArt.boss_name(String(lv.boss.kind))
 		var hp := int(world.state.boss_hp)
@@ -137,12 +180,14 @@ func _draw() -> void:
 			if on:
 				draw_rect(Rect2(px + 1, 23, 5, 5), Color("ff5a5a") if int(_t * 6.0) % 4 != 0 or hp > 1 else Color("ffd0d0"))
 
+
+func _overlays(font: Font, lv: Dictionary) -> void:
 	# Crash hint: after a few wrecks in one stretch, a tip (and the dotted line in the world).
 	if world.guide_on and world.guide_tip != "" and world.phase != "crash":
 		_hint_banner(font)
 	if world.phase == "crash" and world.bot == null and world.phase_ticks >= world.CRASH_SKIP_TICKS:
 		var a := 0.55 + 0.45 * sin(_t * 6.0)
-		_center_text(font, size.y - 22.0, "TAP TO GO AGAIN", 8, Color(UITheme.CREAM, a))
+		_center_text(font, size.y - 22.0, "TAP FOR RESULTS" if world.one_life else "TAP TO GO AGAIN", 8, Color(UITheme.CREAM, a))
 	if world.phase == "ready" and world.first_ready:
 		var msg := "READY" if world.phase_ticks < 36 else "GO!"
 		_center_text(font, size.y * 0.38, msg, 16, UITheme.GOLD)

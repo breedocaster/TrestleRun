@@ -10,6 +10,8 @@ const Credits := preload("res://scripts/screens/credits.gd")
 const StoryMap := preload("res://scripts/screens/story_map.gd")
 const StoryIntro := preload("res://scripts/screens/story_intro.gd")
 const AchievementsScreen := preload("res://scripts/screens/achievements_screen.gd")
+const ChallengesScreen := preload("res://scripts/screens/challenges_screen.gd")
+const SeasonScreen := preload("res://scripts/screens/season_screen.gd")
 
 var current: Node
 
@@ -47,6 +49,9 @@ func _ready() -> void:
 			return
 		if a.begins_with("--ach-export="):
 			add_child(load("res://scripts/dev/ach_export.gd").new())
+			return
+		if a == "--endless-check" or a == "--endless-stats" or a.begins_with("--endless-ride=") or a.begins_with("--pair="):
+			add_child(load("res://scripts/dev/endless_check.gd").new())
 			return
 		if a == "--guide-test":
 			add_child(load("res://scripts/dev/guide_test.gd").new())
@@ -90,6 +95,11 @@ func navigate(target: String, arg: String) -> void:
 			n = StoryIntro.new()
 		"achievements":
 			n = AchievementsScreen.new()
+		"challenges":
+			n = ChallengesScreen.new()
+			n.focus = arg
+		"season":
+			n = SeasonScreen.new()
 		_:
 			n = Title.new()
 	if current:

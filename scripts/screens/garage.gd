@@ -111,6 +111,9 @@ func _build() -> void:
 	for c in _grid.get_children():
 		c.queue_free()
 	for it in Catalog.items(tab):
+		# Season paints: yours, or this season's (to see what the pass gives).
+		if it.has("season") and not GameState.owns(tab, String(it.id)) and int(it.season) != Challenges.season_theme():
+			continue
 		_grid.add_child(_tile(it))
 	Kit.pass_drags(_grid)
 
@@ -144,6 +147,9 @@ func _tile(it: Dictionary) -> Control:
 	elif owned:
 		b = Kit.button("EQUIP", 0, 22)
 		b.pressed.connect(func(): _equip(id))
+	elif it.has("season"):
+		b = Kit.button("SEASON PASS", 0, 22)
+		b.disabled = true
 	else:
 		var price := int(it.price)
 		b = Kit.button("SURE?" if _confirm == id else "BUY %d" % price, 0, 22)

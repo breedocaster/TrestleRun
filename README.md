@@ -2,7 +2,7 @@
 
 One-button motorcycle runner for Android/iOS, built in **Godot 4.7** (GL Compatibility renderer, 2D pixel art drawn in code). Inspired by the mine-cart *mechanic*, with original names, art and characters throughout.
 
-Two ways to play from the title screen: **STORY** (win back the parts of Grandpa's motorcycle, area by area, boss by boss) and **FREE RIDE** (the twelve trails, any time and weather). Both share the garage, the wallet and the achievements.
+Three ways to play from the title screen: **STORY** (win back the parts of Grandpa's motorcycle, area by area, boss by boss), **FREE RIDE** (the twelve trails, any time and weather) and **CHALLENGES** (a new daily ride, daily missions, endless runs, a weekly league and a season pass). All share the garage, the wallet and the achievements.
 
 ## Gameplay
 
@@ -25,7 +25,7 @@ Two ways to play from the title screen: **STORY** (win back the parts of Grandpa
 - **Ghost:** your best-time run rides alongside you as a see-through rider. GHOST RUN on/off in Settings.
 - Checkpoints mid-trail; crashes respawn you there about 1.6 s later, or tap once the wreck has played for 0.4 s ("TAP TO GO AGAIN") to come straight back. Coins only bank when you finish.
 - **CONTINUE** on the title screen takes you straight into the trail you last rode, or the next one once that's cleared (Free Ride trails keep your last time and weather).
-- **Settings** (title screen): GHOST RUN, CRASH HINTS, VIBRATION, SCREEN SHAKE and SHARP PIXELS on/off; CRASH HINTS is in the pause menu too. SHARP PIXELS (on unless you turn it off) draws the game at a whole-number zoom so every pixel is the same size: on the Fold's inner screen that's 4x with a 552 x 460 view (a little more trail ahead and above you) instead of 480 x 399 stretched 4.6x, where some pixel columns come out wider than others and edges shimmer as the trail scrolls. The outer screen is already an exact 4x, so it looks the same either way. SCREEN SHAKE off keeps the camera still on bonks, crashes and boss hits.
+- **Settings** (title screen): GHOST RUN, CRASH HINTS, VIBRATION, SCREEN SHAKE and SHARP PIXELS on/off, and CHEATS (below); CRASH HINTS is in the pause menu too. SHARP PIXELS (on unless you turn it off) draws the game at a whole-number zoom so every pixel is the same size: on the Fold's inner screen that's 4x with a 552 x 460 view (a little more trail ahead and above you) instead of 480 x 399 stretched 4.6x, where some pixel columns come out wider than others and edges shimmer as the trail scrolls. The outer screen is already an exact 4x, so it looks the same either way. SCREEN SHAKE off keeps the camera still on bonks, crashes and boss hits.
 - **Rope cue:** in the air with your hands at catch height and a rope just ahead (or a moment behind, for a late catch), the stretch of rope you can grab lights up gold; it brightens while you're holding.
 - **Payout** per clear = coins + conditions bonus + new gears + clear bonus + no-crash bonus. Results also show your time and best time.
 
@@ -93,6 +93,27 @@ Each boss is an alien machine that moves between fixed spots in its arena: the S
 Wreck a few times in the same stretch of trail and your next try shows the way through it: a tip at the top of the screen for that kind of stretch, and a dotted line from the checkpoint to past the trouble, with **TAP**, **HOLD** and **LET GO** marks (the dots turn blue while the button should be down). The line is the real physics played forward from the exact spot you respawn at, ridden by the autopilot, with each plain jump moved to the middle of its timing window (where a person has the most room either side). It's worked out on a background thread while the crash plays, so the run never stutters. It disappears once you're through.
 
 How many wrecks it takes rises as the game goes on: 2 on Free Ride trails 1-3 and on the farm, 3 on trails 4-6 and in the rail yard, 4 on trails 7-9 and in the orchard, 5 on trails 10-12 and at the speedway. Cables, rails, ropes, wall-rides and boss arenas always hint after 2, since those are the ones you can't solve by jumping harder. The count is per stretch and survives RESTART until you close the app. CRASH HINTS in Settings or the pause menu turns them off.
+
+### Challenges
+
+CHALLENGES on the title screen (a gold dot on the button when today's ride is waiting or there's a reward to take). Everything here runs offline: days, weeks and seasons come from the phone's date, so every phone gets the same daily course and league line.
+
+- **Daily ride:** a new course every day, stitched from stretches of all 24 trails (see Endless), with checkpoints and letters. It gets quicker through the week (118 px/s on Monday, 130 Tuesday-Wednesday, 142 Thursday-Friday, 154 at the weekend) and has the day's own weather, time of day and look. Clearing it pays 100 coins and 60 season XP once a day; no crashes and under par (the dev bot's time + 1 s) adds 40 XP. Your best run that day rides along as the ghost.
+- **Missions:** three a day from sixteen kinds (land flips, stomp critters, grind rails, swing on ropes, ride ziplines, ride so far in one endless run, finish the daily ride, find T-R-E-S-T-L-E...). They count in every mode. +40 coins and +40 XP each, +50 and +60 more for all three.
+- **Login streak:** the first time the title screen opens each day, the streak's reward: 25, 40, 60, 80, 100, 125, then 200 coins on day 7, round again. Miss a day and it starts over.
+- **Endless:** one life, and the course never repeats: stretches of every Free Ride and story trail (cut at their checkpoints, bosses aside) one after another, joined by flat decks that bring the course back to level. The speed steps up every four stretches, about every kilometre, from 118 to 166 px/s (the quickest trail is 158). Distance in metres (8 px to the metre), your best on the card and the HUD, coins plus 1 per 10 m. It's in the current season's look, and the time of day follows your clock.
+- **Weekly league:** the same endless line all week (Monday to Sunday) for everyone; your best distance that week counts. You're in a group of 20 with 19 computer rivals (there's no server yet), in five divisions: DIRT, GRAVEL, TIMBER, IRON, GOLDEN SPIKE. Top 5 move up, bottom 5 move down, and the week's place pays 600/350/150/50 coins and 300/200/100/50 XP (1st, 2nd-3rd, 4th-10th, the rest). The HUD shows the next rival to pass. Rivals are modelled on the line itself: each forced jump on it has the timing window the careful rider measured there, a rival fumbles it more often the narrower that window is (and more often in DIRT than in GOLDEN SPIKE), the line gets quicker the same way yours does, and they get one more run each day of the week. So an easier week's line means longer rival runs, the same as yours. Calibrated (`tools/endless/league_calibrate.py`) so a group's middle rider ends the week near 1.2 km in DIRT, 2.2 in GRAVEL, 3.5 in TIMBER, 5.5 in IRON and 8.5 in GOLDEN SPIKE; they start the week lower.
+- **Season pass:** a season lasts three weeks and takes one trail's look (season 1 is Copper Canyon; they go round all sixteen). 30 tiers at 100 XP; XP comes from every run (10, plus up to 80 for distance), missions, the daily ride, the streak and the league. The free track pays coins and two season paints; the gold track three more paints (the last with flames) and more coins. The gold pass costs 1,500 coins for now: selling it for real money needs the store billing plugins and accounts, which are the next phase. Season paints show in the garage once you have them (and the current season's, marked SEASON PASS).
+
+### Cheats
+
+GoldenEye-style: each one unlocks by beating a time on one trail in one weather (DK Mode was Runway on Agent in under 5:00). Any bike, any time of day; it's just the clock, so a crash usually costs too much. Each target is the dev bot's clean time there plus a second, and the bot doesn't wheelie, so a wheelie bike helps. Switch them on and off under SETTINGS > CHEATS. Cosmetic only.
+
+| Cheat | What it does | Unlock |
+|---|---|---|
+| BIG HEAD | Every rider's head twice the size (in runs, the garage and the menus) | Dusty Trail in the rain in under 49.5 s |
+| RAINBOW TRAIL | A rainbow streams behind you in the air | Copper Canyon in the wind in under 63.5 s |
+| PAINTBALL | Landings and crashes splat your paint on the deck | Rustyard in the rain in under 48.5 s |
 
 ### Achievements
 
@@ -281,6 +302,7 @@ Godot exports iOS as an Xcode project, and that export has to run on **macOS wit
 scripts/
   game_state.gd          autoload: wallet, unlocks, skins, story progress, save (user://save.json), input map, font/theme
   achievements.gd        autoload: the achievement list, unlocks, toasts, Play Games / Game Center bridge
+  challenges.gd          autoload: daily ride, missions, streak, endless records, weekly league and rivals, season pass, cheats
   catalog.gd             riders, bikes, paint, Free Ride and story trails, story areas and parts, prices   <- economy knobs
   main.gd                screen switching, Android back button
   game/
@@ -292,18 +314,20 @@ scripts/
     boss_art.gd          the four bosses
     story_art.gd         Grandpa's bike (filling in part by part), Grandma, the intro comic panels
     world.gd             one run: sim, pickups, checkpoints, bonus plane, camera, drawing
+    endless.gd           endless/daily/league courses from trail stretches; endless_table.gd (generated) says which are safe at which speed
     feature_art.gd       pixel art for springs, tunnels, loops, lifts, ziplines, biplane
     backdrop.gd          parallax themes: day/dusk/night palettes per trail, weather skies
     weather_fx.gd        screen-space rain and wind layer, per-trail ambient particles
     letter_spots.gd      where each trail's T-R-E-S-T-L-E letters sit (generated, see Dev checks)
     world_art.gd         per-trail track builds and critter skins, switch-ramp signs
     bike_view.gd         bike models + riders drawn from primitives (paint = palette)
-  screens/               title, trail select, story map and intro, achievements, garage, game (pause/results)
+  screens/               title, trail select, story map and intro, achievements, garage, challenges, season pass, game (pause/results)
   ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport), achievement badges
   audio/audio_director.gd  autoload: buses, engine, ambience, SFX pool, theme
   dev/                   bot, verifier, screenshots, input test, Movie Maker demo (excluded from export)
 tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio
 tools/store/play_ids.py  Play Console achievement ids -> scripts/achievements.gd (see ACHIEVEMENTS.md)
+tools/endless/make_table.py  --endless-check output -> scripts/game/endless_table.gd
 store/achievements/      store icons and import files (not part of the game; .gdignore keeps it out of the APK)
 ```
 
@@ -326,6 +350,9 @@ godot --headless --path . -- --verify --set=story                      # just th
 godot --headless --path . -- --verify --test=rail,rope:140             # the hold-move test strips (name[:speed])
 godot --headless --path . -- --guide-test                              # crash-hint line from every checkpoint
 xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2   # store icons + import files
+godot --headless --path . -- --endless-check [--part=0/2]               # ride every trail stretch at every endless speed
+python3 tools/endless/make_table.py check_*.log                          # ...and write scripts/game/endless_table.gd
+godot --headless --path . -- --endless-ride=1-20 [--bike=all] [--mode=daily --weather=rain]  # whole built courses
 ```
 
 - `--headless` runs with no window or audio
@@ -339,9 +366,13 @@ xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2
 - `--par` prints each trail's par time (the bot's clean clear-weather time + 1 s, rounded up to the half second) for `Catalog.PARS`
 - `--set=story|free` limits `--verify` to the story or Free Ride trails; `--test=` runs the short test strips in `level_layouts.gd` (`TESTS`) instead, each at the given speed
 - `--guide-test` rides every trail in every weather and, at each checkpoint, works out the crash-hint line from there to the next checkpoint exactly as a wreck would; it reports any line that doesn't get through and how long the work took. Its other modes (listed at the top of `scripts/dev/guide_test.gd`): `--flow` (when hints switch on, and the crash skip), `--rope-windows` (catch and let-go windows per rope; add `--late` for a press after the hands pass), `--wheelie-probe`, `--pacing` (checkpoint stretches and quiet stretches), and probes for a single spot
+- `--endless-check` rides each stretch of each trail on its own (start, joint, the stretch, joint, finish) at 118, 130, 142, 154 and 166 px/s: the bot in clear weather at three arrival times 0.85 s apart (lifts and moving critters run on the clock, so a stretch has to work whenever you get there), once in rain and once in wind, then the careful rider in clear for its timing windows. A stretch is used at a speed only if all of that passes with no crash and the tightest window is at least 75 ms. `--part=k/n` splits the work over n processes (run them side by side). `make_table.py` collects the output into `endless_table.gd`; rerun both after changing a layout.
+- `--endless-ride=a-b` builds the endless courses for seeds a..b and has the bot ride each to the end (one life; `--max-m=` stops early), on one bike or `--bike=all`; `--mode=daily` builds daily rides instead (with checkpoints), in `--weather=`. It prints where any crash happened and on which stretch.
 - `--ach-export=` writes the store kit for achievements (needs a display, so `xvfb-run` on a server; see ACHIEVEMENTS.md)
 
-Current result (v0.8.2; riding is unchanged from 0.8.1, the rest below is 0.8.1's):
+Current result (v0.9.0; trail riding is unchanged from 0.8.1, so the rest below is 0.8.1's apart from the first and last lines):
+- `--endless-check`: 76 stretches x 5 speeds. Used in clear weather (bot clean at all three arrival times, tightest window 75 ms or more): 66 at 118 px/s, 73 at 130, 142 and 154, 70 at 166; in all three weathers 64, 72, 73, 72, 69. The ones left out are mostly a tightest window of one to four frames at that speed, and five where the bot itself crashed at 118 (too slow to clear a gap the trail was built for at its own speed). Across everything that's used, the careful rider's timing windows have a median of 366 ms and a tenth of them under 166 ms.
+- `--endless-ride`: 8 endless courses x 7 bikes to 7 km each (all five speeds), and 36 daily rides (12 each in clear, rain and wind, at all five speeds): no crashes. Two things this caught on the way: a stretch that opened straight into a jump right after a joint's slope, and stretches built at a different height from where the checker rode them (a marginal rail mount went the other way). Joints now end in a full second of flat deck, and bring every stretch back to the height it was checked at.
 - Plain bike: all 84 runs (12 Free Ride trails + 16 story trails, x 3 weathers) cleared with 0 crashes and 3/3 gears; every boss knocked out 3/3 without circling round, in every weather. Letters 7/7 in 68 of 72 trail runs (bosses have none); the misses are single letters except Hollow Oak in wind (two), all picked up by the bot in the other weathers.
 - Every bike with its specialty active: all 588 runs cleared with 0 crashes, and no boss circles round on any bike. (In 0.8.0's first pass the scooter fell on rail-yard trails: holding to grind also opened its umbrella, which floated it over the rails. The umbrella now stays shut with a rail, wall-ride or rope just ahead.) Gears 3/3 in all but twelve runs, all of them the scooter floating past one. Letters 7/7 in 462 of 504 trail runs.
 - `--guide-test`: from every checkpoint of every trail in every weather, the crash-hint line gets through to the next checkpoint (252 lines, 0 failures). Working it out took 2.0-4.2 ms per frame of line on this machine with another test running alongside (about 2.1-3.2 ms with a core to itself), against 16.7 ms per frame of riding, so the line runs well ahead of you on the worker thread.

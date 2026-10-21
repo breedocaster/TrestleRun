@@ -14,6 +14,7 @@ const Art := preload("res://scripts/game/feature_art.gd")
 const WorldArt := preload("res://scripts/game/world_art.gd")
 const BossArt := preload("res://scripts/game/boss_art.gd")
 const Guide := preload("res://scripts/game/guide.gd")
+const Endless := preload("res://scripts/game/endless.gd")
 
 const SWOOP_SETTLE := 190.0
 const SWOOP_RANGE := 170.0
@@ -33,6 +34,17 @@ const REAR_WHEEL := {"scrambler": -8.0, "dirt": -9.0, "minibike": -6.0, "scooter
 
 var level: Dictionary
 var level_id := ""
+## "" (Free Ride and story), "endless", "daily" or "league". Endless and league runs
+## have one life: a crash ends the run and the distance counts.
+var mode := ""
+var one_life := false
+var _zone := 0
+## Cosmetic cheats (Challenges): a rainbow behind you in the air; paint splats.
+var cheat_rainbow := false
+var cheat_paint := false
+var _splats: Array = []
+const MAX_SPLATS := 80
+const RAINBOW := [Color("ff4a4a"), Color("ffa040"), Color("ffe85a"), Color("6ae06a"), Color("5ab0ff"), Color("b07aff")]
 var state: Dictionary
 var loadout: Dictionary = {}
 var ability: Dictionary = {}
@@ -180,6 +192,7 @@ static func meta_part(id: String) -> String:
 ## Dev/demo: swap in a custom level after the world is in the tree.
 func replace_level(lv: Dictionary, x := 40.0) -> void:
 	level = lv
+	_win = {}
 	Phys.apply_weather(level, String(cond.weather))
 	boss_vis = {}
 	if level.has("boss"):
@@ -238,7 +251,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		press_queued = true
 		held = true
 		if phase == "crash" and phase_ticks >= CRASH_SKIP_TICKS:
-			_respawn()  # impatient: straight back to the checkpoint
+			_crash_over()  # impatient: straight back to the checkpoint (or to the results)
 		if is_inside_tree():
 			get_viewport().set_input_as_handled()
 
@@ -303,13 +316,19 @@ func tick() -> void:
 				_wreck.pos += _wreck.vel * Phys.DT
 				_wreck.rot += _wreck.spin * Phys.DT
 			if phase_ticks >= CRASH_TICKS:
-				_respawn()
+				_crash_over()
 		"done":
 			phase_ticks += 1
 			if state.alive:
 				Phys.step(level, state, false, false)
 			if phase_ticks == FINISH_TICKS:
-				result = {"level_id": level_id, "coins": run_coins, "gears": gears.duplicate(),
+				_emit_result(true)
+	if not headless:
+		_tick_visuals()
+
+
+func _emit_result(finished: bool) -> void:
+	result = {"level_id": level_id, "coins": run_coins, "gears": gears.duplicate(),
 					"crashes": crashes, "stomps": stomps, "conditions": cond.duplicate(),
 					"time": snappedf(ride_time, 0.1), "planes": planes_caught, "planes_seen": planes_seen,
 					"tricks": tricks_landed, "trick_coins": trick_coins,
@@ -318,10 +337,9 @@ func tick() -> void:
 					"rig": loadout.duplicate(),
 					"bike": String(loadout.get("bike", "")),
 					"boss": level.has("boss"), "boss_down": boss_down_tick >= 0, "part": boss_part,
-					"boss_loops": int(state.boss_loops), "had_ghost": not ghost.is_empty()}
-				run_finished.emit(result)
-	if not headless:
-		_tick_visuals()
+					"boss_loops": int(state.boss_loops), "had_ghost": not ghost.is_empty(),
+					"mode": mode, "metres": metres(), "finished": finished, "par": float(level.get("par", 0.0))}
+	run_finished.emit(result)
 
 
 func _ride_tick() -> void:
@@ -333,6 +351,8 @@ func _ride_tick() -> void:
 		pressed = d[0]
 		h = d[1]
 	held_now = h
+	if level.has("zones"):
+		_zone_tick()
 	var ev := Phys.step(level, state, pressed, h)
 	if state.grounded:
 		_air_x = float(state.x)
@@ -344,6 +364,8 @@ func _ride_tick() -> void:
 	if ev & Phys.EV_LAND:
 		_squash = 1.0
 		_puff(Vector2(state.x, state.y), 6, Color(theme.deck_hi, 0.9))
+		if cheat_paint:
+			_splat(Vector2(state.x, state.y), 1.0)
 		_sfx("land", randf_range(0.92, 1.05))
 		if level.rain:
 			_splash(Vector2(state.x, state.y))
@@ -375,6 +397,19 @@ func _ride_tick() -> void:
 		_sfx("finish")
 		if _audio_on():
 			AudioDirector.engine_coast()
+
+
+## Endless courses change speed stretch by stretch; it eases over on the joint.
+func _zone_tick() -> void:
+	var zones: Array = level.zones
+	while _zone + 1 < zones.size() and float(state.x) >= float(zones[_zone + 1][0]):
+		_zone += 1
+	level.speed = move_toward(float(level.speed), float(zones[_zone][1]), Endless.SPEED_RAMP * Phys.DT)
+
+
+## Metres ridden (endless and league).
+func metres() -> int:
+	return Endless.metres(level, float(state.x))
 
 
 func _on_stomp() -> void:
@@ -429,6 +464,7 @@ func _feature_events(ev: int) -> void:
 		loops_done += 1
 	if ev & Phys.EV_ZIP:
 		_sfx("zip_grab")
+		_ach("zips")
 		if _audio_on():
 			AudioDirector.zip_on(true)
 	if ev & Phys.EV_UNZIP:
@@ -454,6 +490,7 @@ func _feature_events(ev: int) -> void:
 			Achievements.unlock("flip")
 			if int(state.trick_n) >= 2:
 				Achievements.unlock("double_flip")
+		_ach("flips", maxi(1, int(state.trick_n)))
 		_float(Vector2(state.x, state.y - 36), "%s +%d" % [String(state.trick_name), coins], Color("8fe3ff"))
 		_puff(Vector2(state.x, state.y), 10, Color("8fe3ff"))
 		_sfx("trick")
@@ -466,6 +503,7 @@ func _feature_events(ev: int) -> void:
 	if ev & Phys.EV_SWITCH:
 		_sfx("switch", 1.0 if float(level.switches[state.sw].to_lane) > float(level.switches[state.sw].lane) else 1.12)
 	if ev & Phys.EV_POWER:
+		_ach("powerups")
 		var kind := String(state.last_power)
 		var names: Array = POWER_NAMES.get(kind, [kind.to_upper(), ""])
 		_float(Vector2(state.x, state.y - 34), String(names[0]), Color("9fffd0"))
@@ -641,6 +679,8 @@ func _crash() -> void:
 	_wreck = {"pos": Vector2(state.x, state.y), "vel": Vector2(float(state.vx) * 0.4, up),
 		"rot": _angle, "spin": 10.0, "z": float(state.lane_z)}
 	_shake = 5.0
+	if cheat_paint:
+		_splat(Vector2(state.x, _ground_y_or(state.x, INF, int(state.lane))), 2.2)
 	_puff(Vector2(state.x, state.y - 8), 14, Color("ffb347"))
 	_puff(Vector2(state.x, state.y - 8), 8, Color("e8e2d0"))
 	_vibrate(70)
@@ -650,6 +690,17 @@ func _crash() -> void:
 		AudioDirector.zip_on(false)
 		AudioDirector.grind_on(false)
 	plane = {}
+
+
+## The wreck has played: back to the checkpoint, or with one life, the run is over.
+func _crash_over() -> void:
+	if one_life:
+		if phase == "crash":
+			phase = "over"
+			phase_ticks = 0
+			_emit_result(false)
+		return
+	_respawn()
 
 
 func _respawn() -> void:
@@ -759,9 +810,10 @@ func _ach_on() -> bool:
 	return bot == null and not headless and not quiet
 
 
-func _ach(stat: String) -> void:
+func _ach(stat: String, n := 1) -> void:
 	if _ach_on():
-		Achievements.add(stat)
+		Achievements.add(stat, n)
+		Challenges.on_stat(stat, n)
 
 
 func _sfx(sfx_name: String, pitch := 1.0, vol_db := 0.0) -> void:
@@ -965,6 +1017,12 @@ func _build_layers() -> void:
 
 
 func _tick_visuals() -> void:
+	if cheat_rainbow and phase == "ride" and not state.grounded and int(state.zip) < 0 and int(state.rope) < 0:
+		# RAINBOW TRAIL: a band of colour streaming off the back of the bike.
+		var back := Vector2(state.x - 12.0, state.y - 6.0)
+		for i in RAINBOW.size():
+			_particles.append({"p": _view(back + Vector2(0, (i - 2.5) * 1.6)), "v": Vector2(-12.0, 0.0),
+				"life": 26, "max": 26, "c": RAINBOW[i], "s": 2.0, "g": 0.0})
 	if phase == "ride" or phase == "done":
 		_wheel += float(state.vx) * Phys.DT / 4.0
 		var target := atan(state.slope) if state.grounded else clampf(state.vy * 0.0011, -0.42, 0.5)
@@ -1204,6 +1262,33 @@ func _puff(at: Vector2, n: int, c: Color, z := INF) -> void:
 			"life": 22, "max": 22, "c": c, "s": 1.0 + float(randi() % 2), "g": 160.0})
 
 
+## PAINTBALL: a splat of your paint on the deck (kept, oldest first to go).
+func _splat(at: Vector2, size: float) -> void:
+	if headless or at.y == INF:
+		return
+	var paint := Catalog.paint(String(loadout.get("paint", "stock")))
+	_splats.append({"p": at, "lane": int(state.lane), "s": size, "seed": randi(),
+		"c": paint.body if randf() < 0.6 else paint.accent})
+	if _splats.size() > MAX_SPLATS:
+		_splats.pop_front()
+
+
+func _draw_splats(ci: CanvasItem, lane: int, left: float, right: float) -> void:
+	for sp in _splats:
+		var p: Vector2 = sp.p
+		if int(sp.lane) != lane or p.x < left - 30.0 or p.x > right + 30.0:
+			continue
+		var r := RandomNumberGenerator.new()
+		r.seed = int(sp.seed)
+		var k := float(sp.s)
+		var c: Color = sp.c
+		ci.draw_rect(Rect2(p.x - 6.0 * k, p.y - 1, 12.0 * k, 2), c)
+		for i in int(5 * k):
+			var dx := r.randf_range(-11.0, 11.0) * k
+			var w := r.randf_range(1.0, 3.0)
+			ci.draw_rect(Rect2(floorf(p.x + dx), p.y - 1 - floorf(r.randf_range(0.0, 2.0)), w, 1 + floorf(r.randf_range(0.0, 2.0))), c.darkened(r.randf_range(0.0, 0.25)))
+
+
 func _splash(at: Vector2) -> void:
 	if headless:
 		return
@@ -1221,10 +1306,64 @@ func _float(at: Vector2, text: String, c: Color, z := INF) -> void:
 	_floaters.append({"p": _view(at, z), "text": text, "c": c, "life": 50, "max": 50})
 
 
+## What's near the view, so drawing doesn't walk every item of a long course each
+## frame: indices per kind within win_half px of where the camera was when it was last
+## worked out (again whenever the camera has moved WIN_MOVE px).
+var win_half := 1200.0  # dev: --no-window sets it huge to compare against drawing everything
+const WIN_MOVE := 400.0
+var _win := {}
+var _win_x := INF
+
+
+func _update_window() -> void:
+	var cx := cam.position.x
+	if absf(cx - _win_x) < WIN_MOVE and not _win.is_empty():
+		return
+	_win_x = cx
+	var lo := cx - win_half
+	var hi := cx + win_half
+	var w := {}
+	for key in ["tracks", "ceils", "loops", "springs", "switches", "zips", "ropes", "pickups", "powerups", "enemies"]:
+		var out := []
+		var arr: Array = level.get(key, [])
+		for i in arr.size():
+			var it: Dictionary = arr[i]
+			var a := 0.0
+			var b := 0.0
+			match key:
+				"tracks", "ceils", "zips":
+					a = float(it.x0)
+					b = float(it.x1)
+				"loops":
+					a = float(it.x) - 120.0
+					b = float(it.x) + float(it.get("shift", 0.0)) + 160.0
+				"springs":
+					a = float(it.x)
+					b = a
+				"switches":
+					a = float(it.x) - float(it.w) - 80.0
+					b = float(it.x) + float(it.len) + float(it.w) + 80.0
+				"ropes":
+					a = float(it.ax) - float(it.len) * 1.4 - 140.0
+					b = float(it.ax) + float(it.len) * 1.4 + 140.0
+				"pickups", "powerups":
+					a = it.pos.x
+					b = a
+				"enemies":
+					var drift := float(it.get("drift", 0.0))
+					a = float(it.x0) - drift - 60.0
+					b = float(it.get("x1", it.x0)) + drift + 60.0
+			if b >= lo and a <= hi:
+				out.append(i)
+		w[key] = out
+	_win = w
+
+
 ## Everything in one lane, drawn in that lane's own coordinates.
 func draw_lane(ci: CanvasItem, lane: int) -> void:
 	if cam == null:
 		return
+	_update_window()
 	var z := float(lane)
 	var s := lane_scale(z)
 	var oy := lane_oy(z)
@@ -1241,32 +1380,40 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 	# Collapse chase: everything behind the front has fallen into the canyon.
 	var cut := float(state.chase_x) if float(state.chase_x) > -INF else -INF
 	var tl := maxf(left, cut)
-	for cl in level.ceils:
+	for wi in _win.ceils:
+		var cl: Dictionary = level.ceils[wi]
 		if int(cl.lane) == lane and cl.x1 > tl and cl.x0 < right:
 			Art.tunnel_back(ci, cl, theme, bottom, _vis_t, night)
-	WorldArt.draw_tracks(ci, level.tracks, lane, tl, right, bottom, theme, _style, _vis_t, state.t, night)
+	WorldArt.draw_tracks(ci, level.tracks, lane, tl, right, bottom, theme, _style, _vis_t, state.t, night, _win.tracks)
 	_draw_crumble(ci, lane, tl, right, bottom, night)
-	for L in level.loops:
+	if not _splats.is_empty():
+		_draw_splats(ci, lane, tl, right)
+	for wi in _win.loops:
+		var L: Dictionary = level.loops[wi]
 		if int(L.lane) == lane and float(L.x) + 90.0 > left and float(L.x) - 60.0 < right:
 			Art.loop(ci, L, theme, bottom)
-	for cl in level.ceils:
+	for wi in _win.ceils:
+		var cl: Dictionary = level.ceils[wi]
 		if int(cl.lane) == lane and cl.x1 > tl - 40.0 and cl.x0 < right + 40.0:
 			Art.tunnel_front(ci, cl, theme, top, _vis_t)
 	if cut > left:
 		_draw_collapse(ci, cut, top, bottom)
-	for sp in level.springs:
+	for wi in _win.springs:
+		var sp: Dictionary = level.springs[wi]
 		if int(sp.lane) == lane and sp.x > left and sp.x < right:
 			Art.spring(ci, sp.x, Phys.height_at(level.tracks[sp.track], sp.x), _vis_t - float(sp.get("fired", -10.0)))
-	for w in level.switches:
+	for wi in _win.switches:
+		var w: Dictionary = level.switches[wi]
 		if int(w.lane) == lane and w.x > left - 40.0 and w.x < right + 40.0:
 			WorldArt.switch_plate(ci, w.x, Phys.height_at(level.tracks[w.track], w.x),
 				float(w.to_lane) - float(w.lane), float(w.w), _vis_t)
-	for zz in level.zips:
+	for wi in _win.zips:
+		var zz: Dictionary = level.zips[wi]
 		if int(zz.lane) == lane and zz.x1 > left and zz.x0 < right:
 			Art.zip(ci, zz, _ground_y_or(zz.x0, bottom, lane), _ground_y_or(zz.x1, bottom, lane), theme)
 	var on_hold := int(state.track) if state.grounded and Phys.attachment(level, state) in ["rail", "wall"] else -1
-	WorldArt.draw_holds(ci, level.tracks, lane, tl, right, bottom, theme, _style, _vis_t, on_hold)
-	for ri in level.get("ropes", []).size():
+	WorldArt.draw_holds(ci, level.tracks, lane, tl, right, bottom, theme, _style, _vis_t, on_hold, _win.tracks)
+	for ri in _win.ropes:
 		var rp: Dictionary = level.ropes[ri]
 		if int(rp.lane) != lane or float(rp.ax) + 120.0 < left or float(rp.ax) - 120.0 > right:
 			continue
@@ -1277,7 +1424,7 @@ func draw_lane(ci: CanvasItem, lane: int) -> void:
 		Art.rope(ci, rp, end, _vis_t, theme, String(_style.get("rope", "beam")), _rope_cue(ri, rp))
 	_draw_markers(ci, lane, left, right)
 	_draw_pickups(ci, lane, left, right)
-	for i in level.powerups.size():
+	for i in _win.powerups:
 		var pu: Dictionary = level.powerups[i]
 		if int(pu.lane) == lane and not (state.got as Dictionary).has(i) and pu.pos.x > left and pu.pos.x < right:
 			Icons.power(ci, (pu.pos + Vector2(0, sin(_vis_t * 3.0 + pu.pos.x) * 2.0)).floor(), String(pu.kind), _vis_t)
@@ -1370,7 +1517,9 @@ func _draw_boss(ci: CanvasItem) -> void:
 ## own depth). Drawn by the nearer of the two lanes, before its own things.
 func _draw_switch_ramps(ci: CanvasItem, lane: int) -> void:
 	var vs := get_viewport_rect().size
-	for w in level.switches:
+	_update_window()
+	for wi in _win.switches:
+		var w: Dictionary = level.switches[wi]
 		var la := int(w.lane)
 		var lb := int(w.to_lane)
 		if mini(la, lb) != lane:
@@ -1488,7 +1637,8 @@ func _draw_markers(ci: CanvasItem, lane: int, left: float, right: float) -> void
 
 
 func _draw_pickups(ci: CanvasItem, lane: int, left: float, right: float) -> void:
-	for p in level.pickups:
+	for wi in _win.pickups:
+		var p: Dictionary = level.pickups[wi]
 		if not p.alive or int(p.lane) != lane or p.pos.x < left or p.pos.x > right:
 			continue
 		var pos: Vector2 = p.pos
@@ -1511,7 +1661,8 @@ func _draw_pickups(ci: CanvasItem, lane: int, left: float, right: float) -> void
 
 func _draw_enemies(ci: CanvasItem, lane: int, left: float, right: float) -> void:
 	var night: bool = theme.time == "night"
-	for e in level.enemies:
+	for wi in _win.enemies:
+		var e: Dictionary = level.enemies[wi]
 		if int(e.lane) != lane:
 			continue
 		if not e.alive:
@@ -1555,7 +1706,7 @@ func _draw_crumble(ci: CanvasItem, lane: int, left: float, right: float, bottom:
 	var z := float(lane)
 	var s := lane_scale(z)
 	var crumb: Dictionary = state.crumb
-	for ti in level.tracks.size():
+	for ti in _win.tracks:
 		var tr: Dictionary = level.tracks[ti]
 		if not tr.has("crumble") or int(tr.lane) != lane or tr.x1 < left or tr.x0 > right:
 			continue

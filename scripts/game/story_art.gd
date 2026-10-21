@@ -347,5 +347,7 @@ static func _sunrise(ci: CanvasItem, vs: Vector2, t: float) -> void:
 	grandma(ci, Vector2.ZERO, t, false, 0.0, true)
 	ci.draw_set_transform(Vector2(vs.x * 0.36, ground), 0.0, Vector2(3.0, 3.0))
 	var rig := GameState.loadout()
+	BikeView.xf = Transform2D(0.0, Vector2(3.0, 3.0), 0.0, Vector2(vs.x * 0.36, ground))
 	BikeView.draw_rig(ci, Vector2.ZERO, rig, t * 6.0, t, 0.0, 0.5)
+	BikeView.xf = Transform2D.IDENTITY
 	ci.draw_set_transform(Vector2.ZERO)

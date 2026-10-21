@@ -140,7 +140,9 @@ class RigPreview extends Control:
 		draw_rect(Rect2(base.x - 19 * px_scale, base.y, 38 * px_scale, 2 * px_scale), deck)
 		draw_set_transform(base, 0.0, Vector2(px_scale, px_scale))
 		BikeView.line_w = 1.0
+		BikeView.xf = Transform2D(0.0, Vector2(px_scale, px_scale), 0.0, base)
 		BikeView.draw_rig(self, Vector2.ZERO, rig, _t * 8.0, _t, 0.0, 0.55)
+		BikeView.xf = Transform2D.IDENTITY
 		BikeView.line_w = -1.0
 		draw_set_transform(Vector2.ZERO)
 

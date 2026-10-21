@@ -1225,8 +1225,19 @@ static func _finish_step(level: Dictionary, s: Dictionary, ev: int, oy: float, d
 		ev |= _boss_step(level, s, oy, descending, held)
 		if ev & EV_BOSS_LOOP:
 			return ev
-	if s.y > level.kill_y:
+	if s.y > kill_line(level, float(s.x)):
 		s.alive = false
 		s.death = "fall"
 		ev |= EV_DEAD
 	return ev
+
+
+## How far you fall before it counts as a wreck. A trail has one line under its lowest
+## deck; a long built course (endless.gd) has one per stretch of the course, under the
+## decks near you, so a fall is over as quickly there as on a trail.
+static func kill_line(level: Dictionary, x: float) -> float:
+	if not level.has("kill_by"):
+		return level.kill_y
+	var kb: PackedFloat32Array = level.kill_by
+	var i := clampi(int(floor((x - float(level.kill_x0)) / BUCKET)), 0, kb.size() - 1)
+	return kb[i]
