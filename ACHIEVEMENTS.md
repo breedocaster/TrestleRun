@@ -1,6 +1,6 @@
 # Achievements: in the game now, on the stores later
 
-Trestle Run has 31 achievements. They already work in the game with no accounts:
+Trestle Run has 41 achievements. They already work in the game with no accounts:
 they unlock in your save, pop a toast at the top of the screen, and show on
 **ACHIEVEMENTS** (title screen) with progress bars for the counted ones. Progress you
 made before v0.8 counts: anything you'd already earned unlocks quietly the first time
@@ -16,40 +16,53 @@ you can do.
 
 | # | ID | Name | How to get it | Points | Type |
 |---|---|---|---|---|---|
-| 1 | `story_start` | Off You Go | Finish the first story trail. | 10 | one step |
-| 2 | `part_headlight` | Lights On | Get Grandpa's headlight back from the Scooper. | 50 | one step |
-| 3 | `part_kickstart` | Kicked Off | Get the kickstart back from the Rail Hog. | 50 | one step |
-| 4 | `part_seat` | Take a Seat | Get the seat back from the Harvester. | 50 | one step |
-| 5 | `part_wheels` | Rolling Again | Get both wheels back from the Spinner. | 50 | one step |
-| 6 | `parts_4` | Halfway Home | Recover four parts of Grandpa's bike. | 50 | counted (4) |
-| 7 | `boss_flawless` | Not a Scratch | Beat a boss without crashing. | 30 | one step |
-| 8 | `boss_quick` | Short Work | Knock out a boss before it circles round. | 30 | one step |
-| 9 | `first_clear` | Trail Blazer | Clear your first Free Ride trail. | 10 | one step |
-| 10 | `free_all` | Every Trestle | Clear all 12 Free Ride trails. | 80 | counted (12) |
-| 11 | `no_crash` | Clean Run | Clear a trail without crashing. | 15 | one step |
-| 12 | `gold_first` | Gold Rush | Win a gold medal. | 20 | one step |
-| 13 | `gold_ten` | Golden Touch | Win 10 gold medals. | 50 | counted (10) |
-| 14 | `letters_first` | Spell It Out | Find all of T-R-E-S-T-L-E in one run. | 20 | one step |
-| 15 | `gears_all` | Gear Head | Find all 36 gears in Free Ride. | 60 | counted (36) |
-| 16 | `flip` | Head Over Wheels | Land a flip. | 10 | one step |
-| 17 | `double_flip` | Double Trouble | Land a double flip. | 25 | one step |
-| 18 | `tricks_run` | Showboat | Land 10 tricks in one run. | 30 | one step |
-| 19 | `stomp_100` | Stomper | Stomp 100 critters. | 30 | counted (100) |
-| 20 | `zip_chain` | Cable Hopper | Ride three cables in a row without touching down. | 20 | one step |
-| 21 | `rails_25` | Spark Show | Grind 25 rails. | 25 | counted (25) |
-| 22 | `ropes_25` | Rope Trick | Swing on 25 ropes. | 25 | counted (25) |
-| 23 | `walls_25` | Wall of Death | Ride 25 walls. | 25 | counted (25) |
-| 24 | `planes_10` | Air Mail | Catch 10 prize sacks from the bonus plane. | 25 | counted (10) |
-| 25 | `any_weather` | Any Weather | Clear a trail in the rain and one in the wind. | 20 | one step |
-| 26 | `night_5` | After Dark | Clear 5 trails at night. | 25 | counted (5) |
-| 27 | `garage_bikes` | Full Garage | Own all 7 bikes. | 40 | counted (7) |
-| 28 | `garage_riders` | The Whole Gang | Own all 8 riders. | 40 | counted (8) |
-| 29 | `rich` | Savings Jar | Have 2,000 coins at once. | 20 | one step |
-| 30 | `ghost_beat` | Beat Your Ghost | Set a new best time while your ghost rides. | 20 | one step |
+| 1 | `story_start` | Off You Go | Finish the first story trail. | 5 | one step |
+| 2 | `part_headlight` | Lights On | Get Grandpa's headlight back from the Scooper. | 35 | one step |
+| 3 | `part_kickstart` | Kicked Off | Get the kickstart back from the Rail Hog. | 35 | one step |
+| 4 | `part_seat` | Take a Seat | Get the seat back from the Harvester. | 35 | one step |
+| 5 | `part_wheels` | Rolling Again | Get both wheels back from the Spinner. | 35 | one step |
+| 6 | `parts_4` | Halfway Home | Recover four parts of Grandpa's bike. | 25 | counted (4) |
+| 7 | `boss_flawless` | Not a Scratch | Beat a boss without crashing. | 25 | one step |
+| 8 | `boss_quick` | Short Work | Knock out a boss before it circles round. | 25 | one step |
+| 9 | `first_clear` | Trail Blazer | Clear your first Free Ride trail. | 5 | one step |
+| 10 | `free_all` | Every Trestle | Clear all 12 Free Ride trails. | 60 | counted (12) |
+| 11 | `no_crash` | Clean Run | Clear a trail without crashing. | 10 | one step |
+| 12 | `gold_first` | Gold Rush | Win a gold medal. | 15 | one step |
+| 13 | `gold_ten` | Golden Touch | Win 10 gold medals. | 40 | counted (10) |
+| 14 | `letters_first` | Spell It Out | Find all of T-R-E-S-T-L-E in one run. | 15 | one step |
+| 15 | `gears_all` | Gear Head | Find all 36 gears in Free Ride. | 50 | counted (36) |
+| 16 | `flip` | Head Over Wheels | Land a flip. | 5 | one step |
+| 17 | `double_flip` | Double Trouble | Land a double flip. | 20 | one step |
+| 18 | `tricks_run` | Showboat | Land 10 tricks in one run. | 20 | one step |
+| 19 | `stomp_100` | Stomper | Stomp 100 critters. | 25 | counted (100) |
+| 20 | `zip_chain` | Cable Hopper | Ride three cables in a row without touching down. | 15 | one step |
+| 21 | `rails_25` | Spark Show | Grind 25 rails. | 20 | counted (25) |
+| 22 | `ropes_25` | Rope Trick | Swing on 25 ropes. | 20 | counted (25) |
+| 23 | `walls_25` | Wall of Death | Ride 25 walls. | 20 | counted (25) |
+| 24 | `planes_10` | Air Mail | Catch 10 prize sacks from the bonus plane. | 20 | counted (10) |
+| 25 | `any_weather` | Any Weather | Clear a trail in the rain and one in the wind. | 15 | one step |
+| 26 | `night_5` | After Dark | Clear 5 trails at night. | 20 | counted (5) |
+| 27 | `garage_bikes` | Full Garage | Own all 7 bikes. | 35 | counted (7) |
+| 28 | `garage_riders` | The Whole Gang | Own all 8 riders. | 35 | counted (8) |
+| 29 | `rich` | Savings Jar | Have 2,000 coins at once. | 15 | one step |
+| 30 | `ghost_beat` | Beat Your Ghost | Set a new best time while your ghost rides. | 15 | one step |
 | 31 | `outrun` | Outrun It | Finish Last Trestle without crashing. | 30 | one step |
+| 32 | `endless_1k` | First Milepost | Ride 1,000 m in one endless run. | 10 | counted (1,000) |
+| 33 | `endless_5k` | Long Haul | Ride 5,000 m in one endless run. | 30 | counted (5,000) |
+| 34 | `daily_7` | Daily Grind | Clear 7 daily rides. | 20 | counted (7) |
+| 35 | `missions_all` | Hat Trick | Finish all three daily missions in one day. | 15 | one step |
+| 36 | `streak_7` | Seven Straight | Play 7 days in a row. | 20 | counted (7) |
+| 37 | `league_up` | Moving Up | Get promoted in the weekly league. | 15 | one step |
+| 38 | `league_win` | Top of the Table | Finish a league week first in your group. | 20 | one step |
+| 39 | `league_top` | Golden Spike | Reach the Golden Spike division. | 30 | counted (4) |
+| 40 | `season_30` | Top of the Pass | Reach tier 30 on a season pass. | 25 | one step |
+| 41 | `cheats_all` | Cheat Codes | Unlock all 3 cheats. | 20 | counted (3) |
 
-Total: 985 points. Both stores take that: Play allows 5 to 200 per achievement and
-2,000 in all; Game Center allows up to 100 per achievement and 1,000 in all.
+Total: 950 points. Both stores take that: Play allows 5 to 200 per achievement and
+2,000 in all; Game Center allows up to 100 per achievement and 1,000 in all. 0.9.1
+added 32-41 (endless, daily rides and missions, the streak, the league, the season
+pass, cheats) and lowered the older ones to fit, leaving 50 points for later ones.
+Points can still change freely: nothing is on a store yet.
 Counted ones are "incremental" on Play (it tracks the steps) and percent-complete on
 Game Center.
 
@@ -60,7 +73,7 @@ own badge art:
 
 | File | For |
 |---|---|
-| `trestle-run-play-achievements.zip` | Play Console's **Import achievements** (all 31 at once, with icons) |
+| `trestle-run-play-achievements.zip` | Play Console's **Import achievements** (all 41 at once, with icons) |
 | `play/<id>.png` | 512 x 512 icons (Play) |
 | `apple/<id>.png` | 1024 x 1024 opaque icons (App Store Connect) |
 | `game-center-achievements.csv` | what to type into App Store Connect, one row per achievement |
@@ -82,12 +95,10 @@ xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2
 What you need first:
 
 - A Google Play developer account (one-time fee).
-- **A real package name.** The game is `com.example.trestlerun`, and Play Console
-  refuses anything under `com.example` ("You need to use a different package name
-  because 'com.example' is restricted"). Pick one like `com.yourname.trestlerun` and set
-  it in **Project > Export > Android > Package > Unique Name**. Android treats a new
-  package name as a different app: it installs next to the old one instead of over
-  it, and the old save stays with the old app.
+- **The package name**: `com.pre_release.Trestlerun`, the one registered to the app
+  in Play Console (it's in the Android preset's **Package > Unique Name**). Builds
+  before 0.9.0's bundle were `com.example.trestlerun`; Android treats those as a
+  different app, so they install side by side and keep separate saves.
 
 Steps:
 
@@ -108,8 +119,11 @@ Steps:
      of Android's debug key.
 
    Use the `SHA1` line it prints (every machine's debug key is different).
-   (A Play Store release would use the upload key's SHA-1 and Play's app-signing key's
-   SHA-1 instead.)
+   For copies installed from Play (internal testing onwards), add two more Android
+   credentials: the upload key's SHA-1 (kept with the keystore,
+   in `trestle-upload-key.txt`) and the app-signing key's SHA-1, which Play Console
+   shows on the app's app signing page once the first bundle is uploaded. Play
+   re-signs what it serves with the app-signing key, so that's the one a phone sees.
 4. **Achievements**: Setup and management > Achievements > **Import achievements** >
    upload `store/achievements/trestle-run-play-achievements.zip` > Save as draft.
    Once published an achievement can't be deleted, and its type (one step or counted)
@@ -135,7 +149,10 @@ Steps:
    Project Settings > Plugins** and enable it.
 8. **Export preset**: Project > Install Android Build Template, then in the Android
    preset turn on **Gradle Build > Use Gradle Build** (the plugin needs it) and enter
-   the Game ID in **godot_play_game_services/game_id**.
+   the Game ID in **godot_play_game_services/game_id**. With Gradle on, Godot can
+   write the Play bundle itself (**Gradle Build > Export Format: Export AAB**, signed
+   with the upload key in the preset's release keystore fields), so
+   `tools/android/make_aab.py` is only needed for builds without Gradle.
 9. Export, install, start the game. Play Games signs in by itself if it can; if not,
    ACHIEVEMENTS shows **SIGN IN: GOOGLE PLAY GAMES**. After signing in, everything
    you'd already unlocked is sent up, and the button opens Play's own list.
@@ -149,7 +166,8 @@ Play allows up to 4 GB for an app bundle's install download.
 What you need first: the Apple Developer Program (yearly fee) and a Mac with Xcode
 (Godot exports iOS as an Xcode project; it can't be built on Linux).
 
-1. **Bundle id**: the iOS preset uses `com.example.trestlerun`. Register a real one
+1. **Bundle id**: the iOS preset uses `com.calm.trestlerun` (Apple doesn't allow the
+   underscore in Android's `com.pre_release.Trestlerun`). Register it, or your own,
    under your team (Certificates, Identifiers & Profiles) with the **Game Center**
    capability, and set it in the iOS preset (**Application > Bundle Identifier**) along
    with your **App Store Team ID**.
@@ -161,7 +179,7 @@ What you need first: the Apple Developer Program (yearly fee) and a Mac with Xco
    - English localization: **Display Name**, **Pre-earned** and **Earned
      Description**, and the image from `apple/<id>.png` (1024 x 1024, RGB).
 
-   App Store Connect has no spreadsheet import, so it's 31 forms (or the App Store
+   App Store Connect has no spreadsheet import, so it's 41 forms (or the App Store
    Connect API if you'd rather script it).
 3. **Plugin**: download **GameCenterKit 1.0.1** (`gamecenter-addon.zip` from its
    GitHub release or the Godot Asset Store), extract it so it sits at

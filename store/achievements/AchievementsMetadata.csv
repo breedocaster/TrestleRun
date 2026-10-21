@@ -1,31 +1,41 @@
-Off You Go,Finish the first story trail.,False,,Revealed,10,1
-Lights On,Get Grandpa's headlight back from the Scooper.,False,,Revealed,50,2
-Kicked Off,Get the kickstart back from the Rail Hog.,False,,Revealed,50,3
-Take a Seat,Get the seat back from the Harvester.,False,,Revealed,50,4
-Rolling Again,Get both wheels back from the Spinner.,False,,Revealed,50,5
-Halfway Home,Recover four parts of Grandpa's bike.,True,4,Revealed,50,6
-Not a Scratch,Beat a boss without crashing.,False,,Revealed,30,7
-Short Work,Knock out a boss before it circles round.,False,,Revealed,30,8
-Trail Blazer,Clear your first Free Ride trail.,False,,Revealed,10,9
-Every Trestle,Clear all 12 Free Ride trails.,True,12,Revealed,80,10
-Clean Run,Clear a trail without crashing.,False,,Revealed,15,11
-Gold Rush,Win a gold medal.,False,,Revealed,20,12
-Golden Touch,Win 10 gold medals.,True,10,Revealed,50,13
-Spell It Out,Find all of T-R-E-S-T-L-E in one run.,False,,Revealed,20,14
-Gear Head,Find all 36 gears in Free Ride.,True,36,Revealed,60,15
-Head Over Wheels,Land a flip.,False,,Revealed,10,16
-Double Trouble,Land a double flip.,False,,Revealed,25,17
-Showboat,Land 10 tricks in one run.,False,,Revealed,30,18
-Stomper,Stomp 100 critters.,True,100,Revealed,30,19
-Cable Hopper,Ride three cables in a row without touching down.,False,,Revealed,20,20
-Spark Show,Grind 25 rails.,True,25,Revealed,25,21
-Rope Trick,Swing on 25 ropes.,True,25,Revealed,25,22
-Wall of Death,Ride 25 walls.,True,25,Revealed,25,23
-Air Mail,Catch 10 prize sacks from the bonus plane.,True,10,Revealed,25,24
-Any Weather,Clear a trail in the rain and one in the wind.,False,,Revealed,20,25
-After Dark,Clear 5 trails at night.,True,5,Revealed,25,26
-Full Garage,Own all 7 bikes.,True,7,Revealed,40,27
-The Whole Gang,Own all 8 riders.,True,8,Revealed,40,28
-Savings Jar,Have 2000 coins at once.,False,,Revealed,20,29
-Beat Your Ghost,Set a new best time while your ghost rides.,False,,Revealed,20,30
+Off You Go,Finish the first story trail.,False,,Revealed,5,1
+Lights On,Get Grandpa's headlight back from the Scooper.,False,,Revealed,35,2
+Kicked Off,Get the kickstart back from the Rail Hog.,False,,Revealed,35,3
+Take a Seat,Get the seat back from the Harvester.,False,,Revealed,35,4
+Rolling Again,Get both wheels back from the Spinner.,False,,Revealed,35,5
+Halfway Home,Recover four parts of Grandpa's bike.,True,4,Revealed,25,6
+Not a Scratch,Beat a boss without crashing.,False,,Revealed,25,7
+Short Work,Knock out a boss before it circles round.,False,,Revealed,25,8
+Trail Blazer,Clear your first Free Ride trail.,False,,Revealed,5,9
+Every Trestle,Clear all 12 Free Ride trails.,True,12,Revealed,60,10
+Clean Run,Clear a trail without crashing.,False,,Revealed,10,11
+Gold Rush,Win a gold medal.,False,,Revealed,15,12
+Golden Touch,Win 10 gold medals.,True,10,Revealed,40,13
+Spell It Out,Find all of T-R-E-S-T-L-E in one run.,False,,Revealed,15,14
+Gear Head,Find all 36 gears in Free Ride.,True,36,Revealed,50,15
+Head Over Wheels,Land a flip.,False,,Revealed,5,16
+Double Trouble,Land a double flip.,False,,Revealed,20,17
+Showboat,Land 10 tricks in one run.,False,,Revealed,20,18
+Stomper,Stomp 100 critters.,True,100,Revealed,25,19
+Cable Hopper,Ride three cables in a row without touching down.,False,,Revealed,15,20
+Spark Show,Grind 25 rails.,True,25,Revealed,20,21
+Rope Trick,Swing on 25 ropes.,True,25,Revealed,20,22
+Wall of Death,Ride 25 walls.,True,25,Revealed,20,23
+Air Mail,Catch 10 prize sacks from the bonus plane.,True,10,Revealed,20,24
+Any Weather,Clear a trail in the rain and one in the wind.,False,,Revealed,15,25
+After Dark,Clear 5 trails at night.,True,5,Revealed,20,26
+Full Garage,Own all 7 bikes.,True,7,Revealed,35,27
+The Whole Gang,Own all 8 riders.,True,8,Revealed,35,28
+Savings Jar,Have 2000 coins at once.,False,,Revealed,15,29
+Beat Your Ghost,Set a new best time while your ghost rides.,False,,Revealed,15,30
 Outrun It,Finish Last Trestle without crashing.,False,,Revealed,30,31
+First Milepost,Ride 1000 m in one endless run.,True,1000,Revealed,10,32
+Long Haul,Ride 5000 m in one endless run.,True,5000,Revealed,30,33
+Daily Grind,Clear 7 daily rides.,True,7,Revealed,20,34
+Hat Trick,Finish all three daily missions in one day.,False,,Revealed,15,35
+Seven Straight,Play 7 days in a row.,True,7,Revealed,20,36
+Moving Up,Get promoted in the weekly league.,False,,Revealed,15,37
+Top of the Table,Finish a league week first in your group.,False,,Revealed,20,38
+Golden Spike,Reach the Golden Spike division.,True,4,Revealed,30,39
+Top of the Pass,Reach tier 30 on a season pass.,False,,Revealed,25,40
+Cheat Codes,Unlock all 3 cheats.,True,3,Revealed,20,41

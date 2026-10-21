@@ -113,7 +113,7 @@ static func _title(s: String) -> String:
 static func _sentence(s: String) -> String:
 	var t := s.to_lower()
 	t = t.substr(0, 1).to_upper() + t.substr(1)
-	for k in ["grandpa", "t-r-e-s-t-l-e", "free ride", "last trestle"]:
+	for k in ["grandpa", "t-r-e-s-t-l-e", "free ride", "last trestle", "golden spike"]:
 		var cap := "T-R-E-S-T-L-E" if k == "t-r-e-s-t-l-e" else _title(k.to_upper())
 		t = t.replace(k, cap)
 	for k in ["scooper", "rail hog", "harvester", "spinner"]:

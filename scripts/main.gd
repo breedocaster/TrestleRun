@@ -47,6 +47,9 @@ func _ready() -> void:
 		if a == "--place-letters":
 			add_child(load("res://scripts/dev/place_letters.gd").new())
 			return
+		if a == "--ach-test":
+			add_child(load("res://scripts/dev/ach_test.gd").new())
+			return
 		if a.begins_with("--ach-export="):
 			add_child(load("res://scripts/dev/ach_export.gd").new())
 			return

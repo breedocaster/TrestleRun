@@ -181,6 +181,7 @@ func check_in() -> int:
 	st.count = int(st.get("count", 0)) + 1 if last == t - 1 else 1
 	st.last = t
 	GameState.save_game()
+	Achievements.record_max("best_streak", int(st.count))
 	return int(st.count)
 
 
@@ -284,6 +285,7 @@ func on_stat(stat: String, n := 1) -> void:
 		GameState.add_money(MISSIONS_ALL_COINS)
 		add_xp(MISSIONS_ALL_XP)
 		notice("ALL THREE MISSIONS!", "+%d COINS  +%d XP" % [MISSIONS_ALL_COINS, MISSIONS_ALL_XP])
+		Achievements.unlock("missions_all")
 	# No save here: this runs on every stomp and grind. The run's end saves (and a
 	# finished mission already did, when it paid out).
 
@@ -329,6 +331,8 @@ func add_xp(n: int) -> void:
 	_season_state().xp = season_xp() + n
 	if season_tier() > before:
 		notice("SEASON TIER %d!" % season_tier(), "REWARDS WAITING ON THE SEASON PASS")
+		if season_tier() >= SEASON_TIERS:
+			Achievements.unlock("season_30")
 
 
 ## The reward at a tier on a track: {"coins": n} or {"paint": id}.
@@ -543,6 +547,11 @@ func roll_week() -> Dictionary:
 		res = {"week": int(l.week), "rank": rank, "coins": coins, "xp": xp, "from": from, "to": to, "shown": false}
 		l.div = to
 		l.last = res
+		if to > from:
+			Achievements.unlock("league_up")
+		if rank == 1:
+			Achievements.unlock("league_win")
+		Achievements.record_max("best_div", to)
 	l.week = week()
 	l.best_m = 0
 	l.runs = 0
@@ -568,6 +577,8 @@ func on_run(r: Dictionary, mode: String) -> Array:
 		if mode == "endless" and m > int(e.get("best_m", 0)):
 			e.best_m = m
 			lines.append(["NEW BEST DISTANCE!", UITheme.GOLD])
+		e.best_any = maxi(int(e.get("best_any", 0)), m)  # endless or league
+		Achievements.recount("endless_m")
 		on_stat("endless_best", m)
 		on_stat("endless_total", m)
 		if mode == "league":
@@ -595,6 +606,7 @@ func on_run(r: Dictionary, mode: String) -> Array:
 			xp += DAILY_XP
 			lines.append(["DAILY RIDE DONE!", UITheme.GOLD])
 			on_stat("daily")
+			Achievements.add("daily_clears")
 		if int(r.get("crashes", 0)) == 0 and t <= float(r.get("par", 0.0)) and not bool(dr.gold):
 			dr.gold = true
 			xp += DAILY_GOLD_XP
@@ -651,6 +663,7 @@ func _check_cheats(level_id: String, weather: String, t: float) -> Array:
 			cc.unlocked = un
 			set_cheat(String(c[0]), true)
 			notice("CHEAT UNLOCKED!", String(c[1]))
+			Achievements.recount("cheats")
 			out.append(["CHEAT UNLOCKED: %s" % String(c[1]), Color("ff9ad8")])
 	return out
 

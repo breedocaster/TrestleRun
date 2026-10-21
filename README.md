@@ -117,7 +117,7 @@ GoldenEye-style: each one unlocks by beating a time on one trail in one weather 
 
 ### Achievements
 
-31 achievements, from finishing the first story trail to recovering each part, beating a boss without a scratch, gold medals, stomps, rail grinds and catching prize sacks. They unlock in the save, pop a toast, and show on the ACHIEVEMENTS screen (title screen) with progress for the counted ones. Progress from an older save counts. The game reports them to Google Play Games and Apple Game Center when those plugins are in the build; that part needs store accounts, and [ACHIEVEMENTS.md](ACHIEVEMENTS.md) is the step-by-step, with the store icons and import files already generated in `store/achievements/`.
+41 achievements, from finishing the first story trail to recovering each part, beating a boss without a scratch, gold medals, stomps, rail grinds and catching prize sacks, and (since 0.9.1) the calendar modes: 1 km and 5 km in one endless run, 7 daily rides, all three missions in a day, a 7-day streak, a league promotion, first place in a league week, the Golden Spike division, the last tier of a season pass, and all three cheats. They unlock in the save, pop a toast, and show on the ACHIEVEMENTS screen (title screen) with progress for the counted ones. Progress from an older save counts. The game reports them to Google Play Games and Apple Game Center when those plugins are in the build; that part needs store accounts, and [ACHIEVEMENTS.md](ACHIEVEMENTS.md) is the step-by-step, with the store icons and import files already generated in `store/achievements/`.
 
 ### Free Ride trails
 
@@ -290,7 +290,39 @@ For `--install`: enable *Developer options → USB debugging* on the phone and a
 
 Requirements per the Godot 4.7 docs ([source](https://github.com/godotengine/godot-docs/blob/4.7/tutorials/export/exporting_for_android.rst)): OpenJDK 17 plus the Android SDK. The docs warn against distro-packaged SDKs, so the script pulls Google's.
 
-Change `package/unique_name` (`com.example.trestlerun`) to your own reverse-domain ID before any store upload; it can't change after release.
+The package is `com.pre_release.Trestlerun`, the name registered to the app in Play Console; it can't change once a bundle is uploaded. A debug build sideloaded with `--install` can't replace a copy installed from Play (different signing key: `adb` says `INSTALL_FAILED_UPDATE_INCOMPATIBLE`), so on a phone that has the Play copy, test through Play's internal testing instead, or uninstall it first (which wipes its save).
+
+## Build the app bundle for Play Console
+
+Play takes Android App Bundles (`.aab`), not APKs. Godot writes one itself only from a Gradle build, which needs the Android build template and Google's Maven; `tools/android/make_aab.py` makes one from the release APK instead, with Google's `aapt2` and `bundletool`:
+
+```bash
+GODOT_ANDROID_KEYSTORE_RELEASE_PATH=~/.android/debug.keystore \
+GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey \
+GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android \
+  godot --headless --path . --export-release "Android" build/trestle-run-release.apk
+TRESTLE_UPLOAD_PASSWORD='<from trestle-upload-key.txt>' \
+  python3 tools/android/make_aab.py --apk build/trestle-run-release.apk --out build/trestle-run.aab \
+    --aapt2 ~/Android/Sdk/build-tools/35.0.1/aapt2 --bundletool ~/bundletool-all-1.18.3.jar \
+    --keystore ~/keys/trestle-upload.jks --alias upload --verify
+```
+
+- `GODOT_ANDROID_KEYSTORE_RELEASE_*`: the keystore Godot signs the APK with. Any key does (the bundle step drops that signature), so the debug key is fine here.
+- `--export-release "Android"`: a release build from the preset named Android (no debugging, as Play requires).
+- `TRESTLE_UPLOAD_PASSWORD`: the upload keystore's password, read from the environment so it stays out of your shell history's arguments (`--password-env` names a different variable).
+- `--apk` / `--out`: the APK to convert and the bundle to write.
+- `--aapt2`: Android's resource compiler, in the SDK's `build-tools` (`build-apk.sh` installs 35.0.1).
+- `--bundletool`: Google's bundle tool, `bundletool-all-<version>.jar` from [its releases](https://github.com/google/bundletool/releases) (1.18.3 used here; SHA-256 `a099cfa1…028e29`).
+- `--keystore` / `--alias`: the upload key every bundle for this app must be signed with (see below). Leave `--keystore` off for an unsigned bundle.
+- `--verify`: have bundletool build the APKs Play would serve from the bundle and check them against the source APK (below).
+
+What it does, in order: adds the `themed_icon.xml` that Godot's exporter leaves out while its resource table still lists it (an installed APK never notices; aapt2 and bundletool refuse); converts the manifest, resource table and XML resources to aapt2's protobuf format; lays the files out as the bundle's `base` module, with the baseline profile as bundle metadata, where Android's Gradle plugin puts it; writes a bundle config that keeps every file Godot stored uncompressed that way in Play's APKs, and stores native libraries uncompressed and 16 KB page aligned on devices that can load them so (Play has required 16 KB page support since November 2025; the engine's libraries are built for it); runs `bundletool validate`; signs with `jarsigner` (SHA-256 with RSA).
+
+`--verify` checks the universal APK bundletool makes (what a device that takes everything gets) has every dex, native library, asset and resource file byte for byte as in the APK, the same manifest, XML resources and resource table (through `aapt2 dump`, allowing only the two `<meta-data>` tags and `res/xml/splits0.xml` bundletool adds to every APK it makes) and the same `aapt2 dump badging`; and that an arm64 Android 14 phone's split set gets both libraries uncompressed at 16 KB-aligned offsets, `extractNativeLibs=false` and the baseline profile.
+
+**The upload key** (`trestle-upload.jks`, alias `upload`, RSA 4096, made with `keytool -genkeypair -keystore trestle-upload.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 4096 -validity 10000`) is how Play knows an upload is yours: the first bundle registers it, and later ones must match. Play App Signing keeps the key that signs what phones install. Keep the keystore and its password backed up and out of the project folder. Lost or leaked, it can be reset from Play Console's app signing page, but that's slow.
+
+Every upload needs a higher `version/code` in the Android preset than the last one (0.9.0 was 12, 0.9.1 is 13).
 
 ## iOS
 
@@ -350,6 +382,8 @@ godot --headless --path . -- --verify --set=story                      # just th
 godot --headless --path . -- --verify --test=rail,rope:140             # the hold-move test strips (name[:speed])
 godot --headless --path . -- --guide-test                              # crash-hint line from every checkpoint
 xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2   # store icons + import files
+godot --headless --path . -- --ach-test                                # the calendar-mode achievements unlock on cue
+python3 tools/icons/make_launcher_icons.py                              # launcher icon layers + Play's 512 px icon
 godot --headless --path . -- --endless-check [--part=0/2]               # ride every trail stretch at every endless speed
 python3 tools/endless/make_table.py check_*.log                          # ...and write scripts/game/endless_table.gd
 godot --headless --path . -- --endless-ride=1-20 [--bike=all] [--mode=daily --weather=rain]  # whole built courses
@@ -369,8 +403,12 @@ godot --headless --path . -- --endless-ride=1-20 [--bike=all] [--mode=daily --we
 - `--endless-check` rides each stretch of each trail on its own (start, joint, the stretch, joint, finish) at 118, 130, 142, 154 and 166 px/s: the bot in clear weather at three arrival times 0.85 s apart (lifts and moving critters run on the clock, so a stretch has to work whenever you get there), once in rain and once in wind, then the careful rider in clear for its timing windows. A stretch is used at a speed only if all of that passes with no crash and the tightest window is at least 75 ms. `--part=k/n` splits the work over n processes (run them side by side). `make_table.py` collects the output into `endless_table.gd`; rerun both after changing a layout.
 - `--endless-ride=a-b` builds the endless courses for seeds a..b and has the bot ride each to the end (one life; `--max-m=` stops early), on one bike or `--bike=all`; `--mode=daily` builds daily rides instead (with checkpoints), in `--weather=`. It prints where any crash happened and on which stretch.
 - `--ach-export=` writes the store kit for achievements (needs a display, so `xvfb-run` on a server; see ACHIEVEMENTS.md)
+- `--ach-test` feeds the challenge hooks made-up events (endless distances, seven days of daily rides, a streak with a gap, three missions, four winning league weeks, season XP, the three cheat runs) and checks each new achievement unlocks at the right step and not before; it works on a blank copy of the save and puts the real one back
+- `make_launcher_icons.py` redraws `icon.svg` as Android's adaptive icon layers (foreground, background, and the one-colour layer for themed icons) so a launcher's mask shows the whole picture instead of Godot's zoomed-in crop, plus `store/play_icon_512.png`
 
-Current result (v0.9.0; trail riding is unchanged from 0.8.1, so the rest below is 0.8.1's apart from the first and last lines):
+Current result (v0.9.1; riding is unchanged from 0.9.0, so these are 0.9.0's results apart from the first two lines, and trail riding 0.8.1's):
+- `--ach-test`: 22 checks, all pass.
+- `make_aab.py --verify` on the 0.9.1 bundle: OK (351 files in the universal APK, 319 byte for byte, 29 XML files and the resource table matching; arm64 splits with both libraries uncompressed and 16 KB aligned).
 - `--endless-check`: 76 stretches x 5 speeds. Used in clear weather (bot clean at all three arrival times, tightest window 75 ms or more): 66 at 118 px/s, 73 at 130, 142 and 154, 70 at 166; in all three weathers 64, 72, 73, 72, 69. The ones left out are mostly a tightest window of one to four frames at that speed, and five where the bot itself crashed at 118 (too slow to clear a gap the trail was built for at its own speed). Across everything that's used, the careful rider's timing windows have a median of 366 ms and a tenth of them under 166 ms.
 - `--endless-ride`: 8 endless courses x 7 bikes to 7 km each (all five speeds), and 36 daily rides (12 each in clear, rain and wind, at all five speeds): no crashes. Two things this caught on the way: a stretch that opened straight into a jump right after a joint's slope, and stretches built at a different height from where the checker rode them (a marginal rail mount went the other way). Joints now end in a full second of flat deck, and bring every stretch back to the height it was checked at.
 - Plain bike: all 84 runs (12 Free Ride trails + 16 story trails, x 3 weathers) cleared with 0 crashes and 3/3 gears; every boss knocked out 3/3 without circling round, in every weather. Letters 7/7 in 68 of 72 trail runs (bosses have none); the misses are single letters except Hollow Oak in wind (two), all picked up by the bot in the other weathers.

@@ -145,5 +145,83 @@ static func _symbol(ci: CanvasItem, id: String, t: float) -> void:
 			ci.draw_circle(Vector2(-3, 3), 3.0, Color(0.75, 0.9, 1.0, 0.6))
 			ci.draw_circle(Vector2(3, 3), 3.0, Color(0.75, 0.9, 1.0, 0.6))
 			ci.draw_line(Vector2(-3, 3), Vector2(1, -3), Color(0.75, 0.9, 1.0, 0.8), 2.0)
+		"endless_1k":
+			# A milepost: white post, black-banded plate, a "1" on it.
+			ci.draw_rect(Rect2(-1, -1, 2, 8), Color("e8e2d0"))
+			ci.draw_rect(Rect2(-5, -7, 10, 7), Color("e8e2d0"))
+			ci.draw_rect(Rect2(-4, -6, 8, 5), Color("1a1a1a"))
+			ci.draw_rect(Rect2(0, -5.5, 1, 4), Color("ffe08a"))
+			ci.draw_rect(Rect2(-1, -5.5, 1, 1), Color("ffe08a"))
+			ci.draw_rect(Rect2(-1, -2.5, 3, 1), Color("ffe08a"))
+		"endless_5k":
+			# The trestle running off to a point on the horizon.
+			ci.draw_rect(Rect2(-7, -1, 14, 1), Color("a8445a"))
+			# Ties further apart the nearer they are, each as wide as the rails there.
+			for y in [0.0, 1.2, 2.8, 4.8, 6.6]:
+				var hw: float = (float(y) + 1.0) * 0.75
+				ci.draw_rect(Rect2(-hw - 0.5, y, hw * 2.0 + 1.0, 0.8), Color("8a5a32"))
+			ci.draw_line(Vector2(-6, 7), Vector2(0, -1), Color("c9d1d9"), -1.0)
+			ci.draw_line(Vector2(6, 7), Vector2(0, -1), Color("c9d1d9"), -1.0)
+			ci.draw_circle(Vector2(0, -4), 2.5, Color("fff1c1"))
+		"daily_7":
+			# A calendar page with seven ticks.
+			ci.draw_rect(Rect2(-6, -6, 12, 12), Color("e8e2d0"))
+			ci.draw_rect(Rect2(-6, -6, 12, 3), Color("d9453b"))
+			for i in 7:
+				ci.draw_rect(Rect2(-5 + (i % 4) * 2.6, -1 + (i / 4) * 3, 1.6, 1.6), Color("5bd16a"))
+		"missions_all":
+			# Three ticked boxes.
+			for i in 3:
+				var o := Vector2(-4, -5 + i * 4)
+				ci.draw_rect(Rect2(o, Vector2(3, 3)), Color("e8e2d0"))
+				ci.draw_line(o + Vector2(0.5, 1.5), o + Vector2(1.5, 2.5), Color("2f8a3a"), -1.0)
+				ci.draw_line(o + Vector2(1.5, 2.5), o + Vector2(3.5, -0.5), Color("2f8a3a"), -1.0)
+				ci.draw_rect(Rect2(o + Vector2(5, 1), Vector2(5, 1)), Color("c9d1d9"))
+		"streak_7":
+			# A flame.
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(0, -7), Vector2(4, -1), Vector2(4.5, 3), Vector2(2, 6),
+				Vector2(-2, 6), Vector2(-4.5, 3), Vector2(-3.5, -2), Vector2(-1.5, 0)]), Color("ff7a2a"))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(0.5, -2), Vector2(2.5, 2), Vector2(1.5, 5),
+				Vector2(-1.5, 5), Vector2(-2.5, 2.5), Vector2(-1, 1)]), Color("ffe08a"))
+		"league_up":
+			# Up a step: an arrow over a podium.
+			ci.draw_rect(Rect2(-6, 2, 4, 4), Color("8a8f99"))
+			ci.draw_rect(Rect2(-2, -1, 4, 7), Icons.GOLD)
+			ci.draw_rect(Rect2(2, 3, 4, 3), Color("b0673a"))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(0, -8), Vector2(3.5, -4), Vector2(1, -4), Vector2(1, -2),
+				Vector2(-1, -2), Vector2(-1, -4), Vector2(-3.5, -4)]), Color("5bd16a"))
+		"league_win":
+			# A cup.
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(-4, -6), Vector2(4, -6), Vector2(3, -1), Vector2(1, 1),
+				Vector2(-1, 1), Vector2(-3, -1)]), Icons.GOLD)
+			ci.draw_arc(Vector2(-4, -3.5), 2.0, PI * 0.5, PI * 1.5, 8, Icons.GOLD, -1.0)
+			ci.draw_arc(Vector2(4, -3.5), 2.0, -PI * 0.5, PI * 0.5, 8, Icons.GOLD, -1.0)
+			ci.draw_rect(Rect2(-0.5, 1, 1, 3), Icons.GOLD)
+			ci.draw_rect(Rect2(-3, 4, 6, 2), Color("8a5a32"))
+			ci.draw_rect(Rect2(-2, -5, 1, 3), Icons.GOLD_LIGHT)
+		"league_top":
+			# The golden spike, driven into a tie.
+			ci.draw_rect(Rect2(-7, 3, 14, 3), Color("8a5a32"))
+			ci.draw_rect(Rect2(-7, 2, 14, 1), Color("c9d1d9"))
+			ci.draw_rect(Rect2(-1, -4, 2, 7), Icons.GOLD)
+			ci.draw_rect(Rect2(-3, -6, 5, 2), Icons.GOLD)
+			ci.draw_rect(Rect2(-0.5, -3, 0.8, 5), Icons.GOLD_LIGHT)
+		"season_30":
+			# A ticket with a star.
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(-7, -4), Vector2(7, -4), Vector2(7, -1.5), Vector2(6, 0),
+				Vector2(7, 1.5), Vector2(7, 4), Vector2(-7, 4), Vector2(-7, 1.5), Vector2(-6, 0), Vector2(-7, -1.5)]),
+				Color("3fb6c9"))
+			ci.draw_line(Vector2(3, -4), Vector2(3, 4), Color(1, 1, 1, 0.5), -1.0)
+			var sc := Vector2(-1.5, 0)
+			ci.draw_colored_polygon(PackedVector2Array([sc + Vector2(0, -3), sc + Vector2(0.9, -1), sc + Vector2(3, -1),
+				sc + Vector2(1.3, 0.4), sc + Vector2(2, 2.6), sc + Vector2(0, 1.3), sc + Vector2(-2, 2.6),
+				sc + Vector2(-1.3, 0.4), sc + Vector2(-3, -1), sc + Vector2(-0.9, -1)]), Icons.GOLD_LIGHT)
+		"cheats_all":
+			# BIG HEAD: a huge helmet on a little rider.
+			ci.draw_rect(Rect2(-1.5, 3, 3, 3), Color("2f3b52"))
+			ci.draw_rect(Rect2(-3, 6, 6, 1), Color("1a1a1a"))
+			ci.draw_circle(Vector2(0, -2), 5.5, Color("c8323c"))
+			ci.draw_rect(Rect2(0.5, -4, 4, 3), Color("7fd0ff"))
+			ci.draw_rect(Rect2(-4, -6, 2, 1), Color(1, 1, 1, 0.5))
 		_:
 			Icons.medal(ci, Vector2.ZERO, 0, true)

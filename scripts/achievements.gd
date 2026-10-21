@@ -8,40 +8,52 @@ const Catalog := preload("res://scripts/catalog.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 
 ## id, name, how to get it, store points (multiples of 5, at most 100 each and 1,000 in
-## all: Game Center's limits, tighter than Play's 200 and 2,000), goal (0 = one step;
-## otherwise a count shown as progress), stat it counts.
+## all: Game Center's limits, tighter than Play's 200 and 2,000; 950 now, so there's
+## room for a few more), goal (0 = one step; otherwise a count shown as progress), stat
+## it counts. Ids, types and goals are fixed once they're published on a store.
 const LIST := [
-	["story_start", "OFF YOU GO", "FINISH THE FIRST STORY TRAIL.", 10, 0, ""],
-	["part_headlight", "LIGHTS ON", "GET GRANDPA'S HEADLIGHT BACK FROM THE SCOOPER.", 50, 0, ""],
-	["part_kickstart", "KICKED OFF", "GET THE KICKSTART BACK FROM THE RAIL HOG.", 50, 0, ""],
-	["part_seat", "TAKE A SEAT", "GET THE SEAT BACK FROM THE HARVESTER.", 50, 0, ""],
-	["part_wheels", "ROLLING AGAIN", "GET BOTH WHEELS BACK FROM THE SPINNER.", 50, 0, ""],
-	["parts_4", "HALFWAY HOME", "RECOVER FOUR PARTS OF GRANDPA'S BIKE.", 50, 4, "parts"],
-	["boss_flawless", "NOT A SCRATCH", "BEAT A BOSS WITHOUT CRASHING.", 30, 0, ""],
-	["boss_quick", "SHORT WORK", "KNOCK OUT A BOSS BEFORE IT CIRCLES ROUND.", 30, 0, ""],
-	["first_clear", "TRAIL BLAZER", "CLEAR YOUR FIRST FREE RIDE TRAIL.", 10, 0, ""],
-	["free_all", "EVERY TRESTLE", "CLEAR ALL 12 FREE RIDE TRAILS.", 80, 12, "free_cleared"],
-	["no_crash", "CLEAN RUN", "CLEAR A TRAIL WITHOUT CRASHING.", 15, 0, ""],
-	["gold_first", "GOLD RUSH", "WIN A GOLD MEDAL.", 20, 0, ""],
-	["gold_ten", "GOLDEN TOUCH", "WIN 10 GOLD MEDALS.", 50, 10, "golds"],
-	["letters_first", "SPELL IT OUT", "FIND ALL OF T-R-E-S-T-L-E IN ONE RUN.", 20, 0, ""],
-	["gears_all", "GEAR HEAD", "FIND ALL 36 GEARS IN FREE RIDE.", 60, 36, "free_gears"],
-	["flip", "HEAD OVER WHEELS", "LAND A FLIP.", 10, 0, ""],
-	["double_flip", "DOUBLE TROUBLE", "LAND A DOUBLE FLIP.", 25, 0, ""],
-	["tricks_run", "SHOWBOAT", "LAND 10 TRICKS IN ONE RUN.", 30, 0, ""],
-	["stomp_100", "STOMPER", "STOMP 100 CRITTERS.", 30, 100, "stomps"],
-	["zip_chain", "CABLE HOPPER", "RIDE THREE CABLES IN A ROW WITHOUT TOUCHING DOWN.", 20, 0, ""],
-	["rails_25", "SPARK SHOW", "GRIND 25 RAILS.", 25, 25, "rails"],
-	["ropes_25", "ROPE TRICK", "SWING ON 25 ROPES.", 25, 25, "ropes"],
-	["walls_25", "WALL OF DEATH", "RIDE 25 WALLS.", 25, 25, "walls"],
-	["planes_10", "AIR MAIL", "CATCH 10 PRIZE SACKS FROM THE BONUS PLANE.", 25, 10, "planes"],
-	["any_weather", "ANY WEATHER", "CLEAR A TRAIL IN THE RAIN AND ONE IN THE WIND.", 20, 0, ""],
-	["night_5", "AFTER DARK", "CLEAR 5 TRAILS AT NIGHT.", 25, 5, "night_clears"],
-	["garage_bikes", "FULL GARAGE", "OWN ALL 7 BIKES.", 40, 7, "bikes"],
-	["garage_riders", "THE WHOLE GANG", "OWN ALL 8 RIDERS.", 40, 8, "riders"],
-	["rich", "SAVINGS JAR", "HAVE 2,000 COINS AT ONCE.", 20, 0, ""],
-	["ghost_beat", "BEAT YOUR GHOST", "SET A NEW BEST TIME WHILE YOUR GHOST RIDES.", 20, 0, ""],
+	["story_start", "OFF YOU GO", "FINISH THE FIRST STORY TRAIL.", 5, 0, ""],
+	["part_headlight", "LIGHTS ON", "GET GRANDPA'S HEADLIGHT BACK FROM THE SCOOPER.", 35, 0, ""],
+	["part_kickstart", "KICKED OFF", "GET THE KICKSTART BACK FROM THE RAIL HOG.", 35, 0, ""],
+	["part_seat", "TAKE A SEAT", "GET THE SEAT BACK FROM THE HARVESTER.", 35, 0, ""],
+	["part_wheels", "ROLLING AGAIN", "GET BOTH WHEELS BACK FROM THE SPINNER.", 35, 0, ""],
+	["parts_4", "HALFWAY HOME", "RECOVER FOUR PARTS OF GRANDPA'S BIKE.", 25, 4, "parts"],
+	["boss_flawless", "NOT A SCRATCH", "BEAT A BOSS WITHOUT CRASHING.", 25, 0, ""],
+	["boss_quick", "SHORT WORK", "KNOCK OUT A BOSS BEFORE IT CIRCLES ROUND.", 25, 0, ""],
+	["first_clear", "TRAIL BLAZER", "CLEAR YOUR FIRST FREE RIDE TRAIL.", 5, 0, ""],
+	["free_all", "EVERY TRESTLE", "CLEAR ALL 12 FREE RIDE TRAILS.", 60, 12, "free_cleared"],
+	["no_crash", "CLEAN RUN", "CLEAR A TRAIL WITHOUT CRASHING.", 10, 0, ""],
+	["gold_first", "GOLD RUSH", "WIN A GOLD MEDAL.", 15, 0, ""],
+	["gold_ten", "GOLDEN TOUCH", "WIN 10 GOLD MEDALS.", 40, 10, "golds"],
+	["letters_first", "SPELL IT OUT", "FIND ALL OF T-R-E-S-T-L-E IN ONE RUN.", 15, 0, ""],
+	["gears_all", "GEAR HEAD", "FIND ALL 36 GEARS IN FREE RIDE.", 50, 36, "free_gears"],
+	["flip", "HEAD OVER WHEELS", "LAND A FLIP.", 5, 0, ""],
+	["double_flip", "DOUBLE TROUBLE", "LAND A DOUBLE FLIP.", 20, 0, ""],
+	["tricks_run", "SHOWBOAT", "LAND 10 TRICKS IN ONE RUN.", 20, 0, ""],
+	["stomp_100", "STOMPER", "STOMP 100 CRITTERS.", 25, 100, "stomps"],
+	["zip_chain", "CABLE HOPPER", "RIDE THREE CABLES IN A ROW WITHOUT TOUCHING DOWN.", 15, 0, ""],
+	["rails_25", "SPARK SHOW", "GRIND 25 RAILS.", 20, 25, "rails"],
+	["ropes_25", "ROPE TRICK", "SWING ON 25 ROPES.", 20, 25, "ropes"],
+	["walls_25", "WALL OF DEATH", "RIDE 25 WALLS.", 20, 25, "walls"],
+	["planes_10", "AIR MAIL", "CATCH 10 PRIZE SACKS FROM THE BONUS PLANE.", 20, 10, "planes"],
+	["any_weather", "ANY WEATHER", "CLEAR A TRAIL IN THE RAIN AND ONE IN THE WIND.", 15, 0, ""],
+	["night_5", "AFTER DARK", "CLEAR 5 TRAILS AT NIGHT.", 20, 5, "night_clears"],
+	["garage_bikes", "FULL GARAGE", "OWN ALL 7 BIKES.", 35, 7, "bikes"],
+	["garage_riders", "THE WHOLE GANG", "OWN ALL 8 RIDERS.", 35, 8, "riders"],
+	["rich", "SAVINGS JAR", "HAVE 2,000 COINS AT ONCE.", 15, 0, ""],
+	["ghost_beat", "BEAT YOUR GHOST", "SET A NEW BEST TIME WHILE YOUR GHOST RIDES.", 15, 0, ""],
 	["outrun", "OUTRUN IT", "FINISH LAST TRESTLE WITHOUT CRASHING.", 30, 0, ""],
+	# Endless, the daily ride and missions, the streak, the league, the season pass, cheats.
+	["endless_1k", "FIRST MILEPOST", "RIDE 1,000 M IN ONE ENDLESS RUN.", 10, 1000, "endless_m"],
+	["endless_5k", "LONG HAUL", "RIDE 5,000 M IN ONE ENDLESS RUN.", 30, 5000, "endless_m"],
+	["daily_7", "DAILY GRIND", "CLEAR 7 DAILY RIDES.", 20, 7, "daily_clears"],
+	["missions_all", "HAT TRICK", "FINISH ALL THREE DAILY MISSIONS IN ONE DAY.", 15, 0, ""],
+	["streak_7", "SEVEN STRAIGHT", "PLAY 7 DAYS IN A ROW.", 20, 7, "best_streak"],
+	["league_up", "MOVING UP", "GET PROMOTED IN THE WEEKLY LEAGUE.", 15, 0, ""],
+	["league_win", "TOP OF THE TABLE", "FINISH A LEAGUE WEEK FIRST IN YOUR GROUP.", 20, 0, ""],
+	["league_top", "GOLDEN SPIKE", "REACH THE GOLDEN SPIKE DIVISION.", 30, 4, "best_div"],
+	["season_30", "TOP OF THE PASS", "REACH TIER 30 ON A SEASON PASS.", 25, 0, ""],
+	["cheats_all", "CHEAT CODES", "UNLOCK ALL 3 CHEATS.", 20, 3, "cheats"],
 ]
 
 ## Store ids. Google Play Console makes its own ("CgkI..."): paste them in here once the
@@ -132,6 +144,13 @@ func _stat_value(stat: String) -> int:
 			return (GameState.data.bike_owned as Array).size()
 		"riders":
 			return (GameState.data.rider_owned as Array).size()
+		# Kept by Challenges (an autoload after this one, so read from the save here).
+		"endless_m":
+			var e: Dictionary = (GameState.data.get("challenges", {}) as Dictionary).get("endless", {})
+			return maxi(int(e.get("best_any", 0)), int(e.get("best_m", 0)))
+		"cheats":
+			var c: Dictionary = (GameState.data.get("challenges", {}) as Dictionary).get("cheats", {})
+			return (c.get("unlocked", []) as Array).size()
 	return int(stats().get(stat, 0))
 
 
@@ -148,6 +167,18 @@ func unlock(id: String) -> void:
 ## Add to a counter (stomps, rails, ropes...) and unlock whatever it completes.
 func add(stat: String, n := 1) -> void:
 	stats()[stat] = int(stats().get(stat, 0)) + n
+	_check_counts(stat)
+
+
+## Raise a best-ever counter (longest streak, highest division) and check it.
+func record_max(stat: String, v: int) -> void:
+	if v > int(stats().get(stat, 0)):
+		stats()[stat] = v
+	_check_counts(stat)
+
+
+## Check the achievements counting a stat that lives elsewhere (endless_m, cheats).
+func recount(stat: String) -> void:
 	_check_counts(stat)
 
 
