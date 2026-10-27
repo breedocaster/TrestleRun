@@ -1,6 +1,7 @@
-## --ach-test: drives the Challenges hooks with made-up events and checks the
-## achievements for endless, daily rides, missions, the streak, the league, the season
-## pass and cheats unlock when they should (and not a step before). Runs on a blank
+## --ach-test: drives the Challenges hooks and the SUMMIT / GAUNTLET results with
+## made-up events and checks the achievements for endless, daily rides, missions, the
+## streak, the league, the season pass, cheats and the two physics modes unlock when
+## they should (and not a step before). Runs on a blank
 ## copy of the save; the real one is put back afterwards, on disk too.
 extends Node
 
@@ -98,6 +99,42 @@ func _ready() -> void:
 		_expect("cheats_all", false, "before " + String(c[0]))
 		C._check_cheats(String(c[3]), String(c[4]), float(c[5]) - 1.0)
 	_expect("cheats_all", true, "with all three")
+
+	# SUMMIT and GAUNTLET: a failed ride unlocks nothing; the first finish does; a
+	# clean course; and all twelve of each.
+	var P = load("res://scripts/drive/drive_progress.gd")
+	GameState.data.drive = {}
+	var money0 := GameState.money()
+	P.record_result({"mode": "summit", "level_id": "su_farm", "ok": false, "reason": "fuel", "time": 30.0,
+		"coins": 40, "distance_m": 500, "length_m": 900, "faults": 0, "flips": 0}, 0)
+	_expect("summit_first", false, "after running out of fuel")
+	if GameState.money() != money0 + 40:
+		fails += 1
+		print("FAIL a failed SUMMIT ride should still bank its 40 coins, wallet went %d -> %d" % [money0, GameState.money()])
+	for i in 12:
+		var sid := String(P.levels("summit")[i].id)
+		P.record_result({"mode": "summit", "level_id": sid, "ok": true, "reason": "finish", "time": 999.0,
+			"coins": 0, "distance_m": 900, "length_m": 900, "faults": 0, "flips": 0}, i)
+		if i == 0:
+			_expect("summit_first", true, "after the first summit")
+		if i == 10:
+			_expect("summit_all", false, "after 11 summits")
+	_expect("summit_all", true, "after all 12 summits")
+	P.record_result({"mode": "gauntlet", "level_id": "ga_firstgear", "ok": true, "reason": "finish", "time": 999.0,
+		"coins": 0, "faults": 3}, 0)
+	_expect("gauntlet_first", true, "after a course with 3 faults")
+	_expect("gauntlet_clean", false, "after a course with 3 faults")
+	if not P.unlocked("gauntlet", 1) or P.unlocked("gauntlet", 2):
+		fails += 1
+		print("FAIL clearing course 1 should open course 2 and only that")
+	for i in range(1, 12):
+		P.record_result({"mode": "gauntlet", "level_id": String(P.levels("gauntlet")[i].id), "ok": true,
+			"reason": "finish", "time": 999.0, "coins": 0, "faults": 0 if i == 5 else 1}, i)
+		if i == 5:
+			_expect("gauntlet_clean", true, "after a course with no faults")
+		if i == 10:
+			_expect("gauntlet_all", false, "after 11 courses")
+	_expect("gauntlet_all", true, "after all 12 courses")
 
 	print("ACH_TEST %s: %d checks, %d failed" % ["OK" if fails == 0 else "FAILED", checks, fails])
 	# Put everything back.

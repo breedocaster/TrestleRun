@@ -25,7 +25,7 @@ walls_25,"Wall of Death","Ride 25 walls.",20,25,incremental,25
 planes_10,"Air Mail","Catch 10 prize sacks from the bonus plane.",20,10,incremental,10
 any_weather,"Any Weather","Clear a trail in the rain and one in the wind.",15,0,standard,
 night_5,"After Dark","Clear 5 trails at night.",20,5,incremental,5
-garage_bikes,"Full Garage","Own all 7 bikes.",35,7,incremental,7
+garage_bikes,"Full Garage","Own all 14 bikes.",35,14,incremental,14
 garage_riders,"The Whole Gang","Own all 8 riders.",35,8,incremental,8
 rich,"Savings Jar","Have 2,000 coins at once.",15,0,standard,
 ghost_beat,"Beat Your Ghost","Set a new best time while your ghost rides.",15,0,standard,
@@ -40,3 +40,8 @@ league_win,"Top of the Table","Finish a league week first in your group.",20,0,s
 league_top,"Golden Spike","Reach the Golden Spike division.",30,4,incremental,4
 season_30,"Top of the Pass","Reach tier 30 on a season pass.",25,0,standard,
 cheats_all,"Cheat Codes","Unlock all 3 cheats.",20,3,incremental,3
+summit_first,"Hilltop","Reach the top of a summit climb.",5,0,standard,
+summit_all,"Top of the World","Reach the top of all 12 summit climbs.",15,12,incremental,12
+gauntlet_first,"Run the Gauntlet","Clear a gauntlet course.",5,0,standard,
+gauntlet_clean,"No Faults","Clear a gauntlet course without a fault.",10,0,standard,
+gauntlet_all,"The Full Gauntlet","Clear all 12 gauntlet courses.",15,12,incremental,12

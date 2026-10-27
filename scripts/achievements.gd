@@ -8,8 +8,8 @@ const Catalog := preload("res://scripts/catalog.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 
 ## id, name, how to get it, store points (multiples of 5, at most 100 each and 1,000 in
-## all: Game Center's limits, tighter than Play's 200 and 2,000; 950 now, so there's
-## room for a few more), goal (0 = one step; otherwise a count shown as progress), stat
+## all: Game Center's limits, tighter than Play's 200 and 2,000; exactly 1,000 since
+## v0.10, so a new one has to take points from an old one), goal (0 = one step; otherwise a count shown as progress), stat
 ## it counts. Ids, types and goals are fixed once they're published on a store.
 const LIST := [
 	["story_start", "OFF YOU GO", "FINISH THE FIRST STORY TRAIL.", 5, 0, ""],
@@ -38,7 +38,7 @@ const LIST := [
 	["planes_10", "AIR MAIL", "CATCH 10 PRIZE SACKS FROM THE BONUS PLANE.", 20, 10, "planes"],
 	["any_weather", "ANY WEATHER", "CLEAR A TRAIL IN THE RAIN AND ONE IN THE WIND.", 15, 0, ""],
 	["night_5", "AFTER DARK", "CLEAR 5 TRAILS AT NIGHT.", 20, 5, "night_clears"],
-	["garage_bikes", "FULL GARAGE", "OWN ALL 7 BIKES.", 35, 7, "bikes"],
+	["garage_bikes", "FULL GARAGE", "OWN ALL 14 BIKES.", 35, 14, "bikes"],
 	["garage_riders", "THE WHOLE GANG", "OWN ALL 8 RIDERS.", 35, 8, "riders"],
 	["rich", "SAVINGS JAR", "HAVE 2,000 COINS AT ONCE.", 15, 0, ""],
 	["ghost_beat", "BEAT YOUR GHOST", "SET A NEW BEST TIME WHILE YOUR GHOST RIDES.", 15, 0, ""],
@@ -54,6 +54,12 @@ const LIST := [
 	["league_top", "GOLDEN SPIKE", "REACH THE GOLDEN SPIKE DIVISION.", 30, 4, "best_div"],
 	["season_30", "TOP OF THE PASS", "REACH TIER 30 ON A SEASON PASS.", 25, 0, ""],
 	["cheats_all", "CHEAT CODES", "UNLOCK ALL 3 CHEATS.", 20, 3, "cheats"],
+	# SUMMIT and GAUNTLET (v0.10). These bring the total to 1,000, Game Center's cap.
+	["summit_first", "HILLTOP", "REACH THE TOP OF A SUMMIT CLIMB.", 5, 0, ""],
+	["summit_all", "TOP OF THE WORLD", "REACH THE TOP OF ALL 12 SUMMIT CLIMBS.", 15, 12, "summit_done"],
+	["gauntlet_first", "RUN THE GAUNTLET", "CLEAR A GAUNTLET COURSE.", 5, 0, ""],
+	["gauntlet_clean", "NO FAULTS", "CLEAR A GAUNTLET COURSE WITHOUT A FAULT.", 10, 0, ""],
+	["gauntlet_all", "THE FULL GAUNTLET", "CLEAR ALL 12 GAUNTLET COURSES.", 15, 12, "gauntlet_done"],
 ]
 
 ## Store ids. Google Play Console makes its own ("CgkI..."): paste them in here once the
@@ -151,6 +157,15 @@ func _stat_value(stat: String) -> int:
 		"cheats":
 			var c: Dictionary = (GameState.data.get("challenges", {}) as Dictionary).get("cheats", {})
 			return (c.get("unlocked", []) as Array).size()
+		# SUMMIT / GAUNTLET levels finished (drive_progress.gd keeps them in the save).
+		"summit_done", "gauntlet_done":
+			var lv: Dictionary = (GameState.data.get("drive", {}) as Dictionary).get("levels", {})
+			var pre := "su_" if stat == "summit_done" else "ga_"
+			var n := 0
+			for id in lv:
+				if String(id).begins_with(pre) and bool((lv[id] as Dictionary).get("done", false)):
+					n += 1
+			return n
 	return int(stats().get(stat, 0))
 
 

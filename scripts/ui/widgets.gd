@@ -31,6 +31,7 @@ class MedalRow extends Control:
 	var letters := 0
 	var compact := false
 	var boss := false
+	var names: Array = []   # set to replace the three labels (SUMMIT / GAUNTLET)
 	var _t := 0.0
 
 	func _init(h: Array, f: Array = [false, false, false], p := 0.0, l := 0, small := false, is_boss := false) -> void:
@@ -57,6 +58,8 @@ class MedalRow extends Control:
 		var font: Font = GameState.font
 		var labels := ["CLEAR", "NO CRASH" if boss else ("LETTERS" if have[1] else "LETTERS %d/7" % letters),
 			"PAR %.1fs" % par if par > 0.0 else "PAR"]
+		if names.size() == 3:
+			labels = names
 		var widths := []
 		var total := 0.0
 		for l in labels:
@@ -266,12 +269,13 @@ class VolumeSlider extends Control:
 
 
 ## An ON/OFF setting as a button ("CRASH HINTS: ON"). on_change gets the new value.
-static func flag_button(title: String, key: String, width := 160, on_change := Callable()) -> Button:
+## dflt: the setting's value before it's ever been changed (most are on; SWAP LEAN off).
+static func flag_button(title: String, key: String, width := 160, on_change := Callable(), dflt := true) -> Button:
 	const KitC := preload("res://scripts/ui/kit.gd")
-	var b: Button = KitC.button("%s: %s" % [title, "ON" if GameState.flag(key) else "OFF"], width, 22)
+	var b: Button = KitC.button("%s: %s" % [title, "ON" if GameState.flag(key, dflt) else "OFF"], width, 22)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.pressed.connect(func():
-		var v := not GameState.flag(key)
+		var v := not GameState.flag(key, dflt)
 		GameState.set_flag(key, v)
 		b.text = "%s: %s" % [title, "ON" if v else "OFF"]
 		if on_change.is_valid():

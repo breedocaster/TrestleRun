@@ -216,6 +216,29 @@ static func _symbol(ci: CanvasItem, id: String, t: float) -> void:
 			ci.draw_colored_polygon(PackedVector2Array([sc + Vector2(0, -3), sc + Vector2(0.9, -1), sc + Vector2(3, -1),
 				sc + Vector2(1.3, 0.4), sc + Vector2(2, 2.6), sc + Vector2(0, 1.3), sc + Vector2(-2, 2.6),
 				sc + Vector2(-1.3, 0.4), sc + Vector2(-3, -1), sc + Vector2(-0.9, -1)]), Icons.GOLD_LIGHT)
+		"summit_first", "summit_all":
+			# A peak with a flag on top (snow cap for all twelve).
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(-7, 6), Vector2(-1, -3), Vector2(1, -1), Vector2(3, -3),
+				Vector2(7, 6)]), Color("8a6a7a"))
+			if id == "summit_all":
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(-3, 0), Vector2(-1, -3), Vector2(1, -1), Vector2(3, -3),
+					Vector2(4, -1), Vector2(1, 1)]), Color("f0f4f8"))
+			ci.draw_line(Vector2(-1, -3), Vector2(-1, -8), Color("d8d0c0"), -1.0)
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(-1, -8), Vector2(4, -6.5), Vector2(-1, -5)]),
+				Icons.GOLD if id == "summit_all" else Color("d9453b"))
+		"gauntlet_first", "gauntlet_clean", "gauntlet_all":
+			# A crate and a log, with the checkpoint flag (green: no faults).
+			ci.draw_rect(Rect2(-7, 0, 7, 6), Color("8a5a32"))
+			ci.draw_rect(Rect2(-6, 1, 5, 4), Color("b07a48"))
+			ci.draw_line(Vector2(-6, 1), Vector2(-2, 5), Color("6b4428"), -1.0)
+			ci.draw_circle(Vector2(3, 3.5), 2.5, Color("6b4428"))
+			ci.draw_circle(Vector2(3, 3.5), 1.5, Color("c89a62"))
+			ci.draw_line(Vector2(5, 1), Vector2(5, -7), Color("d8d0c0"), -1.0)
+			var fc := Color("5bd16a") if id == "gauntlet_clean" else (Icons.GOLD if id == "gauntlet_all" else Color("f0c040"))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(5, -7), Vector2(0, -5.5), Vector2(5, -4)]), fc)
+			if id == "gauntlet_all":
+				ci.draw_rect(Rect2(-7, -3, 7, 3), Color("8a5a32"))
+				ci.draw_rect(Rect2(-6, -2, 5, 1), Color("b07a48"))
 		"cheats_all":
 			# BIG HEAD: a huge helmet on a little rider.
 			ci.draw_rect(Rect2(-1.5, 3, 3, 3), Color("2f3b52"))

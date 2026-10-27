@@ -45,7 +45,18 @@ static func build(font: Font) -> Theme:
 	t.set_stylebox("pressed", "Button", pressed)
 	t.set_stylebox("hover_pressed", "Button", pressed)
 	t.set_stylebox("disabled", "Button", disabled)
-	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	# Focus ring for pads and arrow keys (buttons only take focus once one is used;
+	# see Main._nav_on).
+	var ring := StyleBoxFlat.new()
+	ring.draw_center = false
+	ring.border_color = Color("9fe8ff")
+	ring.set_border_width_all(2)
+	ring.set_corner_radius_all(3)
+	ring.expand_margin_left = 2
+	ring.expand_margin_right = 2
+	ring.expand_margin_top = 2
+	ring.expand_margin_bottom = 2
+	t.set_stylebox("focus", "Button", ring)
 	t.set_color("font_color", "Button", CREAM)
 	t.set_color("font_hover_color", "Button", Color.WHITE)
 	t.set_color("font_pressed_color", "Button", INK)

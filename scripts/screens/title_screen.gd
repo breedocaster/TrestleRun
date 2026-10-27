@@ -113,6 +113,10 @@ func _ready() -> void:
 	ride.pressed.connect(func(): navigate.emit("levels", ""))
 	var chal := Kit.button("CHALLENGES", 120, bh)
 	chal.pressed.connect(func(): navigate.emit("challenges", ""))
+	var summit := Kit.button("SUMMIT", 120, bh)
+	summit.pressed.connect(func(): navigate.emit("drive_select", "summit"))
+	var gauntlet := Kit.button("GAUNTLET", 120, bh)
+	gauntlet.pressed.connect(func(): navigate.emit("drive_select", "gauntlet"))
 	var garage := Kit.button("GARAGE", 120, bh)
 	garage.pressed.connect(func(): navigate.emit("garage", ""))
 	# Something waiting in CHALLENGES (today's ride, rewards to take): a gold dot.
@@ -128,7 +132,7 @@ func _ready() -> void:
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 4)
-	for b in [story, ride, chal, garage]:
+	for b in [story, ride, summit, gauntlet, chal, garage]:
 		grid.add_child(b)
 	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(grid)
@@ -149,6 +153,10 @@ func _ready() -> void:
 	awards.pressed.connect(func(): navigate.emit("achievements", ""))
 	for b in [settings, credits, awards]:
 		opts.add_child(b)
+	if GameState.is_desktop():
+		var quit := Kit.button("QUIT", 0, 22)
+		quit.pressed.connect(_confirm_quit)
+		opts.add_child(quit)
 	add_child(opts)
 
 	var mb := MoneyBadge.new()
@@ -213,7 +221,9 @@ func _open_settings() -> void:
 	var flags := VBoxContainer.new()
 	flags.add_theme_constant_override("separation", 4)
 	var buttons := [Widgets.flag_button("GHOST RUN", "ghost", 150), Widgets.flag_button("CRASH HINTS", "hints", 150),
-		Widgets.flag_button("VIBRATION", "vibrate", 150), Widgets.flag_button("SCREEN SHAKE", "shake", 150),
+		Widgets.flag_button("FULLSCREEN", "fullscreen", 150, func(_v): GameState.apply_display()) if GameState.is_desktop()
+			else Widgets.flag_button("VIBRATION", "vibrate", 150),
+		Widgets.flag_button("SCREEN SHAKE", "shake", 150),
 		Widgets.flag_button("SHARP PIXELS", "sharp", 150, func(_v): GameState.apply_display())]
 	var cheats := Kit.button("CHEATS", 150, 22)
 	cheats.pressed.connect(_open_cheats)
@@ -349,7 +359,53 @@ func _dev_tap() -> void:
 
 
 func on_back() -> void:
+	if _cheats:
+		_cheats.queue_free()
+		_cheats = null
+		return
 	if _settings:
 		_close_settings()
 		return
-	get_tree().quit()
+	if _quit_box:
+		_quit_box.queue_free()
+		_quit_box = null
+		return
+	# Android's back button leaves the app; on a PC (Esc, or B on a pad) ask first.
+	if GameState.is_desktop():
+		_confirm_quit()
+	else:
+		get_tree().quit()
+
+
+var _quit_box: Control
+
+
+func _confirm_quit() -> void:
+	if _quit_box:
+		return
+	var root := Kit.full_rect(Control.new())
+	var dim := Kit.full_rect(ColorRect.new())
+	dim.color = Color(0.04, 0.02, 0.07, 0.65)
+	root.add_child(dim)
+	var center := Kit.full_rect(CenterContainer.new())
+	root.add_child(center)
+	var panel := PanelContainer.new()
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	v.add_child(Kit.label("QUIT TRESTLE RUN?", 16, UITheme.GOLD))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var stay := Kit.button("KEEP RIDING", 110, 26)
+	stay.pressed.connect(func():
+		root.queue_free()
+		_quit_box = null)
+	var go := Kit.button("QUIT", 110, 26)
+	go.pressed.connect(func(): get_tree().quit())
+	row.add_child(stay)
+	row.add_child(go)
+	v.add_child(row)
+	panel.add_child(v)
+	center.add_child(panel)
+	add_child(root)
+	_quit_box = root

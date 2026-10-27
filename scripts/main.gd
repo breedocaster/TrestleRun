@@ -18,6 +18,9 @@ var current: Node
 
 func _ready() -> void:
 	get_tree().set_quit_on_go_back(false)
+	var nav = load("res://scripts/ui/nav_input.gd").new()
+	nav.main = self
+	add_child(nav)
 	var args := OS.get_cmdline_user_args()
 	# Dev runs: if any game script fails to compile, quit instead of hanging headless.
 	if args.size() > 0 and args[0].begins_with("--") and args[0] != "--input-test":
@@ -46,6 +49,38 @@ func _ready() -> void:
 			return
 		if a == "--place-letters":
 			add_child(load("res://scripts/dev/place_letters.gd").new())
+			return
+		if a == "--parse":
+			# Load every script (with the autoloads up) and list the ones that fail.
+			var bad := 0
+			var stack := ["res://scripts"]
+			while not stack.is_empty():
+				var dir: String = stack.pop_back()
+				var da := DirAccess.open(dir)
+				for sub in da.get_directories():
+					stack.append(dir + "/" + sub)
+				for f in da.get_files():
+					if f.ends_with(".gd"):
+						var sc = load(dir + "/" + f)
+						if sc == null or not sc.can_instantiate():
+							print("PARSE FAILED ", dir + "/" + f)
+							bad += 1
+			print("PARSE %d failed" % bad)
+			get_tree().quit(bad)
+			return
+		if a == "--course-calibrate":
+			add_child(load("res://scripts/dev/course_calibrate.gd").new())
+			return
+		if a == "--drive-levels":
+			add_child(load("res://scripts/dev/drive_levels.gd").new())
+			return
+		if a == "--drive-physics":
+			add_child(load("res://scripts/dev/drive_check.gd").new())
+			return
+		if a == "--nav-test":
+			var nt = load("res://scripts/dev/nav_test.gd").new()
+			nt.main = self
+			add_child(nt)
 			return
 		if a == "--ach-test":
 			add_child(load("res://scripts/dev/ach_test.gd").new())
@@ -103,6 +138,12 @@ func navigate(target: String, arg: String) -> void:
 			n.focus = arg
 		"season":
 			n = SeasonScreen.new()
+		"drive_select":
+			n = load("res://scripts/screens/drive_select.gd").new()
+			n.setup(arg)
+		"drive":
+			n = load("res://scripts/screens/drive_screen.gd").new()
+			n.setup(arg)
 		_:
 			n = Title.new()
 	if current:

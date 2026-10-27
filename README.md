@@ -2,7 +2,7 @@
 
 One-button motorcycle runner for Android/iOS, built in **Godot 4.7** (GL Compatibility renderer, 2D pixel art drawn in code). Inspired by the mine-cart *mechanic*, with original names, art and characters throughout.
 
-Three ways to play from the title screen: **STORY** (win back the parts of Grandpa's motorcycle, area by area, boss by boss), **FREE RIDE** (the twelve trails, any time and weather) and **CHALLENGES** (a new daily ride, daily missions, endless runs, a weekly league and a season pass). All share the garage, the wallet and the achievements.
+Five ways to play from the title screen: **STORY** (win back the parts of Grandpa's motorcycle, area by area, boss by boss), **FREE RIDE** (the twelve trails, any time and weather), **SUMMIT** (twelve physics hill climbs on one tank of fuel, with upgrades), **GAUNTLET** (twelve physics obstacle courses against the clock) and **CHALLENGES** (a new daily ride, daily missions, endless runs, a weekly league and a season pass). All share the garage, the wallet and the achievements. STORY, FREE RIDE and CHALLENGES are the one-button runner; SUMMIT and GAUNTLET are ridden with two pedals, gas and brake.
 
 ## Gameplay
 
@@ -105,6 +105,15 @@ CHALLENGES on the title screen (a gold dot on the button when today's ride is wa
 - **Weekly league:** the same endless line all week (Monday to Sunday) for everyone; your best distance that week counts. You're in a group of 20 with 19 computer rivals (there's no server yet), in five divisions: DIRT, GRAVEL, TIMBER, IRON, GOLDEN SPIKE. Top 5 move up, bottom 5 move down, and the week's place pays 600/350/150/50 coins and 300/200/100/50 XP (1st, 2nd-3rd, 4th-10th, the rest). The HUD shows the next rival to pass. Rivals are modelled on the line itself: each forced jump on it has the timing window the careful rider measured there, a rival fumbles it more often the narrower that window is (and more often in DIRT than in GOLDEN SPIKE), the line gets quicker the same way yours does, and they get one more run each day of the week. So an easier week's line means longer rival runs, the same as yours. Calibrated (`tools/endless/league_calibrate.py`) so a group's middle rider ends the week near 1.2 km in DIRT, 2.2 in GRAVEL, 3.5 in TIMBER, 5.5 in IRON and 8.5 in GOLDEN SPIKE; they start the week lower.
 - **Season pass:** a season lasts three weeks and takes one trail's look (season 1 is Copper Canyon; they go round all sixteen). 30 tiers at 100 XP; XP comes from every run (10, plus up to 80 for distance), missions, the daily ride, the streak and the league. The free track pays coins and two season paints; the gold track three more paints (the last with flames) and more coins. The gold pass costs 1,500 coins for now: selling it for real money needs the store billing plugins and accounts, which are the next phase. Season paints show in the garage once you have them (and the current season's, marked SEASON PASS).
 
+### SUMMIT and GAUNTLET (since 0.10)
+
+Two physics modes with their own levels, ridden on any bike in the garage. Instead of the runner's one button there are two pedals: on a touch screen the right half of the screen is **GAS** and the left half **BRAKE** (both at once is fine); on a PC, Right/D/Up/W/Space is gas and Left/A/Down/S brake, and on a pad the right trigger (or A, or d-pad right) and the left trigger (or X, or d-pad left). The bike is a real little rigid body (`scripts/drive/vehicle_sim.gd`): wheels on sprung suspension, a motor with the bike's own torque curve (the battery bikes hold full torque nearly to top speed), brakes that dip the nose, tyre grip, and the rider's weight. The rider's head touching the ground is a crash. Gas also leans you back and brake leans you forward: in the air that's how you rotate (and flip), on the ground how you lift or plant the front wheel. **SWAP LEAN** in the pause menu turns that round (gas tips the nose down).
+
+- **SUMMIT:** twelve hill climbs (900 m to 2.1 km) to a summit flag, each on one tank of fuel, topped up by fuel cans along the way (charge points on the battery bikes). Bridges over valleys, kicker gaps over pits on the later ones. Coins on the way (5, and 25 for the big ones), +25 per flip landed. Run out of fuel and roll to a stop, or crash, and the ride ends with what you've collected. Coins buy **upgrades** for each bike separately (ENGINE/MOTOR, SUSPENSION, TIRES, TANK/BATTERY, five levels each, 120 to 1,250 coins a level), and the later climbs need some. A climb opens when the one before is reached. Reaching a summit the first time pays 100 coins (20 more for each climb further along); silver and gold, under the medal times, pay again.
+- **GAUNTLET:** twelve obstacle courses (ramps, steps, crates, logs, stairs, blocks, whoops, kickers and gaps) with checkpoints. A crash is a **fault**: you're back at the last checkpoint with the clock still running. Bronze for finishing, silver under the silver time with at most 2 faults, gold under the gold time with none. In GAUNTLET the rider throws their weight hard (a tap of gas pops the front up for a step), but only so far: past about 34 degrees nose-up from the slope ahead they hold the bike there, so holding gas gives a wheelie rather than a loop-out. Upgrades don't apply here.
+
+Levels are built from a seeded recipe (SUMMIT, `scripts/drive/summit_levels.gd`) or a list of moves (GAUNTLET, `scripts/drive/gauntlet_levels.gd`), so every device gets the same ones. Every level is checked by a beam search over the same sim (`--drive-levels`, below), which proves it can be ridden and sets the medal times. Not every bike suits every level (small wheels don't get up steps, the electric unicycles can't wheelie); the level cards say **TOUGH ON THIS BIKE** when the checker didn't get your bike through.
+
 ### Cheats
 
 GoldenEye-style: each one unlocks by beating a time on one trail in one weather (DK Mode was Runway on Agent in under 5:00). Any bike, any time of day; it's just the clock, so a crash usually costs too much. Each target is the dev bot's clean time there plus a second, and the bot doesn't wheelie, so a wheelie bike helps. Switch them on and off under SETTINGS > CHEATS. Cosmetic only.
@@ -117,7 +126,7 @@ GoldenEye-style: each one unlocks by beating a time on one trail in one weather 
 
 ### Achievements
 
-41 achievements, from finishing the first story trail to recovering each part, beating a boss without a scratch, gold medals, stomps, rail grinds and catching prize sacks, and (since 0.9.1) the calendar modes: 1 km and 5 km in one endless run, 7 daily rides, all three missions in a day, a 7-day streak, a league promotion, first place in a league week, the Golden Spike division, the last tier of a season pass, and all three cheats. They unlock in the save, pop a toast, and show on the ACHIEVEMENTS screen (title screen) with progress for the counted ones. Progress from an older save counts. The game reports them to Google Play Games and Apple Game Center when those plugins are in the build; that part needs store accounts, and [ACHIEVEMENTS.md](ACHIEVEMENTS.md) is the step-by-step, with the store icons and import files already generated in `store/achievements/`.
+46 achievements, from finishing the first story trail to recovering each part, beating a boss without a scratch, gold medals, stomps, rail grinds and catching prize sacks, and (since 0.9.1) the calendar modes: 1 km and 5 km in one endless run, 7 daily rides, all three missions in a day, a 7-day streak, a league promotion, first place in a league week, the Golden Spike division, the last tier of a season pass, and all three cheats; and (since 0.10) SUMMIT and GAUNTLET: a summit, all twelve, a course, a course with no faults, all twelve. 1,000 points in all, Game Center's cap. They unlock in the save, pop a toast, and show on the ACHIEVEMENTS screen (title screen) with progress for the counted ones. Progress from an older save counts. The game reports them to Google Play Games and Apple Game Center when those plugins are in the build; that part needs store accounts, and [ACHIEVEMENTS.md](ACHIEVEMENTS.md) is the step-by-step, with the store icons and import files already generated in `store/achievements/`.
 
 ### Free Ride trails
 
@@ -180,7 +189,7 @@ Speed climbs every trail and each one adds a mechanic on top of the timing; the 
 
 ### Bike specialties
 
-Every bike keeps the same one-button control and hitbox; each adds one move.
+In the runner every bike keeps the same one-button control and hitbox; each adds one move. (In SUMMIT and GAUNTLET each bike instead rides with its own build: wheelbase, wheel size, power, grip, suspension, weight.)
 
 | Bike | Specialty | How |
 |---|---|---|
@@ -191,6 +200,13 @@ Every bike keeps the same one-button control and hitbox; each adds one move.
 | Scooter | Umbrella | Hold while falling to float down slowly |
 | Cafe racer | Air dash | Tap in the air to dash forward |
 | Chopper | Iron hide | Smash through one enemy per checkpoint (falls still count) |
+| Zip e-moped | Umbrella | As the scooter |
+| Commuter e-bike | Double hop | As the minibike |
+| Spark e-dirt | Wheelie +12% | As the scrambler |
+| Boulder fat e-bike | Iron hide | As the chopper |
+| Mono e-wheel | Double hop | As the minibike |
+| Surge e-street | Air dash | As the cafe racer |
+| Goliath e-wheel | Iron hide | As the chopper |
 
 Wheelie or jump again: on the wheelie bikes, a press in the air that you're still holding when the wheels touch is a wheelie, unless it came on the very last frame before touchdown or on touchdown itself (a "jump again as I land" press). A tap you let go of before touchdown still jumps again on landing, and a press after touchdown always jumps. (Before 0.8.1 any press in the last 0.12 s before touchdown jumped again, which is what kept turning wheelies into jumps.) An air press within a few pixels of landing still counts as a buffered jump rather than a specialty move. On story trails the scooter's umbrella stays shut when a rail, wall-ride or rope is just ahead: holding there means "grab", and a floating scooter would drift over the top of them. The garage shows each bike's specialty; the HUD names it bottom left and lights it while it's active.
 
@@ -203,7 +219,7 @@ Every 22-38 s a biplane overtakes you with a prize sack on a rope (10 coins on T
 Mix and match three things, each bought with coins (`scripts/catalog.gd`):
 
 - **Riders (8):** Dusty, Granny Grit (scarf), Bandit (raccoon), Bones (skeleton, hair on fire), Zorp (alien), Robo-7, Finn (land shark), Big Frosty (yeti). Scarves, tails and flames stream harder in wind and in the air.
-- **Bikes (7):** scrambler, dirt bike, minibike, scooter, cafe racer, chopper, sportbike.
+- **Bikes (14):** scrambler, dirt bike, minibike, scooter, cafe racer, chopper, sportbike, and (since 0.10) seven battery ones: the Zip e-moped, the Commuter e-bike, the Spark electric dirt bike, the Boulder fat-tyre e-bike, the Mono and Goliath electric unicycles (one wheel, the rider standing on the pedals and balancing it: lean forward to go, back to slow) and the Surge electric streetbike.
 - **Paint (6):** colour schemes applied to whichever bike you ride.
 
 All bikes and riders share one hitbox and every trail is beatable on any bike; bikes differ by specialty (below).
@@ -237,7 +253,7 @@ The title screen runs the far and valley layers too, so rivals race behind the m
 
 ### Sound
 
-- **Engines:** every bike model has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. In the garage, picking a rider or a bike starts the engine and revs it (for a rider, the bike you have equipped), and tapping any bike tile, owned or not, lets you hear it before you buy.
+- **Engines:** every gas bike has its own engine, built from that engine's real firing order (V-twin chopper, 270-degree parallel twin, single, inline-4, inline-3, 2-stroke scooter, 212cc minibike). The battery bikes have electric drives instead (`tools/audio/electric.py`): the motor's whine at its electrical frequency and the orders a three-phase motor sings at, a faint inverter tone, the gear whir of a hub or mid-drive on the e-bikes (and their freewheel ticking at idle), chain or belt noise, and tyre roar with tread pulses on the knobby and fat tyres; idle is a quiet "ready" hum, and on the unicycles a wavering balance hum. Idle at READY, launch to cruise at GO; pitch follows speed (rain slides, wind drag) and flares when the rear wheel is in the air. In the garage, picking a rider or a bike starts the engine and revs it (for a rider, the bike you have equipped), and tapping any bike tile, owned or not, lets you hear it before you buy.
 - **Ambience:** birds by day; crickets at dusk and night. On top of that each trail has its own bed (table above): synthesized canyon wind, machine yard (hum, distant clanks in a shed, steam hiss), mine (rumble, echoing drips, timber creaks), mountain wind and, on Last Trestle, the collapse (low rumble, snapping timbers), plus the creek at Copper Canyon and Mesa Springs. The mine and the hoist yard drop the birds; Skyline Pass drops the crickets. Rain adds a rain bed. In wind, the wind recording's volume follows the same gust curve that pushes the bike. Story areas have their own beds: Grandma's Farm a breeze over the hay, porch wind chimes (in the farm loop's key) and the windmill pump; the Rail Yard the machine yard; the Old Orchard rustling leaves, a distant owl and the odd apple dropping; the County Speedway the crowd in the stands, a cheer now and then and bikes buzzing round the far track. Everything is stereo at 44.1 kHz, and the loops are long: the recordings 40-96 s, the synthesized beds 48 s, the wind 42 s (rebuilt from slices of its 15 s recording so there's no seam).
 - **Foley:** soft chimes tuned to the theme's key (coin streaks climb a pentatonic ladder), a soft whoosh on jumps, wooden thock on landings, splash in rain, plank-joint "ta-dak" while rolling, gentle crash with a falling two-note chime. Springs boing up a fifth, roof bonks knock, loops swoop, ziplines clink on and whine along the cable, and the bonus biplane drones in from behind with a Doppler drop as it passes.
 - **Coins:** each coin is a short, dry chime (rings out in about 0.3 s, down from 1.1 s), and two coin voices alternate with each new coin damping the last, so a fast streak plays as separate notes.
@@ -322,7 +338,31 @@ What it does, in order: adds the `themed_icon.xml` that Godot's exporter leaves 
 
 **The upload key** (`trestle-upload.jks`, alias `upload`, RSA 4096, made with `keytool -genkeypair -keystore trestle-upload.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 4096 -validity 10000`) is how Play knows an upload is yours: the first bundle registers it, and later ones must match. Play App Signing keeps the key that signs what phones install. Keep the keystore and its password backed up and out of the project folder. Lost or leaked, it can be reset from Play Console's app signing page, but that's slow.
 
-Every upload needs a higher `version/code` in the Android preset than the last one (0.9.0 was 12, 0.9.1 is 13).
+Every upload needs a higher `version/code` in the Android preset than the last one (0.9.0 was 12, 0.9.1 13, 0.10.0 is 14).
+
+## Windows and Linux (Steam)
+
+```bash
+python3 tools/steam/make_steam_build.py --godot godot
+```
+
+- `--godot`: the Godot 4.7.2 binary. The Windows and Linux export templates must be installed (Editor > Manage Export Templates, or extract `windows_release_x86_64.exe` and `linux_release.x86_64` from the official `Godot_v4.7.2-stable_export_templates.tpz` into `~/.local/share/godot/export_templates/4.7.2.stable/`).
+- `--no-export`: zip what's already in `build/windows` and `build/linux` instead of exporting again.
+- `--app <id> --win-depot <id> --linux-depot <id>`: also write `build/steam/app_build_<id>.vdf` for SteamPipe (the three ids come from Steamworks once the app exists).
+
+It exports the **Windows Desktop** and **Linux** presets (x86_64, release, PCK beside the executable; the Windows .exe gets the game icon and version info from `assets/icon/trestle-run.ico` and the preset) and zips each into `build/TrestleRun-<version>-windows.zip` / `-linux.zip` for trying outside Steam. Upload to Steam with Valve's `steamcmd`:
+
+```bash
+steamcmd +login <steam user> +run_app_build "$PWD/build/steam/app_build_<id>.vdf" +quit
+```
+
+- `+login <steam user>`: your Steamworks account (it asks for the password and Steam Guard code).
+- `+run_app_build <file>`: upload both depots as described in that file (one depot per OS, each from its build folder).
+- `+quit`: exit when done. The build then appears under SteamPipe > Builds, where you set it live on a branch.
+
+In Steamworks, set the launch options to `TrestleRun.exe` (Windows) and `TrestleRun.x86_64` (Linux), and the Linux runtime to Steam Linux Runtime 3.0 (sniper).
+
+On a PC the game starts fullscreen (**FULLSCREEN** in Settings, or F11 / Alt+Enter), Esc or B goes back, the title has **QUIT**, and the menus work with arrow keys or a pad: the first d-pad, stick or A press puts a focus ring on the button nearest the middle, then the d-pad moves it, A presses and B backs out (`scripts/ui/nav_input.gd`). In a run, nothing holds focus, so Space, click and A always jump. The save lives in `%APPDATA%\Godot\app_userdata\Trestle Run` (Windows) or `~/.local/share/godot/app_userdata/Trestle Run` (Linux).
 
 ## iOS
 
@@ -353,6 +393,18 @@ scripts/
     letter_spots.gd      where each trail's T-R-E-S-T-L-E letters sit (generated, see Dev checks)
     world_art.gd         per-trail track builds and critter skins, switch-ramp signs
     bike_view.gd         bike models + riders drawn from primitives (paint = palette)
+  drive/                 SUMMIT and GAUNTLET
+    vehicle_sim.gd       the rigid-body bike: suspension, motor, brakes, grip, lean, unicycle balance  <- feel knobs
+    vehicles.gd          each bike's build (wheel positions from its drawing, power, grip...) and the upgrades
+    terrain.gd           collision segments, bucketed by x
+    summit_levels.gd     the twelve hill climbs (seeded recipe) and their fuel, coins, bridges, gaps
+    course.gd            GAUNTLET's move builder (steps, ramps, crates, logs, pits...), corners rounded
+    gauntlet_levels.gd   the twelve courses as lists of moves
+    drive_world.gd       one ride: sim at 60 Hz, input, fuel, checkpoints and faults, camera, drawing
+    drive_hud.gd / drive_art.gd   pedals, gauges; ground, scenery, props
+    drive_progress.gd    records, medals, payouts, upgrades (in the save)
+    drive_search.gd      beam search over gas/coast/brake, for the level checker
+    drive_table.gd       medal times and which bikes got through (generated by --drive-levels)
   screens/               title, trail select, story map and intro, achievements, garage, challenges, season pass, game (pause/results)
   ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport), achievement badges
   audio/audio_director.gd  autoload: buses, engine, ambience, SFX pool, theme
@@ -383,10 +435,15 @@ godot --headless --path . -- --verify --test=rail,rope:140             # the hol
 godot --headless --path . -- --guide-test                              # crash-hint line from every checkpoint
 xvfb-run -a godot --path . -- --ach-export=$PWD/store/achievements --ach-scale=2   # store icons + import files
 godot --headless --path . -- --ach-test                                # the calendar-mode achievements unlock on cue
+xvfb-run -a godot --path . -- --nav-test --no-streak                    # keyboard / pad menu navigation
 python3 tools/icons/make_launcher_icons.py                              # launcher icon layers + Play's 512 px icon
+python3 tools/store/make_store_art.py --godot godot                     # Play feature graphic + 8 screenshots (needs xvfb-run)
 godot --headless --path . -- --endless-check [--part=0/2]               # ride every trail stretch at every endless speed
 python3 tools/endless/make_table.py check_*.log                          # ...and write scripts/game/endless_table.gd
 godot --headless --path . -- --endless-ride=1-20 [--bike=all] [--mode=daily --weather=rain]  # whole built courses
+godot --headless --path . -- --drive-physics [--bike=mono]               # each bike's sim: rest, launch, brake, climbs, drops
+godot --headless --path . -- --course-calibrate [--bike=a,b --only=step_up]  # how big each GAUNTLET obstacle can be
+godot --headless --path . -- --drive-levels --bikes=all --write          # ride every SUMMIT/GAUNTLET level, write drive_table.gd
 ```
 
 - `--headless` runs with no window or audio
@@ -404,10 +461,19 @@ godot --headless --path . -- --endless-ride=1-20 [--bike=all] [--mode=daily --we
 - `--endless-ride=a-b` builds the endless courses for seeds a..b and has the bot ride each to the end (one life; `--max-m=` stops early), on one bike or `--bike=all`; `--mode=daily` builds daily rides instead (with checkpoints), in `--weather=`. It prints where any crash happened and on which stretch.
 - `--ach-export=` writes the store kit for achievements (needs a display, so `xvfb-run` on a server; see ACHIEVEMENTS.md)
 - `--ach-test` feeds the challenge hooks made-up events (endless distances, seven days of daily rides, a streak with a gap, three missions, four winning league weeks, season XP, the three cheat runs) and checks each new achievement unlocks at the right step and not before; it works on a blank copy of the save and puts the real one back
+- `make_store_art.py` renders Play Console's feature graphic (1024 x 500, the title scene with only the logo) and eight 1920 x 1080 screenshots (six gameplay moments picked from a sweep of the trails, plus CHALLENGES and the garage) into `store/play/`, each the game's own 480 x 270 frame blown up with hard edges. `--godot` is the Godot binary to run; `--sample` renders a row of positions on many trails instead, for picking new moments. It runs the game with a throwaway save (a temporary `override.cfg` points `user://` elsewhere), so your own progress and cheats stay out of the pictures.
+- `--drive-physics` puts every bike's sim through fixed tests on made-up ground: how it settles at rest, 0-150 px/s and top speed on full gas, braking from 140, holding gas up 15-45 degree slopes, landing 40-140 px drops
+- `--course-calibrate` builds a short track per GAUNTLET obstacle size (a step of 4 to 20 px, crates, logs, stairs, steep ramps, kicker gaps...) and has the search try each on a few bikes, printing the time or how far it got
+- `--drive-levels` rides levels with the search: GAUNTLET checkpoint to checkpoint (carrying the speed across), SUMMIT fuel can to fuel can on the upgrades listed for that climb, failing a leg longer than a tank. `--mode=summit|gauntlet`, `--only=0,3`, `--bikes=a,b` or `all` (default: the scrambler, which the medal times come from: gold is its time x 1.15, silver x 1.45), `--beam=n` (default 24); `--write` rewrites `scripts/drive/drive_table.gd` with the medal times and, with `--bikes=all`, the bikes that got through each level
 - `make_launcher_icons.py` redraws `icon.svg` as Android's adaptive icon layers (foreground, background, and the one-colour layer for themed icons) so a launcher's mask shows the whole picture instead of Godot's zoomed-in crop, plus `store/play_icon_512.png`
 
-Current result (v0.9.1; riding is unchanged from 0.9.0, so these are 0.9.0's results apart from the first two lines, and trail riding 0.8.1's):
-- `--ach-test`: 22 checks, all pass.
+Current result (v0.10.0; the runner's riding is unchanged from 0.9.0, so the lines from `--endless-check` on are 0.9.0's results, and trail riding 0.8.1's):
+- `--drive-levels` on the scrambler: all 12 SUMMIT climbs reached on their listed upgrades (searched times 36-100 s, legs never longer than a tank), and all 12 GAUNTLET courses cleared without a fault (15-37 s), each section also from a standstill at its checkpoint. Medal times in `drive_table.gd`.
+- `--drive-levels --bikes=all --beam=12` (other bikes on SUMMIT fully upgraded): GAUNTLET courses cleared per bike: scrambler 12, dirt bike 11, Spark 11, sportbike 10, Surge 10, cafe racer 9, chopper 5, Boulder 5, minibike 3, Zip 3, Commuter 3, scooter 2, Mono 2, Goliath 2; FIRST GEAR and SWITCHBACK by all 14, THE GAUNTLET by the scrambler and the Surge. SUMMIT climbs reached: scrambler 12, dirt bike 12, cafe racer 11, chopper 11, Spark 11, Surge 11, sportbike 10, Boulder 8, Goliath 6, minibike, scooter, Zip and Commuter the first 4 (most of them stop at the 64 px kicker gaps that start on climb 5), Mono 4 (not Mesa Steps, but Orchard Hills); Lantern Haul is the hardest (3 bikes). The cards say TOUGH ON THIS BIKE for the rest.
+- `--course-calibrate` (beam 12): the scrambler climbs a 4 px step or crate, stairs of 3 px, a log of radius 4, 45-degree ramps 40 px high, clears a 60 px pit off a 40 x 12 kicker and lands 90 px drops; the commuter e-bike the same steps and logs (5 px logs), 35 degrees and a 20 px gap; the scooter no steps at all (3 px wheels) but 4 px logs, 30 degrees, 40 px gaps; the Mono unicycle 3 px steps, 45 degrees and 40 px gaps but no logs. A pit with no kicker or ramp before it can't be cleared from flat ground at any size. GAUNTLET's courses are sized from these.
+- `--verify --bike=<each of the 7 new bikes> --weather=clear`: every Free Ride and story trail cleared with no crashes on each (196 runs); they reuse the existing specialties, so the 0.9.0 results below for those cover the other weathers.
+- `--ach-test`: 31 checks, all pass (the 22 calendar-mode ones, plus SUMMIT and GAUNTLET: nothing for a failed ride, a failed climb still banks its coins, first finish, a clean course, all twelve of each, the next course opening).
+- `--nav-test`: also on SUMMIT: the picker takes focus, A starts a climb, nothing holds focus while riding, the right trigger is gas, B pauses and B resumes.
 - `make_aab.py --verify` on the 0.9.1 bundle: OK (351 files in the universal APK, 319 byte for byte, 29 XML files and the resource table matching; arm64 splits with both libraries uncompressed and 16 KB aligned).
 - `--endless-check`: 76 stretches x 5 speeds. Used in clear weather (bot clean at all three arrival times, tightest window 75 ms or more): 66 at 118 px/s, 73 at 130, 142 and 154, 70 at 166; in all three weathers 64, 72, 73, 72, 69. The ones left out are mostly a tightest window of one to four frames at that speed, and five where the bot itself crashed at 118 (too slow to clear a gap the trail was built for at its own speed). Across everything that's used, the careful rider's timing windows have a median of 366 ms and a tenth of them under 166 ms.
 - `--endless-ride`: 8 endless courses x 7 bikes to 7 km each (all five speeds), and 36 daily rides (12 each in clear, rain and wind, at all five speeds): no crashes. Two things this caught on the way: a stretch that opened straight into a jump right after a joint's slope, and stretches built at a different height from where the checker rode them (a marginal rail mount went the other way). Joints now end in a full second of flat deck, and bring every stretch back to the height it was checked at.

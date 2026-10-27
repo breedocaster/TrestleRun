@@ -24,7 +24,7 @@ Wall of Death,Ride 25 walls.,True,25,Revealed,20,23
 Air Mail,Catch 10 prize sacks from the bonus plane.,True,10,Revealed,20,24
 Any Weather,Clear a trail in the rain and one in the wind.,False,,Revealed,15,25
 After Dark,Clear 5 trails at night.,True,5,Revealed,20,26
-Full Garage,Own all 7 bikes.,True,7,Revealed,35,27
+Full Garage,Own all 14 bikes.,True,14,Revealed,35,27
 The Whole Gang,Own all 8 riders.,True,8,Revealed,35,28
 Savings Jar,Have 2000 coins at once.,False,,Revealed,15,29
 Beat Your Ghost,Set a new best time while your ghost rides.,False,,Revealed,15,30
@@ -39,3 +39,8 @@ Top of the Table,Finish a league week first in your group.,False,,Revealed,20,38
 Golden Spike,Reach the Golden Spike division.,True,4,Revealed,30,39
 Top of the Pass,Reach tier 30 on a season pass.,False,,Revealed,25,40
 Cheat Codes,Unlock all 3 cheats.,True,3,Revealed,20,41
+Hilltop,Reach the top of a summit climb.,False,,Revealed,5,42
+Top of the World,Reach the top of all 12 summit climbs.,True,12,Revealed,15,43
+Run the Gauntlet,Clear a gauntlet course.,False,,Revealed,5,44
+No Faults,Clear a gauntlet course without a fault.,False,,Revealed,10,45
+The Full Gauntlet,Clear all 12 gauntlet courses.,True,12,Revealed,15,46

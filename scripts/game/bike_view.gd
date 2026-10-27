@@ -1,7 +1,8 @@
 ## Pixel bike + rider, drawn from primitives. A rig is {rider, bike, paint} ids:
 ## bike models are different frames, paint recolours the bike, riders sit on the
 ## model's seat/peg/grip anchors. Origin = ground contact centred between wheels.
-## All models share one hitbox (bike_physics), so choices are cosmetic.
+## In the runner every model shares one hitbox (bike_physics) and differs by its
+## ability; SUMMIT and GAUNTLET ride each one's own build (scripts/drive/vehicles.gd).
 extends Node2D
 
 const Catalog := preload("res://scripts/catalog.gd")
@@ -135,6 +136,20 @@ static func draw_bike(ci: CanvasItem, o: Vector2, model: String, k: Dictionary, 
 			return _chopper(ci, o, k, wa)
 		"sport":
 			return _sport(ci, o, k, wa)
+		"spark":
+			return _spark(ci, o, k, wa)
+		"surge":
+			return _surge(ci, o, k, wa)
+		"zip":
+			return _zip(ci, o, k, wa)
+		"commuter":
+			return _commuter(ci, o, k, wa)
+		"boulder":
+			return _boulder(ci, o, k, wa)
+		"mono":
+			return _mono(ci, o, k, wa)
+		"goliath":
+			return _goliath(ci, o, k, wa)
 	return _scrambler(ci, o, k, wa)
 
 
@@ -274,6 +289,152 @@ static func _sport(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dict
 	return {"hip": Vector2(-4, -15), "peg": Vector2(-1, -7), "grip": Vector2(6, -13), "torso": 1.0}
 
 
+# --- battery bikes (v0.10) ------------------------------------------------------
+# No exhaust or engine block: a battery pack (with its charge light) where the engine
+# would be, a motor at the swingarm or in the hub.
+
+const CHARGE := Color("5bf08a")
+
+
+## A thin bicycle wheel: tyre ring, two spokes, hub.
+static func _spoked(ci: CanvasItem, c: Vector2, rad: float, k: Dictionary, wa: float) -> void:
+	ci.draw_arc(c, rad - 0.75, 0.0, TAU, 20, k.tire, 1.5)
+	ci.draw_arc(c, rad - 2.0, 0.0, TAU, 16, Color(k.rim, 0.55), 1.0)
+	for i in 2:
+		var d := Vector2(cos(wa + i * PI * 0.5), sin(wa + i * PI * 0.5)) * (rad - 1.5)
+		ci.draw_line(c - d, c + d, Color(k.rim, 0.8), line_w)
+	ci.draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), k.chrome)
+
+
+static func _spark(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_l(ci, o, -8, -4, -1, -8, k.frame, 2.0)
+	_wheel(ci, o + Vector2(-8, -4), 4.0, k, wa, true)
+	_wheel(ci, o + Vector2(8, -4), 4.0, k, wa + 0.7, true)
+	_l(ci, o, 8, -4, 5, -16, k.chrome)
+	_l(ci, o, -2, -8, -4, -13, k.chrome)
+	_p(ci, o, [[-4, -14], [4, -15], [3, -8], [-3, -8]], k.body_dark)
+	_r(ci, o, -2, -12, 4, 1, CHARGE)
+	ci.draw_circle(o + Vector2(0, -7), 1.5, k.engine)
+	_l(ci, o, -3, -15, 5, -16, k.frame)
+	_r(ci, o, -12, -17, 9, 2, k.seat)
+	_p(ci, o, [[-11, -16], [-16, -18], [-15, -16]], k.body)
+	_p(ci, o, [[6, -12], [12, -11], [11, -10], [7, -11]], k.body)
+	_r(ci, o, 4, -19, 3, 4, Color("f4f4f4"))
+	_r(ci, o, 5, -18, 1, 2, k.accent)
+	_l(ci, o, 3, -18, 6, -19, k.chrome)
+	return {"hip": Vector2(-5, -15), "peg": Vector2(0, -6), "grip": Vector2(5, -18), "torso": 0.3}
+
+
+static func _surge(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_l(ci, o, -8, -4, -2, -7, k.frame, 2.0)
+	_wheel(ci, o + Vector2(-8, -4), 4.0, k, wa)
+	_wheel(ci, o + Vector2(9, -4), 4.0, k, wa + 0.7)
+	_l(ci, o, 9, -4, 7, -13, k.chrome)
+	_p(ci, o, [[-4, -12], [5, -12], [4, -6], [-3, -6]], k.engine)
+	_r(ci, o, -3, -10, 7, 1, k.body_dark)
+	_r(ci, o, -3, -8, 6, 1, k.body_dark)
+	_r(ci, o, 3, -7, 1, 1, CHARGE)
+	ci.draw_circle(o + Vector2(-2, -6), 1.5, k.chrome)
+	_p(ci, o, [[-13, -16], [-5, -14], [-5, -12], [-11, -13]], k.body)
+	_r(ci, o, -6, -15, 5, 2, k.seat)
+	_p(ci, o, [[-1, -15], [6, -15], [9, -12], [5, -11], [-1, -12]], k.body)
+	_l(ci, o, 0, -14, 7, -13, k.accent)
+	_r(ci, o, 8, -13, 2, 2, LIGHT)
+	_r(ci, o, -13, -15, 1, 1, TAIL)
+	_l(ci, o, 4, -16, 8, -15, k.chrome)
+	return {"hip": Vector2(-4, -15), "peg": Vector2(-1, -7), "grip": Vector2(6, -15), "torso": 0.9}
+
+
+static func _zip(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_wheel(ci, o + Vector2(-6, -3), 3.0, k, wa)
+	_wheel(ci, o + Vector2(7, -3), 3.0, k, wa + 0.7)
+	_r(ci, o, -7, -4, 2, 2, k.engine)
+	_p(ci, o, [[-10, -6], [-9, -10], [-2, -10], [0, -6], [-2, -4], [-9, -4]], k.body)
+	_r(ci, o, -8, -8, 4, 1, CHARGE)
+	_r(ci, o, -1, -5, 6, 2, k.body_dark)
+	_p(ci, o, [[4, -5], [6, -5], [7, -14], [5, -14]], k.body)
+	_l(ci, o, 6, -14, 6, -16, k.chrome)
+	_r(ci, o, 3, -17, 5, 2, k.body)
+	_r(ci, o, 7, -16, 2, 2, LIGHT)
+	_r(ci, o, -9, -12, 7, 2, k.seat)
+	_r(ci, o, -11, -8, 1, 1, TAIL)
+	return {"hip": Vector2(-5, -12), "peg": Vector2(1, -6), "grip": Vector2(4, -17), "torso": 0.0}
+
+
+static func _commuter(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_spoked(ci, o + Vector2(-8, -5), 5.0, k, wa)
+	_spoked(ci, o + Vector2(8, -5), 5.0, k, wa + 0.7)
+	_l(ci, o, -8, -5, -1, -6, k.frame)
+	_l(ci, o, -8, -5, -4, -13, k.frame)
+	_l(ci, o, -1, -6, -4, -13, k.frame)
+	_l(ci, o, -4, -13, 5, -13, k.body)
+	_l(ci, o, -1, -6, 5, -12, k.body, 2.0)
+	_p(ci, o, [[0, -9], [3, -12], [4, -11], [1, -8]], k.body_dark)
+	_r(ci, o, 1, -10, 1, 1, CHARGE)
+	_l(ci, o, 5, -13, 8, -5, k.chrome)
+	_l(ci, o, 5, -13, 5, -16, k.chrome)
+	_l(ci, o, 4, -16, 7, -16, k.chrome)
+	_l(ci, o, -4, -13, -5, -15, k.chrome)
+	_r(ci, o, -7, -16, 4, 1, k.seat)
+	ci.draw_circle(o + Vector2(-1, -6), 1.5, k.engine)
+	_r(ci, o, -9, -6, 2, 2, k.engine)
+	_r(ci, o, 6, -14, 1, 1, LIGHT)
+	_l(ci, o, -11, -11, -6, -11, k.chrome)
+	_r(ci, o, -12, -11, 1, 1, TAIL)
+	return {"hip": Vector2(-4, -16), "peg": Vector2(0, -5), "grip": Vector2(6, -16), "torso": 0.3}
+
+
+static func _boulder(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_wheel(ci, o + Vector2(-8, -5), 5.0, k, wa, true)
+	_wheel(ci, o + Vector2(8, -5), 5.0, k, wa + 0.7, true)
+	_l(ci, o, -8, -5, -1, -6, k.frame, 2.0)
+	_l(ci, o, -8, -5, -4, -12, k.frame)
+	_l(ci, o, -1, -6, -4, -13, k.frame, 2.0)
+	_p(ci, o, [[-1, -6], [5, -13], [7, -12], [1, -5]], k.body)
+	_l(ci, o, 1, -7, 5, -11, k.accent)
+	_r(ci, o, 2, -9, 1, 1, CHARGE)
+	_l(ci, o, 6, -13, 8, -5, k.chrome, 2.0)
+	_l(ci, o, 6, -13, 5, -17, k.chrome)
+	_l(ci, o, 4, -17, 8, -17, k.chrome)
+	_l(ci, o, -4, -13, -5, -15, k.chrome)
+	_r(ci, o, -7, -16, 5, 2, k.seat)
+	_l(ci, o, -12, -11, -5, -11, k.chrome)
+	_l(ci, o, -10, -11, -8, -6, k.chrome)
+	ci.draw_circle(o + Vector2(-1, -6), 1.5, k.engine)
+	_r(ci, o, 7, -15, 2, 1, LIGHT)
+	_r(ci, o, -12, -12, 1, 1, TAIL)
+	return {"hip": Vector2(-4, -16), "peg": Vector2(0, -5), "grip": Vector2(6, -17), "torso": 0.35}
+
+
+## Electric unicycles: one wheel under a shell, the rider standing on the pedals.
+static func _mono(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_wheel(ci, o + Vector2(0, -5), 5.0, k, wa)
+	_p(ci, o, [[-3, -3], [-4, -6], [-4, -10], [-2, -12], [2, -12], [4, -10], [4, -6], [3, -3]], k.body)
+	_l(ci, o, -3, -9, 3, -9, k.accent)
+	_r(ci, o, -1, -13, 2, 1, k.frame)
+	_r(ci, o, -1, -6, 2, 1, CHARGE)
+	_r(ci, o, -4, -4, 8, 1, k.chrome)
+	_r(ci, o, 3, -8, 1, 2, LIGHT)
+	_r(ci, o, -4, -8, 1, 2, TAIL)
+	return {"hip": Vector2(0, -16), "peg": Vector2(1, -4), "grip": Vector2(5, -12), "torso": 0.05,
+		"knee": Vector2(1.5, -1)}
+
+
+static func _goliath(ci: CanvasItem, o: Vector2, k: Dictionary, wa: float) -> Dictionary:
+	_wheel(ci, o + Vector2(0, -7), 7.0, k, wa, true)
+	_p(ci, o, [[-4, -4], [-5, -8], [-5, -14], [-3, -16], [3, -16], [5, -14], [5, -8], [4, -4]], k.body)
+	_r(ci, o, -5, -13, 10, 1, k.body_dark)
+	_l(ci, o, -4, -11, 4, -11, k.accent)
+	_r(ci, o, -1, -8, 2, 1, CHARGE)
+	_l(ci, o, -4, -15, -6, -19, k.chrome)
+	_r(ci, o, -7, -20, 3, 1, k.chrome)
+	_r(ci, o, -5, -6, 10, 2, k.chrome)
+	_r(ci, o, 4, -13, 2, 2, LIGHT)
+	_r(ci, o, -6, -12, 1, 2, TAIL)
+	return {"hip": Vector2(0, -19), "peg": Vector2(1, -6), "grip": Vector2(5, -14), "torso": 0.05,
+		"knee": Vector2(1.5, -1)}
+
+
 static func _flames(ci: CanvasItem, o: Vector2, k: Dictionary) -> void:
 	if k.get("flames", false):
 		_p(ci, o, [[-2, -11], [3, -12], [1, -11], [5, -11], [-2, -10]], k.accent)
@@ -294,7 +455,7 @@ static func draw_rider(ci: CanvasItem, o: Vector2, id: String, a: Dictionary, t:
 	var head := shoulder + up * (4.5 if big else 3.5) + Vector2(0.5, 0)
 	if big_head:
 		head = shoulder + up * ((4.5 if big else 3.5) * BIG_HEAD * 0.85) + Vector2(0.5, 0)
-	var knee := hip.lerp(peg, 0.5) + Vector2(3, -2)
+	var knee: Vector2 = hip.lerp(peg, 0.5) + a.get("knee", Vector2(3, -2))
 	var fl := clampf(flutter, 0.0, 1.0)
 	var R := _rider_colors(id)
 

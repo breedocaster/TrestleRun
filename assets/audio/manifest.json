@@ -107,6 +107,24 @@
   "seconds": 48.0,
   "synth": true
  },
+ "engines/boulder_cruise.ogg": {
+  "electric": true,
+  "f0": 200.0,
+  "kb": 84.0,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -11.8,
+  "seconds": 8.0
+ },
+ "engines/boulder_idle.ogg": {
+  "electric": true,
+  "f0": 200.0,
+  "kb": 98.0,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -19.9,
+  "seconds": 8.0
+ },
  "engines/cafe_cruise.ogg": {
   "cycles": 373,
   "fire_hz": 140.0,
@@ -147,6 +165,24 @@
   "rpm": 950,
   "seconds": 7.958
  },
+ "engines/commuter_cruise.ogg": {
+  "electric": true,
+  "f0": 230.0,
+  "kb": 84.3,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -13.4,
+  "seconds": 8.0
+ },
+ "engines/commuter_idle.ogg": {
+  "electric": true,
+  "f0": 230.0,
+  "kb": 110.8,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -20.3,
+  "seconds": 8.0
+ },
  "engines/dirt_cruise.ogg": {
   "cycles": 427,
   "fire_hz": 53.3,
@@ -167,6 +203,24 @@
   "rpm": 1750,
   "seconds": 8.023
  },
+ "engines/goliath_cruise.ogg": {
+  "electric": true,
+  "f0": 340.0,
+  "kb": 91.1,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -14.7,
+  "seconds": 8.0
+ },
+ "engines/goliath_idle.ogg": {
+  "electric": true,
+  "f0": 340.0,
+  "kb": 79.3,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -21.7,
+  "seconds": 8.0
+ },
  "engines/minibike_cruise.ogg": {
   "cycles": 280,
   "fire_hz": 35.0,
@@ -185,6 +239,24 @@
   "lufs": -24.0,
   "peak_db": -5.8,
   "rpm": 1800,
+  "seconds": 8.0
+ },
+ "engines/mono_cruise.ogg": {
+  "electric": true,
+  "f0": 460.0,
+  "kb": 94.1,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -14.6,
+  "seconds": 8.0
+ },
+ "engines/mono_idle.ogg": {
+  "electric": true,
+  "f0": 460.0,
+  "kb": 80.5,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -22.0,
   "seconds": 8.0
  },
  "engines/scooter_cruise.ogg": {
@@ -227,6 +299,24 @@
   "rpm": 1150,
   "seconds": 8.035
  },
+ "engines/spark_cruise.ogg": {
+  "electric": true,
+  "f0": 290.0,
+  "kb": 85.2,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -13.9,
+  "seconds": 8.0
+ },
+ "engines/spark_idle.ogg": {
+  "electric": true,
+  "f0": 290.0,
+  "kb": 80.5,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -21.7,
+  "seconds": 8.0
+ },
  "engines/sport_cruise.ogg": {
   "cycles": 507,
   "fire_hz": 253.3,
@@ -246,6 +336,42 @@
   "peak_db": -8.1,
   "rpm": 1300,
   "seconds": 8.031
+ },
+ "engines/surge_cruise.ogg": {
+  "electric": true,
+  "f0": 380.0,
+  "kb": 98.3,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -15.1,
+  "seconds": 8.0
+ },
+ "engines/surge_idle.ogg": {
+  "electric": true,
+  "f0": 380.0,
+  "kb": 79.7,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -21.8,
+  "seconds": 8.0
+ },
+ "engines/zip_cruise.ogg": {
+  "electric": true,
+  "f0": 520.0,
+  "kb": 90.8,
+  "loop": true,
+  "lufs": -21.0,
+  "peak_db": -15.0,
+  "seconds": 8.0
+ },
+ "engines/zip_idle.ogg": {
+  "electric": true,
+  "f0": 520.0,
+  "kb": 81.3,
+  "loop": true,
+  "lufs": -30.0,
+  "peak_db": -22.1,
+  "seconds": 8.0
  },
  "music/coal_smoke.ogg": {
   "bars": 32,

@@ -1,6 +1,6 @@
 # Achievements: in the game now, on the stores later
 
-Trestle Run has 41 achievements. They already work in the game with no accounts:
+Trestle Run has 46 achievements. They already work in the game with no accounts:
 they unlock in your save, pop a toast at the top of the screen, and show on
 **ACHIEVEMENTS** (title screen) with progress bars for the counted ones. Progress you
 made before v0.8 counts: anything you'd already earned unlocks quietly the first time
@@ -42,7 +42,7 @@ you can do.
 | 24 | `planes_10` | Air Mail | Catch 10 prize sacks from the bonus plane. | 20 | counted (10) |
 | 25 | `any_weather` | Any Weather | Clear a trail in the rain and one in the wind. | 15 | one step |
 | 26 | `night_5` | After Dark | Clear 5 trails at night. | 20 | counted (5) |
-| 27 | `garage_bikes` | Full Garage | Own all 7 bikes. | 35 | counted (7) |
+| 27 | `garage_bikes` | Full Garage | Own all 14 bikes. | 35 | counted (14) |
 | 28 | `garage_riders` | The Whole Gang | Own all 8 riders. | 35 | counted (8) |
 | 29 | `rich` | Savings Jar | Have 2,000 coins at once. | 15 | one step |
 | 30 | `ghost_beat` | Beat Your Ghost | Set a new best time while your ghost rides. | 15 | one step |
@@ -57,12 +57,19 @@ you can do.
 | 39 | `league_top` | Golden Spike | Reach the Golden Spike division. | 30 | counted (4) |
 | 40 | `season_30` | Top of the Pass | Reach tier 30 on a season pass. | 25 | one step |
 | 41 | `cheats_all` | Cheat Codes | Unlock all 3 cheats. | 20 | counted (3) |
+| 42 | `summit_first` | Hilltop | Reach the top of a SUMMIT climb. | 5 | one step |
+| 43 | `summit_all` | Top of the World | Reach the top of all 12 SUMMIT climbs. | 15 | counted (12) |
+| 44 | `gauntlet_first` | Run the Gauntlet | Clear a GAUNTLET course. | 5 | one step |
+| 45 | `gauntlet_clean` | No Faults | Clear a GAUNTLET course without a fault. | 10 | one step |
+| 46 | `gauntlet_all` | The Full Gauntlet | Clear all 12 GAUNTLET courses. | 15 | counted (12) |
 
-Total: 950 points. Both stores take that: Play allows 5 to 200 per achievement and
-2,000 in all; Game Center allows up to 100 per achievement and 1,000 in all. 0.9.1
-added 32-41 (endless, daily rides and missions, the streak, the league, the season
-pass, cheats) and lowered the older ones to fit, leaving 50 points for later ones.
-Points can still change freely: nothing is on a store yet.
+Total: 1,000 points. Both stores take that: Play allows 5 to 200 per achievement and
+2,000 in all; Game Center allows up to 100 per achievement and 1,000 in all, so this
+is Game Center's ceiling: a new achievement now has to take its points from an old
+one. 0.9.1 added 32-41 (endless, daily rides and missions, the streak, the league,
+the season pass, cheats); 0.10 added 42-46 (SUMMIT and GAUNTLET) and raised FULL
+GARAGE from 7 bikes to 14. Points and goals can still change freely: nothing is on a
+store yet.
 Counted ones are "incremental" on Play (it tracks the steps) and percent-complete on
 Game Center.
 
@@ -73,7 +80,7 @@ own badge art:
 
 | File | For |
 |---|---|
-| `trestle-run-play-achievements.zip` | Play Console's **Import achievements** (all 41 at once, with icons) |
+| `trestle-run-play-achievements.zip` | Play Console's **Import achievements** (all 46 at once, with icons) |
 | `play/<id>.png` | 512 x 512 icons (Play) |
 | `apple/<id>.png` | 1024 x 1024 opaque icons (App Store Connect) |
 | `game-center-achievements.csv` | what to type into App Store Connect, one row per achievement |
@@ -179,7 +186,7 @@ What you need first: the Apple Developer Program (yearly fee) and a Mac with Xco
    - English localization: **Display Name**, **Pre-earned** and **Earned
      Description**, and the image from `apple/<id>.png` (1024 x 1024, RGB).
 
-   App Store Connect has no spreadsheet import, so it's 41 forms (or the App Store
+   App Store Connect has no spreadsheet import, so it's 46 forms (or the App Store
    Connect API if you'd rather script it).
 3. **Plugin**: download **GameCenterKit 1.0.1** (`gamecenter-addon.zip` from its
    GitHub release or the Godot Asset Store), extract it so it sits at

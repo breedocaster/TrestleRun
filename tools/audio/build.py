@@ -20,6 +20,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 import ambience  # noqa: E402
+import electric  # noqa: E402
 import engines  # noqa: E402
 import sfx  # noqa: E402
 import theme  # noqa: E402
@@ -58,6 +59,12 @@ def main():
         for state in ("idle", "cruise"):
             # 8 s loops (4 s before v0.8.2) so the combustion wander doesn't audibly repeat.
             y, meta = engines.render(name, state, target_s=8.0)
+            save(f"engines/{name}_{state}.ogg", y, q=6, loop=True, meta=meta, manifest=manifest)
+    # The battery bikes, e-bikes and electric unicycles (v0.10): motor whine instead of
+    # combustion. --only=electric renders just these.
+    for name in (electric.MOTORS if want("engines") or want("electric") else []):
+        for state in ("idle", "cruise"):
+            y, meta = electric.render(name, state, target_s=8.0)
             save(f"engines/{name}_{state}.ogg", y, q=6, loop=True, meta=meta, manifest=manifest)
     for name, y in (sfx.build(SRC).items() if want("sfx") else []):
         # q5 (about 160 kbps): clean chime tails and noise bursts. They were q2 for a

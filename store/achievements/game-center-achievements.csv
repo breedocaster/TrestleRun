@@ -25,7 +25,7 @@ trestlerun.walls_25,Wall of Death,20,No,No,"Wall of Death","Ride 25 walls.","Rid
 trestlerun.planes_10,Air Mail,20,No,No,"Air Mail","Catch 10 prize sacks from the bonus plane.","Catch 10 prize sacks from the bonus plane.",apple/planes_10.png
 trestlerun.any_weather,Any Weather,15,No,No,"Any Weather","Clear a trail in the rain and one in the wind.","Clear a trail in the rain and one in the wind.",apple/any_weather.png
 trestlerun.night_5,After Dark,20,No,No,"After Dark","Clear 5 trails at night.","Clear 5 trails at night.",apple/night_5.png
-trestlerun.garage_bikes,Full Garage,35,No,No,"Full Garage","Own all 7 bikes.","Own all 7 bikes.",apple/garage_bikes.png
+trestlerun.garage_bikes,Full Garage,35,No,No,"Full Garage","Own all 14 bikes.","Own all 14 bikes.",apple/garage_bikes.png
 trestlerun.garage_riders,The Whole Gang,35,No,No,"The Whole Gang","Own all 8 riders.","Own all 8 riders.",apple/garage_riders.png
 trestlerun.rich,Savings Jar,15,No,No,"Savings Jar","Have 2,000 coins at once.","Have 2,000 coins at once.",apple/rich.png
 trestlerun.ghost_beat,Beat Your Ghost,15,No,No,"Beat Your Ghost","Set a new best time while your ghost rides.","Set a new best time while your ghost rides.",apple/ghost_beat.png
@@ -40,3 +40,8 @@ trestlerun.league_win,Top of the Table,20,No,No,"Top of the Table","Finish a lea
 trestlerun.league_top,Golden Spike,30,No,No,"Golden Spike","Reach the Golden Spike division.","Reach the Golden Spike division.",apple/league_top.png
 trestlerun.season_30,Top of the Pass,25,No,No,"Top of the Pass","Reach tier 30 on a season pass.","Reach tier 30 on a season pass.",apple/season_30.png
 trestlerun.cheats_all,Cheat Codes,20,No,No,"Cheat Codes","Unlock all 3 cheats.","Unlock all 3 cheats.",apple/cheats_all.png
+trestlerun.summit_first,Hilltop,5,No,No,"Hilltop","Reach the top of a summit climb.","Reach the top of a summit climb.",apple/summit_first.png
+trestlerun.summit_all,Top of the World,15,No,No,"Top of the World","Reach the top of all 12 summit climbs.","Reach the top of all 12 summit climbs.",apple/summit_all.png
+trestlerun.gauntlet_first,Run the Gauntlet,5,No,No,"Run the Gauntlet","Clear a gauntlet course.","Clear a gauntlet course.",apple/gauntlet_first.png
+trestlerun.gauntlet_clean,No Faults,10,No,No,"No Faults","Clear a gauntlet course without a fault.","Clear a gauntlet course without a fault.",apple/gauntlet_clean.png
+trestlerun.gauntlet_all,The Full Gauntlet,15,No,No,"The Full Gauntlet","Clear all 12 gauntlet courses.","Clear all 12 gauntlet courses.",apple/gauntlet_all.png

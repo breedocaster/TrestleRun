@@ -104,7 +104,8 @@ def main():
     os.makedirs(store, exist_ok=True)
     icon = draw(BACK, 512, 16, 0, "RGB", (0, 0, 0))
     icon.paste(draw(FORE, 512, 16, 0), (0, 0), draw(FORE, 512, 16, 0))
-    icon.save(os.path.join(store, "play_icon_512.png"))
+    # Play wants a 32-bit PNG (with alpha) here, even though the icon is opaque.
+    icon.convert("RGBA").save(os.path.join(store, "play_icon_512.png"))
     print("wrote", out, "and", store)
 
 

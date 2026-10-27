@@ -1,0 +1,7 @@
+<en-US>
+New in 0.10: two physics modes and seven battery bikes.
+- SUMMIT: 12 hill climbs on one tank. Grab fuel, flip for coins, and upgrade each bike's engine, suspension, tires and tank.
+- GAUNTLET: 12 obstacle courses against the clock. Gas lifts the front, brake dips it, and every crash is a fault.
+- 7 new bikes: an e-moped, two e-bikes, an electric dirt bike, an electric streetbike and two electric unicycles, each with its own motor sound.
+- 5 new achievements, and a privacy note in Credits.
+</en-US>

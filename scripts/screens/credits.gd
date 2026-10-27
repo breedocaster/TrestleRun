@@ -14,7 +14,8 @@ const SECTIONS := [
 		["TRAIL LOOPS", "Lantern Low, Ridge Runner, Hayloft Shuffle, Coal Smoke, Windfall, County Fair, Saucer Stomp: the same band, original"],
 	]],
 	["ENGINES", [
-		["ALL 7 BIKES", "Original physical models: real firing orders, synthesized"],
+		["THE 7 GAS BIKES", "Original physical models: real firing orders, synthesized"],
+		["THE 7 BATTERY BIKES", "Original motor, gear and tyre models, synthesized"],
 	]],
 	["NATURE RECORDINGS", [
 		["RAIN", "Rain recording by alex36917, freesound.org/s/524605, CC BY 4.0. Trimmed, looped, filtered"],
@@ -33,6 +34,11 @@ const SECTIONS := [
 	]],
 	["FONT", [
 		["PRESS START 2P", "CodeMan38, SIL Open Font License 1.1"],
+	]],
+	["PRIVACY", [
+		["NO DATA COLLECTED", "Trestle Run has no ads, no accounts and no analytics. Your progress is saved on this device only and never leaves it."],
+		["PERMISSIONS", "Vibration only (Android), for the rumble on crashes and landings. You can turn it off in SETTINGS."],
+		["ACHIEVEMENTS", "Only if you sign in to Google Play Games or Game Center yourself: then the achievements you unlock are sent to that service, under its own privacy policy."],
 	]],
 ]
 

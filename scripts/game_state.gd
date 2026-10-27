@@ -31,10 +31,23 @@ func _ready() -> void:
 const BASE_VIEW := Vector2i(480, 270)
 
 
+## Windows / Linux / macOS (the Steam builds), as against phones.
+func is_desktop() -> bool:
+	return OS.has_feature("pc")
+
+
 func apply_display() -> void:
 	var win := get_tree().root
 	if not win.size_changed.is_connected(apply_display):
 		win.size_changed.connect(apply_display)
+	# FULLSCREEN (desktop, on by default). Not in editor builds, so dev runs and
+	# screenshots keep their window.
+	if is_desktop() and not OS.has_feature("editor") and DisplayServer.get_name() != "headless":
+		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if flag("fullscreen") else DisplayServer.WINDOW_MODE_WINDOWED
+		var now := DisplayServer.window_get_mode()
+		var full := now == DisplayServer.WINDOW_MODE_FULLSCREEN or now == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+		if full != (want == DisplayServer.WINDOW_MODE_FULLSCREEN):
+			DisplayServer.window_set_mode(want)
 	var size := BASE_VIEW
 	var stretch := Window.CONTENT_SCALE_STRETCH_FRACTIONAL
 	if flag("sharp") and DisplayServer.get_name() != "headless":
@@ -399,6 +412,37 @@ func _setup_input() -> void:
 		jb.device = -1
 		jb.button_index = JOY_BUTTON_A
 		InputMap.action_add_event("jump", jb)
+	# Pads: A presses the focused button, B goes back (Godot's defaults are keys only).
+	for pair in [["ui_accept", JOY_BUTTON_A], ["ui_cancel", JOY_BUTTON_B]]:
+		var has := false
+		for e in InputMap.action_get_events(pair[0]):
+			has = has or (e is InputEventJoypadButton and e.button_index == pair[1])
+		if not has:
+			var pb := InputEventJoypadButton.new()
+			pb.device = -1
+			pb.button_index = pair[1]
+			InputMap.action_add_event(pair[0], pb)
+	# SUMMIT / GAUNTLET: gas and brake (they also lean). Keys, pad triggers, A / X.
+	for spec in [["gas", [KEY_RIGHT, KEY_D, KEY_UP, KEY_W, KEY_SPACE], JOY_AXIS_TRIGGER_RIGHT, [JOY_BUTTON_A, JOY_BUTTON_DPAD_RIGHT]],
+			["brake", [KEY_LEFT, KEY_A, KEY_DOWN, KEY_S], JOY_AXIS_TRIGGER_LEFT, [JOY_BUTTON_X, JOY_BUTTON_DPAD_LEFT]]]:
+		if InputMap.has_action(spec[0]):
+			continue
+		InputMap.add_action(spec[0], 0.2)
+		for k in spec[1]:
+			var ek := InputEventKey.new()
+			ek.device = -1
+			ek.physical_keycode = k
+			InputMap.action_add_event(spec[0], ek)
+		var em := InputEventJoypadMotion.new()
+		em.device = -1
+		em.axis = spec[2]
+		em.axis_value = 1.0
+		InputMap.action_add_event(spec[0], em)
+		for b in spec[3]:
+			var eb := InputEventJoypadButton.new()
+			eb.device = -1
+			eb.button_index = b
+			InputMap.action_add_event(spec[0], eb)
 	if not InputMap.has_action("pause"):
 		InputMap.add_action("pause")
 		for k in [KEY_ESCAPE, KEY_P]:

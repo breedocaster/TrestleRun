@@ -46,6 +46,15 @@ static func bikes() -> Array:
 			{"id": "cafe", "name": "CAFE RACER", "price": 350, "ability": "dash"},
 			{"id": "chopper", "name": "CHOPPER", "price": 500, "ability": "tough"},
 			{"id": "sport", "name": "SPORTBIKE", "price": 700, "ability": "wheelie", "k": 0.18},
+			# Battery bikes (v0.10): e-moped, e-bikes, electric motorcycles, electric
+			# unicycles. In SUMMIT they top up at charge points instead of fuel cans.
+			{"id": "zip", "name": "ZIP E-MOPED", "price": 300, "ability": "glide", "electric": true},
+			{"id": "commuter", "name": "COMMUTER E-BIKE", "price": 350, "ability": "hop", "electric": true},
+			{"id": "spark", "name": "SPARK E-DIRT", "price": 450, "ability": "wheelie", "k": 0.12, "electric": true},
+			{"id": "boulder", "name": "BOULDER FAT E-BIKE", "price": 550, "ability": "tough", "electric": true},
+			{"id": "mono", "name": "MONO E-WHEEL", "price": 600, "ability": "hop", "electric": true},
+			{"id": "surge", "name": "SURGE E-STREET", "price": 950, "ability": "dash", "electric": true},
+			{"id": "goliath", "name": "GOLIATH E-WHEEL", "price": 1000, "ability": "tough", "electric": true},
 		]
 	return _bikes
 

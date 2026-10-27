@@ -30,7 +30,8 @@ const PLANE_PRIZE_H := 68.0  # sack height above the deck where it meets you
 const PLANE_ROPE := 22.0
 # Rear wheel x per bike model (wheelies pivot here).
 const REAR_WHEEL := {"scrambler": -8.0, "dirt": -9.0, "minibike": -6.0, "scooter": -7.0,
-	"cafe": -8.0, "chopper": -11.0, "sport": -8.0}
+	"cafe": -8.0, "chopper": -11.0, "sport": -8.0, "zip": -6.0, "commuter": -8.0, "spark": -8.0,
+	"boulder": -8.0, "surge": -8.0, "mono": 0.0, "goliath": 0.0}
 
 var level: Dictionary
 var level_id := ""

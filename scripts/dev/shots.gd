@@ -1,8 +1,11 @@
 ## Screenshot helper.
 ## --shot=title|levels|garage[:rider|bike|paint]|setup:<id>|tips:<id>|results:<id>
 ##        game:<id>:<ticks or x<pos>>[:pause|:hint|:hold]
+##        drive:<summit|gauntlet>:<index>:<x>[:<bike>]  drive_select:<summit|gauntlet>[:upgrades]
+##        drive_screen:<summit|gauntlet>:<index>:<x>[:pause|:results]  (--pedals: the touch pedals)
 ## --out=<file.png> [--money=N] [--cond=<time>:<weather>] [--rig=<rider>:<bike>:<paint>]
 ## --own-all  (marks every garage item owned, for previews)  --plane (send a bonus plane now)
+## --xs=a,b,c  (game shots: one more picture at each x)  --store (no toasts, no NEW tag)
 ## --unlock-all  --clear=<n> (mark the first n trails cleared)
 extends Node
 
@@ -234,6 +237,64 @@ func _ready() -> void:
 			main.current._open_settings()
 		"league_table":
 			main.navigate("challenges", "league")
+		"drive":
+			# drive:<summit|gauntlet>:<level index>:<x>[:<bike>] — the bot rides to x.
+			var DW = load("res://scripts/drive/drive_world.gd")
+			var lv: Dictionary
+			if parts[1] == "summit":
+				lv = load("res://scripts/drive/summit_levels.gd").build(int(parts[2]))
+			else:
+				lv = load("res://scripts/drive/gauntlet_levels.gd").build(int(parts[2]))
+			var w = DW.new()
+			var rg := GameState.loadout().duplicate()
+			if parts.size() > 4:
+				rg.bike = parts[4]
+			w.bot = load("res://scripts/drive/drive_bot.gd").new()
+			w.setup(parts[1], lv, rg, {"engine": 5, "suspension": 5, "tires": 5, "tank": 5})
+			main.add_child(w)
+			if main.current:
+				main.current.visible = false
+			var tx := float(parts[3])
+			while w.sim.pos.x < tx and w.ticks < 60 * 300 and w.phase == "ride":
+				w.tick()
+			print("DRIVE at x=%.0f y=%.0f ang=%.2f phase=%s t=%.1f coins=%d fuel=%.1f" % [w.sim.pos.x, w.sim.pos.y, w.sim.ang, w.phase, w.ride_time, w.coins, w.fuel])
+			w._acc = -1.0e9
+			w.cam.position = w._cam_target().round()
+		"drive_select":
+			# drive_select:<summit|gauntlet>[:upgrades]
+			main.navigate("drive_select", ":".join(parts.slice(1)))
+		"drive_screen":
+			# drive_screen:<mode>:<index>:<x>[:pause|:results] — the real screen with its
+			# HUD; the bot rides to x.
+			main.navigate("drive", "%s:%s" % [parts[1], parts[2]])
+			await get_tree().process_frame
+			var ds = main.current
+			var w2 = ds.world
+			if "--pedals" in args:
+				ds.hud.show_pedals = true   # as on a phone
+			w2.bot = load("res://scripts/drive/drive_bot.gd").new()
+			var tx2 := float(parts[3])
+			while w2.sim.pos.x < tx2 and w2.ticks < 60 * 300 and w2.phase == "ride":
+				w2.tick()
+			w2._acc = -1.0e9
+			w2.cam.position = w2._cam_target().round()
+			if parts.size() > 4 and parts[4] == "pause":
+				ds.pause()
+			elif parts.size() > 4 and parts[4] == "results":
+				w2._finish(true, "finish")
+		"feature":
+			# Play Console's feature graphic: the title scene with only the logo. Drawn at
+			# 512 x 250 (tools/store/make_store_art.py sets that size with an override.cfg
+			# for the run) and doubled to the 1024 x 500 Play asks for.
+			main.navigate("title", "")
+			await get_tree().process_frame
+			for c in main.current.get_children():
+				if c is CenterContainer:
+					for col in c.get_children():
+						for n in col.get_children():
+							n.visible = n is Label
+				elif c is Control:
+					c.visible = false
 		"cheats":
 			main.navigate("title", "")
 			await get_tree().process_frame
@@ -271,10 +332,45 @@ func _ready() -> void:
 	if "--ghost" in args and main.current.get("world") != null:
 		var gw = main.current.world
 		print("GHOST at ride_time=%.2f rider_x=%.1f ghost_vis=%s pos=%s" % [gw.ride_time, gw.state.x, gw._ghost_view.visible, gw._ghost_view.position])
+	# --xs=a,b,c (with game:<id>:...): ride on and take one picture at each x as well,
+	# saved as <out>_x<a>.png and so on.
+	var xs := []
+	for a in args:
+		if a.begins_with("--xs="):
+			xs = Array(a.substr(5).split(","))
+	if not xs.is_empty() and main.current.get("world") != null:
+		var w = main.current.world
+		for x in xs:
+			while float(w.state.x) < float(x) and w.ticks < 60 * 600:
+				w.tick()
+			w._vis_t += 1.0
+			for i in 8:
+				await get_tree().process_frame
+			_store_clean()
+			await get_tree().process_frame
+			var shot := get_viewport().get_texture().get_image()
+			var path := out.get_basename() + "_x%s.png" % String(x)
+			shot.save_png(path)
+			print("SHOT saved ", path, " ", shot.get_size(), " at x=", w.state.x)
+	_store_clean()
+	await get_tree().process_frame
 	var img := get_viewport().get_texture().get_image()
 	img.save_png(out)
 	print("SHOT saved ", out, " ", img.get_size())
 	get_tree().quit()
+
+
+## --store: pictures for the store page, so no passing toasts (missions, season tiers,
+## achievements) and no first-visit "NEW: ..." tag.
+func _store_clean() -> void:
+	if not "--store" in args:
+		return
+	for n in [Achievements, Challenges]:
+		n._toasts.clear()
+		n._toast.visible = false
+	if main.current.get("hud") != null:
+		if "feature_new" in main.current.hud:
+			main.current.hud.feature_new = false
 
 
 ## Plays a hint line's button presses back frame by frame (the sim is deterministic,

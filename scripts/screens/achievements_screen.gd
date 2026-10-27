@@ -41,7 +41,7 @@ func _ready() -> void:
 		open.pressed.connect(func(): Achievements.show_store_ui())
 		head.add_child(open)
 	else:
-		head.add_child(Kit.label("SAVED ON THIS PHONE", 8, UITheme.DIM, HORIZONTAL_ALIGNMENT_RIGHT))
+		head.add_child(Kit.label("SAVED ON THIS DEVICE", 8, UITheme.DIM, HORIZONTAL_ALIGNMENT_RIGHT))
 	col.add_child(head)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
