@@ -61,11 +61,15 @@ static func ground(ci: CanvasItem, pts: PackedVector2Array, left: float, right: 
 	for i in range(i0, i1):
 		var a := pts[i]
 		var b := pts[i + 1]
+		# A vertical face (a GAUNTLET step) has no strip: zero width won't triangulate.
+		if b.x - a.x < 0.05:
+			continue
 		var poly := PackedVector2Array([a, b, Vector2(b.x, bottom), Vector2(a.x, bottom)])
 		ci.draw_colored_polygon(poly, cols[1])
 		# A darker band further down.
-		var d := PackedVector2Array([a + Vector2(0, 26), b + Vector2(0, 26), Vector2(b.x, bottom), Vector2(a.x, bottom)])
-		ci.draw_colored_polygon(d, cols[2])
+		if maxf(a.y, b.y) + 26.0 < bottom:
+			var d := PackedVector2Array([a + Vector2(0, 26), b + Vector2(0, 26), Vector2(b.x, bottom), Vector2(a.x, bottom)])
+			ci.draw_colored_polygon(d, cols[2])
 		# Lip.
 		ci.draw_colored_polygon(PackedVector2Array([a, b, b + Vector2(0, 3), a + Vector2(0, 3)]), cols[0])
 		# Specks.

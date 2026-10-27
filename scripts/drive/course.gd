@@ -12,6 +12,7 @@ var props: Array = []
 var solids: Array = []      # closed outlines that collide (crates, logs)
 var gaps: Array = []        # [x0, x1, lip_y, land_y]
 var checkpoints: Array = []
+var tips: Array = []        # [x, text]: shown as the rider passes x (how-to signs)
 
 
 func _init() -> void:
@@ -187,6 +188,6 @@ func finish(meta: Dictionary) -> Dictionary:
 	t.add_segment(Vector2(-300, 0), Vector2(-300, -400))
 	var lv := meta.duplicate()
 	lv.merge({"terrain": t, "ground": floor, "props": props, "gaps": gaps, "bridges": [],
-		"checkpoints": checkpoints, "coins": [], "fuel": [], "start": Vector2(0, 0),
+		"checkpoints": checkpoints, "tips": tips, "coins": [], "fuel": [], "start": Vector2(0, 0),
 		"finish_x": finish_x, "kill_y": 3000.0, "mode": "gauntlet"}, true)
 	return lv

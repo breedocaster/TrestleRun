@@ -1,0 +1,5 @@
+<en-US>
+- SUMMIT and GAUNTLET: the rider's body now crashes on the ground, so no more riding along upside down.
+- SUMMIT: steep walls from climb 2. Holding gas flips you on them; ease off. Upgraded engines no longer loop out at the start.
+- GAUNTLET: more like trials. Brake then gas quickly to hop; the back tyre grips faces to climb. Bigger steps, crates, tables and logs, all checked rideable.
+</en-US>

@@ -63,6 +63,10 @@ var _was_grounded := true
 var _shake := 0.0
 var _audio := true
 var _horizon_ref := INF
+var _hops_seen := 0
+var _tip_i := 0
+var tip_text := ""          # the how-to sign showing (the HUD draws it), and for how long
+var tip_t := 0.0
 
 
 func setup(p_mode: String, lv: Dictionary, p_rig: Dictionary, p_up := {}) -> void:
@@ -118,6 +122,7 @@ func _process(delta: float) -> void:
 	if _audio and phase == "ride":
 		var top: float = maxf(1.0, sim.top_w)
 		AudioDirector.engine_update(delta, sim.grounded, clampf(absf(sim.drive_w) / top * 1.3 + 0.35, 0.5, 1.8))
+	tip_t = maxf(0.0, tip_t - delta)
 	for p in popups:
 		p[2] += delta
 	popups = popups.filter(func(p): return p[2] < 1.2)
@@ -140,6 +145,7 @@ func tick() -> void:
 			if mode == "summit":
 				fuel = maxf(0.0, fuel - DT)
 			_pickups()
+			_hop_and_tips()
 			_landing()
 			_checks()
 		"crash":
@@ -192,6 +198,18 @@ func _pickups() -> void:
 			fuel = tank
 			popups.append(["FULL CHARGE" if electric else "FUEL!", fl[i], 0.0])
 			_sfx("power")
+
+
+## Hops (GAUNTLET) and the how-to signs.
+func _hop_and_tips() -> void:
+	if sim.hops > _hops_seen:
+		_hops_seen = sim.hops
+		_sfx("jump")
+	var tips: Array = level.get("tips", [])
+	while _tip_i < tips.size() and sim.pos.x >= float(tips[_tip_i][0]) - 60.0:
+		tip_text = String(tips[_tip_i][1])
+		tip_t = 3.5
+		_tip_i += 1
 
 
 func _landing() -> void:

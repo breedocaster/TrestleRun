@@ -123,6 +123,13 @@ func _draw() -> void:
 		_center(size.y * 0.4, why, Color("ff6a5a"), 16)
 	elif world.phase == "crash":
 		_center(size.y * 0.4, "FAULT!", Color("ff6a5a"), 16)
+	if world.tip_t > 0.0 and world.tip_text != "":
+		var a := clampf(world.tip_t, 0.0, 1.0)
+		var w := GameState.font.get_string_size(world.tip_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+		var r := Rect2(floorf((size.x - w) * 0.5) - 6, 46, w + 12, 16)
+		draw_rect(r, Color(UITheme.INK, 0.8 * a))
+		draw_rect(r, Color(UITheme.GOLD, a), false, 1.0)
+		_center(58, world.tip_text, Color(UITheme.CREAM, a))
 	if show_pedals:
 		_pedal(Rect2(6, size.y - 50, 56, 44), "BRAKE", world.brake > 0.5, false)
 		_pedal(Rect2(size.x - 62, size.y - 50, 56, 44), "GAS", world.gas > 0.5, true)

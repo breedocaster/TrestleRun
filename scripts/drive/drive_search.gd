@@ -9,6 +9,11 @@ const Vehicles := preload("res://scripts/drive/vehicles.gd")
 
 const BLOCK := 6
 const ACTIONS := [Vector2(1, 0), Vector2(0, 0), Vector2(0, 1)]
+## Ranking penalty for the front being up off the slope (per radian past PITCH_FREE, and
+## per rad/s still coming up): on a steep climb the furthest states are often the ones
+## about to go over backwards, and they'd crowd out the careful ones. (tuning: static)
+static var pitch_k := 0.0
+const PITCH_FREE := 0.25
 
 
 static func fell(level: Dictionary, s) -> bool:
@@ -67,7 +72,8 @@ static func solve(level: Dictionary, bike: String, x0: float, target: float, bea
 				best_x = maxf(best_x, s.pos.x)
 				if s.pos.x >= target and s.grounded:
 					return {"ok": true, "frames": (st + 1) * BLOCK, "best_x": s.pos.x, "path": path, "end": s.save()}
-				kids.append({"s": s.save(), "x": s.pos.x, "v": s.speed(), "path": path})
+				kids.append({"s": s.save(), "x": s.pos.x, "v": s.speed(), "path": path,
+					"p": wrapf(float(s.ground_ang) - float(s.ang), -PI, PI) if s.grounded else 0.0, "w": -float(s.angvel)})
 		if kids.is_empty():
 			return {"ok": false, "frames": st * BLOCK, "best_x": best_x, "path": PackedByteArray()}
 		nodes = _select(kids, beam)
@@ -80,6 +86,8 @@ static func solve(level: Dictionary, bike: String, x0: float, target: float, bea
 static func _select(kids: Array, beam: int) -> Array:
 	for k in kids:
 		k.score = float(k.x) + 0.35 * float(k.v)
+		if pitch_k > 0.0:
+			k.score -= pitch_k * (maxf(0.0, float(k.get("p", 0.0)) - PITCH_FREE) + 0.15 * maxf(0.0, float(k.get("w", 0.0))))
 	kids.sort_custom(func(a, b): return float(a.score) > float(b.score))
 	var out := []
 	var bins := {}

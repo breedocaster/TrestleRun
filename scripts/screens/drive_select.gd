@@ -16,8 +16,8 @@ const Table := preload("res://scripts/drive/drive_table.gd")
 
 const NAMES := {"summit": "SUMMIT", "gauntlet": "GAUNTLET"}
 const BLURB := {
-	"summit": "HILL CLIMBS ON ONE TANK. GRAB FUEL, DON'T LAND ON YOUR HEAD. IN THE AIR, GAS TIPS YOU BACK AND BRAKE TIPS YOU FORWARD.",
-	"gauntlet": "OBSTACLE COURSES AGAINST THE CLOCK. GAS LIFTS THE FRONT, BRAKE DIPS IT. EVERY CRASH IS A FAULT.",
+	"summit": "HILL CLIMBS ON ONE TANK. FULL GAS UP A STEEP HILL FLIPS YOU: EASE OFF. IN THE AIR, GAS TIPS YOU BACK, BRAKE FORWARD.",
+	"gauntlet": "OBSTACLES AGAINST THE CLOCK. GAS LIFTS THE FRONT, BRAKE DIPS IT. BRAKE THEN GAS QUICKLY TO HOP. EVERY CRASH IS A FAULT.",
 }
 const UPGRADE_NAMES := {"engine": "ENGINE", "suspension": "SUSPENSION", "tires": "TIRES", "tank": "TANK"}
 const UPGRADE_NAMES_E := {"engine": "MOTOR", "suspension": "SUSPENSION", "tires": "TIRES", "tank": "BATTERY"}
@@ -227,7 +227,8 @@ class ProfileThumb extends Control:
 			for k in range(poly.size() - 1):
 				var a := poly[k]
 				var b := poly[k + 1]
-				draw_colored_polygon(PackedVector2Array([a, b, Vector2(b.x, size.y), Vector2(a.x, size.y)]), cols[1])
+				if b.x - a.x > 0.05 and maxf(a.y, b.y) < size.y:
+					draw_colored_polygon(PackedVector2Array([a, b, Vector2(b.x, size.y), Vector2(a.x, size.y)]), cols[1])
 				if not (in_pit[k] or in_pit[k + 1]):
 					draw_line(a, b, cols[0], 1.0)
 			var f := poly[poly.size() - 1]

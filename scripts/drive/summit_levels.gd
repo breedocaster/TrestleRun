@@ -4,6 +4,7 @@
 extends RefCounted
 
 const Terrain := preload("res://scripts/drive/terrain.gd")
+const Course := preload("res://scripts/drive/course.gd")
 
 const PX_PER_M := 8.0
 const STEP := 16.0
@@ -80,38 +81,8 @@ static func build(i: int) -> Dictionary:
 	var length := float(m.m) * PX_PER_M
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1000 + i
-	# 1. The natural ground: a climb with hills on it, slopes kept within limits.
-	var pts := PackedVector2Array()
-	var x := -480.0
-	var y := 0.0
-	var up_max := tan(deg_to_rad(float(m.up)))
-	var down_max := tan(deg_to_rad(float(m.down)))
-	var climb := float(m.climb) / 1000.0
-	var amp := float(m.amp)
-	var bump := float(m.bump)
-	var steps := bool(m.get("steps", false))
-	while x <= length + 600.0:
-		var target := 0.0
-		if x > 240.0 and x < length - 120.0:
-			var k := x - 240.0
-			# Hills ease in over the first 600 px.
-			var ease := clampf(k / 600.0, 0.0, 1.0)
-			target = -climb * k
-			target += ease * amp * (_noise(k / 520.0, seed) * 0.65 + _noise(k / 210.0, seed + 1.0) * 0.35)
-			target += ease * bump * 7.0 * _noise(k / 48.0, seed + 2.0)
-			if steps:
-				# Shelves: flatten into steps every ~300 px.
-				var sh := 36.0 + 10.0 * _noise(k / 900.0, seed + 3.0)
-				target = lerpf(target, roundf(target / sh) * sh, 0.55)
-		elif x >= length - 120.0:
-			target = y  # summit plateau
-		var dy := clampf(target - y, -up_max * STEP, down_max * STEP)
-		if x <= 240.0:
-			dy = 0.0
-		y += dy
-		pts.append(Vector2(x, y))
-		x += STEP
-	# 2. Bridges and kicker gaps, alternating, spread over the middle of the climb.
+	# Where the bridges and kicker gaps go, alternating, spread over the middle of the climb
+	# (placed before the ground is made, so the walls can keep clear of them).
 	var kinds := []
 	var nb := int(m.bridges)
 	var ng := int(m.gaps)
@@ -126,6 +97,61 @@ static func build(i: int) -> Dictionary:
 	for f in kinds.size():
 		var at := lerpf(length * 0.18, length * 0.88, (float(f) + 0.5) / float(kinds.size()))
 		feats.append([at + rng.randf_range(-120.0, 120.0), kinds[f]])
+	# Walls (from climb 2): short straight climbs of 33-34 degrees, between the bridges and gaps.
+	# Hold gas up one and the front keeps coming up until you're over backwards; ease
+	# off and let the momentum carry you. They're why holding gas only gets you to the
+	# top of the first climb.
+	var walls := _walls(i, length, feats)
+	# 1. The natural ground: a climb with hills on it, slopes kept within limits. A wall
+	# takes over the ground in its window (flat run-in, the straight wall, a flat shelf on
+	# top); after it the hills carry on from the shelf's height (off), so a wall is
+	# always the size it says rather than adding to whatever the hill was doing there.
+	var pts := PackedVector2Array()
+	var x := -480.0
+	var y := 0.0
+	# (The hills themselves stay under 26 degrees, whatever "up" says: past about 30 a bike
+	# can't hold its speed up a long climb without the front coming up, so only the walls,
+	# which are short, go steeper.)
+	var up_max := tan(deg_to_rad(minf(float(m.up), 26.0)))
+	var down_max := tan(deg_to_rad(float(m.down)))
+	var climb := float(m.climb) / 1000.0
+	var amp := float(m.amp)
+	var bump := float(m.bump)
+	var steps := bool(m.get("steps", false))
+	var off := 0.0
+	while x <= length + 600.0:
+		var target := 0.0
+		var natural := 0.0
+		if x > 240.0 and x < length - 120.0:
+			var k := x - 240.0
+			# Hills ease in over the first 600 px.
+			var ease := clampf(k / 600.0, 0.0, 1.0)
+			natural = -climb * k
+			natural += ease * amp * (_noise(k / 520.0, seed) * 0.65 + _noise(k / 210.0, seed + 1.0) * 0.35)
+			natural += ease * bump * 7.0 * _noise(k / 48.0, seed + 2.0)
+			target = natural + off
+			if steps:
+				# Shelves: flatten into steps every ~300 px.
+				var sh := 36.0 + 10.0 * _noise(k / 900.0, seed + 3.0)
+				target = lerpf(target, roundf(target / sh) * sh, 0.55)
+		elif x >= length - 120.0:
+			target = y  # summit plateau
+		var dy := clampf(target - y, -up_max * STEP, down_max * STEP)
+		for wi in walls.size():
+			var wl: Array = walls[wi]
+			if x >= float(wl[0]) and x < float(wl[5]):
+				dy = 0.0
+				var kk := int(roundf((x - float(wl[1])) / STEP))
+				if x >= float(wl[1]) - 1.0 and kk < (wl[6] as Array).size():
+					dy = -float(wl[6][kk])
+		if x <= 240.0:
+			dy = 0.0
+		y += dy
+		for wl in walls:
+			if x >= float(wl[0]) and x < float(wl[5]):
+				off = y - natural
+		pts.append(Vector2(x, y))
+		x += STEP
 	var bridges := []
 	var gaps := []
 	for f in feats:
@@ -140,7 +166,13 @@ static func build(i: int) -> Dictionary:
 			var n := int(span / STEP)
 			var deck_y := pts[ia].y
 			var ib := mini(ia + n, pts.size() - 2)
-			# Carve a valley under the deck, rejoining the hills after it.
+			# The ground after the bridge carries on from deck height: everything from the
+			# deck's end on moves to suit (rather than climbing back to where the hills were,
+			# which made a long steep pull right off the deck).
+			var shift := deck_y - pts[ib].y
+			for j in range(ib, pts.size()):
+				pts[j].y += shift
+			# Carve a valley under the deck.
 			var end_y := pts[ib].y
 			# (From the point after the deck's start: that one stays at deck height, so the
 			# ground runs straight onto the deck instead of dipping and leaving a ledge.)
@@ -148,16 +180,11 @@ static func build(i: int) -> Dictionary:
 				var u := float(j - ia) / float(ib - ia)
 				var valley := deck_y + 70.0 + 30.0 * sin(u * PI)
 				pts[j].y = maxf(pts[j].y, lerpf(valley, end_y, smoothstep(0.85, 1.0, u)) if u > 0.85 else valley)
-			# Ground after the bridge starts at deck height (re-ease the next stretch).
-			var shift := deck_y - pts[ib].y
-			for j in range(ib, mini(ib + 40, pts.size())):
-				var w := 1.0 - float(j - ib) / 40.0
-				pts[j].y += shift * w
 			bridges.append([pts[ia].x, pts[ib].x, deck_y])
 		else:
 			# Kicker: a flat run-in (224 px at the height the climb had 224 px back, so
 			# you reach the lip at speed instead of slowed by the hill), a short ramp up
-			# (18 px over 64, about 16 degrees), a 64 px pit, then a landing slope. The
+			# (18 px over 64, about 16 degrees), a 64 px pit, then a flat landing. The
 			# level checker gets the scrambler over it on each climb's up_req upgrades;
 			# 80 px it couldn't clear on any, so later climbs have more gaps, not wider.
 			var ramp_n := 4
@@ -174,12 +201,15 @@ static func build(i: int) -> Dictionary:
 				continue
 			for j in range(ia + ramp_n, land):
 				pts[j].y = base + 160.0
-			# Landing: a little lower than the lip, then back up onto the hill over 384
-			# px (the run-in held the height down, so the hill is above by now).
+			# Landing: a flat 96 px pad a little lower than the lip, and the hills carry on
+			# from there (everything after moves to suit).
 			var land_y := lip.y + 12.0
-			var nxt := pts[mini(land + 24, pts.size() - 1)].y
-			for j in range(land, mini(land + 24, pts.size())):
-				pts[j].y = lerpf(land_y, nxt, smoothstep(0.0, 1.0, float(j - land) / 24.0))
+			if land + 6 < pts.size():
+				var drop := land_y - pts[land + 6].y
+				for j in range(land + 6, pts.size()):
+					pts[j].y += drop
+			for j in range(land, mini(land + 6, pts.size())):
+				pts[j].y = land_y
 			gaps.append([lip.x, pts[land].x, lip.y, land_y])
 	# 3. Physics surface: the ground, but bridges replace the valley with a deck, and
 	# gaps are open (their pit floor is far below and kills).
@@ -200,7 +230,7 @@ static func build(i: int) -> Dictionary:
 				break
 		if in_gap:
 			if surf.size() > 1:
-				t.add_polyline(surf)
+				t.add_polyline(Course._rounded(surf))
 			surf = PackedVector2Array()
 		elif in_bridge:
 			pass  # the deck goes in below
@@ -208,7 +238,7 @@ static func build(i: int) -> Dictionary:
 			surf.append(p)
 		j += 1
 	if surf.size() > 1:
-		t.add_polyline(surf)
+		t.add_polyline(Course._rounded(surf))
 	for b in bridges:
 		t.add_segment(Vector2(float(b[0]) - 0.5, float(b[2])), Vector2(float(b[1]) + 0.5, float(b[2])))
 	# Gap pits: a floor far down (touching it ends the run) and the walls.
@@ -225,12 +255,18 @@ static func build(i: int) -> Dictionary:
 	var fuel := []
 	var fx := float(m.fuel) * PX_PER_M
 	while fx < length - 200.0:
-		var ok := true
+		# A can that would sit over a gap goes just past its landing instead (dropping
+		# it left QUARRY CLIMB a leg longer than a tank).
+		var at := fx
 		for g in gaps:
-			if fx > float(g[0]) - 40.0 and fx < float(g[1]) + 40.0:
-				ok = false
-		if ok:
-			fuel.append(Vector2(fx, _surface_y(t, fx) - 8.0))
+			if at > float(g[0]) - 40.0 and at < float(g[1]) + 40.0:
+				at = float(g[1]) + 140.0
+		# One that would sit on a wall (or the end of its run-in) goes on the shelf at the
+		# top: you grab it when you've made it up.
+		for wl in walls:
+			if at > float(wl[1]) - 60.0 and at < float(wl[5]):
+				at = float(wl[1]) + float(wl[2]) + WALL_SHELF * 0.5
+		fuel.append(Vector2(at, _surface_y(t, at) - 8.0))
 		fx += float(m.fuel) * PX_PER_M
 	var coins := []
 	var cx := 420.0
@@ -250,12 +286,93 @@ static func build(i: int) -> Dictionary:
 				continue
 			coins.append([Vector2(px, sy - 9.0), 25 if big else 5])
 		cx += rng.randf_range(260.0, 420.0)
+	# How-to signs: the first wall on climb 2, the first kicker gap.
+	var tips := []
+	if i == 1 and not walls.is_empty():
+		tips.append([float(walls[0][0]), "STEEP! EASE OFF THE GAS OR YOU FLIP"])
+	if not gaps.is_empty() and i == 4:
+		tips.append([float(gaps[0][0]) - 300.0, "JUMP! IN THE AIR, GAS TIPS YOU BACK"])
 	return {
+		"tips": tips,
 		"id": m.id, "name": m.name, "theme": m.theme, "time": m.time, "weather": "clear",
 		"terrain": t, "ground": pts, "bridges": bridges, "gaps": gaps,
 		"coins": coins, "fuel": fuel, "start": Vector2(0, 0), "finish_x": length,
 		"length_m": float(m.m), "kill_y": 2000.0, "mode": "summit",
 	}
+
+
+## Walls for climb i: [[run-in start x, foot x, run, rise, degrees, shelf end x, the rise
+## of each 16 px step]]. Climb 1 has none; then one to four, 33 to 34 degrees and 59 to
+## 71 px high, each after a flat 288 px run-in and with a 96 px shelf on top, in the
+## stretches clear of the bridges and kicker gaps. The corners get the same small
+## rounding as GAUNTLET's (course.gd _rounded, in build()): a dead sharp foot kicked the
+## front up hard enough at speed to flip the bike however it was ridden, while easing
+## the foot and top over three steps each left so little of the wall at full slope that
+## holding gas got up most of them. In calibration runs (--course-calibrate
+## --only=wall, and longer walls in a scratch version) holding gas flipped nearly every
+## bike on a 34 degree wall from 60 px, and the search (beam 24) got the scrambler up
+## 34 x 64 stock by easing off; in
+## the levels, walls past 34 degrees and 66 px stopped the search too (it rides in 0.1 s
+## blocks, about as finely as a thumb can feather), so they stop there.
+static var WALL_RUN_IN := 288.0
+const WALL_SHELF := 96.0
+static func _walls(i: int, length: float, feats: Array) -> Array:
+	if i == 0:
+		return []
+	var n := mini(1 + i / 3, 4) + (1 if i == 1 or i == 3 else 0)
+	var deg := 33.0 + 0.1 * float(i)
+	var rise := 58.0 + 1.2 * float(i)
+	# Rise per 16 px step: the full slope, and what's left over as one last, gentler
+	# step. (Rounding the step count instead made some walls 35 degrees and some 32.)
+	var full := STEP * tan(deg_to_rad(deg))
+	var seq := []
+	for _q in int(rise / full):
+		seq.append(full)
+	if rise - full * float(seq.size()) > 0.5:
+		seq.append(rise - full * float(seq.size()))
+	var run := float(seq.size()) * STEP
+	var w := WALL_RUN_IN + run + WALL_SHELF
+	# Free stretches: from 500 px past a bridge or gap's start (a bridge runs up to 420 px
+	# on, a kicker's landing 384) to 300 px before the next (a kicker's run-in starts 224
+	# px before its lip).
+	var marks := []
+	for f in feats:
+		marks.append(float(f[0]))
+	marks.sort()
+	var free := []
+	var a := maxf(length * 0.1, 900.0)
+	for mk in marks:
+		free.append([a, float(mk) - 300.0])
+		a = float(mk) + 500.0
+	free.append([a, length * 0.9])
+	# Hand the walls out one at a time to the stretch with the most room per wall.
+	var count := []
+	for f in free:
+		count.append(0)
+	for _k in n:
+		var best := -1
+		var best_room := 0.0
+		for j in free.size():
+			var span := float(free[j][1]) - float(free[j][0])
+			var room := (span - float(count[j] + 1) * w) / float(count[j] + 2)
+			if room > 160.0 and room > best_room:
+				best_room = room
+				best = j
+		if best < 0:
+			break
+		count[best] += 1
+	var out := []
+	for j in free.size():
+		var c: int = count[j]
+		if c == 0:
+			continue
+		var a0 := float(free[j][0])
+		var gap := (float(free[j][1]) - a0 - float(c) * w) / float(c + 1)
+		for q in c:
+			var x0 := a0 + gap * float(q + 1) + w * float(q)
+			out.append([x0, x0 + WALL_RUN_IN, run, rise, deg, x0 + w, seq])
+	out.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
+	return out
 
 
 static func _surface_y(t, x: float) -> float:

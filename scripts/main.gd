@@ -71,6 +71,9 @@ func _ready() -> void:
 		if a == "--course-calibrate":
 			add_child(load("res://scripts/dev/course_calibrate.gd").new())
 			return
+		if a == "--drive-hold":
+			add_child(load("res://scripts/dev/drive_hold.gd").new())
+			return
 		if a == "--drive-levels":
 			add_child(load("res://scripts/dev/drive_levels.gd").new())
 			return
