@@ -45,6 +45,8 @@ const MISSIONS := [
 	["tricks_run", "LAND %d TRICKS IN ONE RUN", [4, 6], "max"],
 	["letters", "FIND ALL OF T-R-E-S-T-L-E", [1], "add"],
 	["clears", "CLEAR %d TRAILS", [2, 3], "add"],
+	["air_tricks", "LAND %d AIR TRICKS IN SUMMIT OR GAUNTLET", [2, 4], "add"],
+	["event_ride", "RIDE THIS WEEK'S EVENT", [1], "add"],
 ]
 const MISSION_COINS := 40
 const MISSION_XP := 40

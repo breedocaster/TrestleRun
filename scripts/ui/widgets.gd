@@ -21,6 +21,48 @@ class GearRow extends Control:
 			Icons.gear(self, Vector2(x0 + i * 14, size.y * 0.5), 4.5, 0.2, bool(flags[i]))
 
 
+## SUMMIT / GAUNTLET objectives (drive/objectives.gd): a star each, filled when done;
+## fresh ones pulse (results).
+class StarRow extends Control:
+	var done: Array = [false, false, false]
+	var fresh: Array = [false, false, false]
+	var _t := 0.0
+
+	func _init(d: Array, f: Array = [false, false, false], n := 3) -> void:
+		done = d
+		fresh = f
+		custom_minimum_size = Vector2(n * 11 + 1, 12)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		if fresh.has(true):
+			_t += delta
+			queue_redraw()
+
+	func _draw() -> void:
+		var n := int((custom_minimum_size.x - 1.0) / 11.0)
+		var x0 := (size.x - n * 11.0) * 0.5 + 5.5
+		for i in n:
+			var on := i < done.size() and bool(done[i])
+			var pulse := 1.0 + (0.25 * sin(_t * 10.0) if i < fresh.size() and bool(fresh[i]) else 0.0)
+			star(self, Vector2(x0 + i * 11.0, size.y * 0.5), 5.0 * pulse, on)
+
+	## A five-point star: gold when on, an outline when not.
+	static func star(ci: CanvasItem, c: Vector2, r: float, on: bool) -> void:
+		var pts := PackedVector2Array()
+		for k in 10:
+			var a := -PI * 0.5 + k * PI / 5.0
+			var rr := r if k % 2 == 0 else r * 0.45
+			pts.append(c + Vector2(cos(a), sin(a)) * rr)
+		if on:
+			ci.draw_colored_polygon(pts, Color("f2c14e"))
+			pts.append(pts[0])
+			ci.draw_polyline(pts, Color("8a5a1a"), 1.0)
+		else:
+			pts.append(pts[0])
+			ci.draw_polyline(pts, Color(0.85, 0.8, 0.95, 0.55), 1.0)
+
+
 ## Bronze (clear), silver (all letters in one run), gold (par time, no crashes).
 ## Full: icons with what each is for (results). Compact: three icons (trail cards).
 class MedalRow extends Control:

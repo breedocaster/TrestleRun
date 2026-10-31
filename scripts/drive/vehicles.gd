@@ -252,6 +252,15 @@ static func tank_seconds(id: String, up := {}) -> float:
 	return base * (1.0 + 0.2 * float(up.get("tank", 0)))
 
 
+## An event's changes to the physics (events.gd lv.mods): gravity and tyre grip, as
+## factors.
+static func apply_mods(s, mods: Dictionary) -> void:
+	if mods.has("gravity"):
+		s.g *= float(mods.gravity)
+	if mods.has("grip"):
+		s.grip *= float(mods.grip)
+
+
 ## Price of the next level of an upgrade.
 static func upgrade_cost(level: int) -> int:
 	return [120, 260, 480, 800, 1250][clampi(level, 0, MAX_LEVEL - 1)]

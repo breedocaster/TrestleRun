@@ -110,14 +110,32 @@ func _draw() -> void:
 		var cx := bx + bw * clampf(float(c) / float(lv.finish_x), 0.0, 1.0)
 		draw_rect(Rect2(floorf(cx), 8, 1, 7), Color("5bd16a"))
 	draw_rect(Rect2(bx + bw - 1, 7, 2, 9), Color("f4f4f4"))
-	if world.mode == "summit":
+	var ek := String(world.ev.get("kind", ""))
+	if ek == "long_jump":
+		_center(26, "JUMP %.1f M" % world.jump_m if world.jump_m >= 0.0 else "HIT THE RAMP FLAT OUT!",
+			UITheme.GOLD if world.jump_m >= 0.0 else UITheme.CREAM)
+	elif ek == "fuel_saver":
+		_center(26, "%d M" % int(world.best_x / 8.0))
+		_fuel_gauge()
+	elif world.mode == "summit":
 		_center(26, "%d M / %d M" % [int(world.best_x / 8.0), int(float(lv.finish_x) / 8.0)])
 		_fuel_gauge()
+	elif ek == "trick_attack":
+		var left := maxf(0.0, float(world.ev.get("time_limit", 60.0)) - world.ride_time)
+		_center(26, "%d:%02d LEFT" % [int(left / 60.0), int(left) % 60], Color("ff6a5a") if left < 10.0 else UITheme.CREAM)
 	else:
 		var t: float = world.ride_time
 		_center(26, "%d:%04.1f" % [int(t / 60.0), fmod(t, 60.0)], UITheme.CREAM, 8)
+	if ek == "collect":
+		var n: int = (lv.get("items", []) as Array).size()
+		const Art := preload("res://scripts/drive/drive_art.gd")
+		Art.item(self, Vector2(size.x - 52, 40), String(world.ev.get("item", "star")), 0.0)
+		_text(Vector2(size.x - 44, 44), "%d/%d" % [world.items_got, n], UITheme.GOLD)
+	if world.mode == "gauntlet":
 		var fc := Color("ff6a5a") if world.faults > 0 else UITheme.DIM
 		_text(Vector2(6, 38), "FAULTS %d" % world.faults, fc)
+		if world.trick_pts > 0:
+			_text(Vector2(6, 50), "TRICKS %d" % world.trick_pts, UITheme.GOLD)
 	if world.phase == "crash" and world.mode == "summit":
 		var why := "OUT OF FUEL" if world.result.get("reason", "") == "fuel" else "WIPEOUT!"
 		_center(size.y * 0.4, why, Color("ff6a5a"), 16)
@@ -130,11 +148,38 @@ func _draw() -> void:
 		draw_rect(r, Color(UITheme.INK, 0.8 * a))
 		draw_rect(r, Color(UITheme.GOLD, a), false, 1.0)
 		_center(58, world.tip_text, Color(UITheme.CREAM, a))
+	_combo(70.0 if world.tip_t > 0.0 else 48.0)
+	# The level's objectives as the ride starts.
+	if world.ride_time < 4.0 and world.phase == "ride" and not world.objectives.is_empty():
+		var a := clampf(4.0 - world.ride_time, 0.0, 1.0)
+		var y: float = 92.0
+		for o in world.objectives:
+			_center(y, String(o), Color(UITheme.CREAM, a))
+			y += 11.0
 	if show_pedals:
 		_pedal(Rect2(6, size.y - 50, 56, 44), "BRAKE", world.brake > 0.5, false)
 		_pedal(Rect2(size.x - 62, size.y - 50, 56, 44), "GAS", world.gas > 0.5, true)
 	elif world.ride_time < 6.0 and world.mode != "":
 		_center(size.y - 12, "GAS: RIGHT / D / RT     BRAKE: LEFT / A / LT", Color(UITheme.CREAM, 0.7))
+
+
+## The air-trick combo as it builds (tricks.gd): the last few names, the multiplier,
+## and what it's worth if you land it.
+func _combo(y: float) -> void:
+	var tk = world.tricks
+	if tk.combo.is_empty() and tk.active.is_empty():
+		return
+	var names: Array = tk.combo.map(func(e): return String(e[1]))
+	if not tk.active.is_empty():
+		names.append(String(tk.active.name) + "!")
+	if names.size() > 3:
+		names = ["..."] + names.slice(names.size() - 3)
+	_center(y, " + ".join(names), UITheme.GOLD)
+	if tk.combo.size() > 0:
+		var v: Array = tk.value()
+		var worth := "+%d COINS" % int(v[0]) if world.mode == "summit" else "+%d" % int(v[1])
+		var m: float = tk.multiplier(tk.combo.size())
+		_center(y + 11.0, ("X%s  " % String.num(m, 2).trim_suffix("0").trim_suffix(".") if m > 1.0 else "") + worth, UITheme.CREAM)
 
 
 func _fuel_gauge() -> void:

@@ -42,7 +42,7 @@ const COURSES := [
 	# out at a 4 px step), so it teaches rather than sorts.
 	[["f", 160], ["h", 70, 6], ["f", 60], ["tip", "BRAKE, THEN GAS QUICKLY: HOP!"], ["f", 70], ["s", 4], ["f", 60],
 		["s", -4], ["f", 50], ["s", 4], ["f", 80], ["cp"],
-		["f", 100], ["l", 4, 40], ["f", 60], ["w", 3, 60, 5], ["f", 40], ["k", 36, 8], ["f", 120], ["s", -12],
+		["f", 100], ["l", 3, 40], ["f", 60], ["h", 100, 5], ["f", 50], ["h", 100, 5], ["f", 40], ["k", 36, 8], ["f", 120], ["s", -12],
 		["f", 60], ["cp"],
 		["f", 50], ["sl", 80, 20], ["f", 50], ["t", 4, 40], ["f", 50], ["s", -10], ["f", 80], ["h", 90, 12], ["f", 60],
 		["cp"],
@@ -78,8 +78,9 @@ const COURSES := [
 		["sl", 60, -30], ["f", 40], ["sl", 50, 30], ["sl", 40, 20], ["f", 30], ["sl", 80, -50], ["f", 60],
 		["sl", 48, 36], ["f", 40], ["s", -36], ["f", 60]],
 	# 6 MIND THE GAP: kicker gaps, growing, some landing on a ledge; downhill run-ins.
-	[["f", 160], ["k", 40, 10], ["p", 24, 0], ["f", 80], ["k", 40, 12], ["p", 36, 0], ["f", 90], ["cp"],
-		["sl", 70, -20], ["f", 40], ["k", 40, 12], ["p", 40, 0], ["f", 120], ["k", 40, 12], ["p", 40, -12], ["f", 80],
+	[["f", 160], ["k", 40, 10], ["p", 24, 0],
+		["f", 80], ["k", 40, 12], ["p", 36, 0], ["f", 90], ["cp"],
+		["tip", "BIG ONE: TAP GAS TWICE IN THE AIR FOR A NO-HANDER"], ["sl", 70, -20], ["f", 40], ["k", 40, 12], ["p", 40, 0], ["f", 120], ["k", 40, 12], ["p", 40, -12], ["f", 80],
 		["cp"],
 		["sl", 70, -20], ["f", 40], ["k", 44, 14], ["p", 52, 0], ["f", 80], ["s", 6], ["f", 40], ["k", 40, 12],
 		["p", 40, 6], ["f", 80], ["cp"],
@@ -142,7 +143,7 @@ static func meta(i: int) -> Dictionary:
 
 
 ## The course as a level dict for drive_world.gd.
-static func build(i: int, moves: Array = []) -> Dictionary:
+static func build(i: int, moves: Array = [], meta_override: Dictionary = {}) -> Dictionary:
 	var c = Course.new()
 	c.flat(300.0 + 120.0)    # from -300: a run-up before x = 0, where you start
 	var marks := []   # [x where each move starts, the move] for the checker's reports
@@ -180,7 +181,7 @@ static func build(i: int, moves: Array = []) -> Dictionary:
 				c.checkpoint()
 			"tip":
 				c.tips.append([c.x, String(a[1])])
-	var m := meta(i).duplicate()
+	var m := (meta_override if not meta_override.is_empty() else meta(i)).duplicate()
 	m.erase("m")
 	m.marks = marks
 	return c.finish(m)

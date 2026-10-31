@@ -1,0 +1,8 @@
+<en-US>
+New in 0.11 for SUMMIT and GAUNTLET:
+- Air tricks: tap the pedals twice in the air for a whip, no-hander, heel clicker or superman. Chain them with flips for combos.
+- Jump ramps on the climbs.
+- Race a ghost: your best run, or the gold line.
+- Three objectives per level, with stars and coins.
+- Events: a new one every week, and holiday ones. Pumpkin Patch runs till 2 November.
+</en-US>

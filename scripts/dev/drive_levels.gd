@@ -8,6 +8,9 @@
 ##   --write                  rewrite drive_table.gd: pars from the SCRAMBLER's times,
 ##                            and per level the bikes that made it (with more than one
 ##                            bike; added to what's there, so clear RIDEABLE first)
+##   --lines                  save the SCRAMBLER's winning ride as the level's GOLD LINE
+##                            ghost (assets/lines/<id>.bin, ghost.gd), replayed from the
+##                            start to check it still gets there
 ## GAUNTLET rides section by section (checkpoint to checkpoint), carrying the bike's
 ## speed across, then each section again from a standstill (as after a fault); SUMMIT
 ## rides fuel can to fuel can and fails if a leg takes longer than a tank: the SCRAMBLER
@@ -19,6 +22,7 @@ const Gauntlet := preload("res://scripts/drive/gauntlet_levels.gd")
 const Search := preload("res://scripts/drive/drive_search.gd")
 const Vehicles := preload("res://scripts/drive/vehicles.gd")
 const Catalog := preload("res://scripts/catalog.gd")
+const Ghost := preload("res://scripts/drive/ghost.gd")
 
 const REF := "scrambler"
 ## Medal pars from the reference bike's searched time: the search rides near-perfect
@@ -33,6 +37,7 @@ func _ready() -> void:
 	var bikes := [REF]
 	var beam := 24
 	var write := false
+	var lines := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--mode="):
 			modes = [a.substr(7)]
@@ -48,6 +53,8 @@ func _ready() -> void:
 			beam = int(a.substr(7))
 		elif a == "--write":
 			write = true
+		elif a == "--lines":
+			lines = true
 	# Only this run's results; merged into the table as it is on disk when writing, so
 	# runs split over several processes (--only=...) can each --write.
 	var pars := {}
@@ -70,6 +77,8 @@ func _ready() -> void:
 					print("%-14s %-10s ok %6.1fs   (%d legs, %.0fs to check)" % [id, b, r.time, r.legs, ms / 1000.0])
 					if b == REF:
 						pars[id] = [ceilf(float(r.time) * GOLD_K), ceilf(float(r.time) * SILVER_K)]
+						if lines:
+							print("   line: ", _save_line(lv, mode, i, r))
 				else:
 					fails += 1
 					print("%-14s %-10s FAIL leg %d of %d at x=%.0f (%.0f%%)%s%s" % [id, b, r.leg, r.legs, r.best_x,
@@ -98,11 +107,13 @@ func _ride_gauntlet(lv: Dictionary, bike: String, beam: int) -> Dictionary:
 	var state = null
 	var x := 0.0
 	var frames := 0
+	var path := PackedByteArray()
 	for k in targets.size():
 		var r: Dictionary = Search.solve(lv, bike, x, float(targets[k]), beam, 40.0, {}, 1.0, state)
 		if not r.ok:
 			return {"ok": false, "leg": k + 1, "legs": targets.size(), "best_x": r.best_x}
 		frames += int(r.frames)
+		path.append_array(r.path)
 		state = r.end
 		x = float(targets[k])
 	# After a fault you start the section again from a standstill at its checkpoint
@@ -112,7 +123,7 @@ func _ride_gauntlet(lv: Dictionary, bike: String, beam: int) -> Dictionary:
 		var r: Dictionary = Search.solve(lv, bike, x0, float(targets[k]), beam, 40.0)
 		if not r.ok:
 			return {"ok": false, "leg": k + 1, "legs": targets.size(), "best_x": r.best_x, "why": "from rest"}
-	return {"ok": true, "time": frames / 60.0, "legs": targets.size()}
+	return {"ok": true, "time": frames / 60.0, "legs": targets.size(), "path": path, "up": {}}
 
 
 ## The reference bike rides on the climb's listed upgrades (up_req; the pars come from
@@ -131,6 +142,7 @@ func _ride_summit(lv: Dictionary, i: int, bike: String, beam: int) -> Dictionary
 	var state = null
 	var x := 0.0
 	var frames := 0
+	var path := PackedByteArray()
 	for k in targets.size():
 		var r: Dictionary = Search.solve(lv, bike, x, float(targets[k]), beam, tank + 4.0, up, 1.0, state)
 		if not r.ok:
@@ -139,9 +151,46 @@ func _ride_summit(lv: Dictionary, i: int, bike: String, beam: int) -> Dictionary
 			return {"ok": false, "leg": k + 1, "legs": targets.size(), "best_x": float(targets[k]),
 				"why": "out of fuel (%.1fs leg, %.0fs tank)" % [r.frames / 60.0, tank]}
 		frames += int(r.frames)
+		path.append_array(r.path)
 		state = r.end
 		x = float(targets[k])
-	return {"ok": true, "time": frames / 60.0, "legs": targets.size()}
+	return {"ok": true, "time": frames / 60.0, "legs": targets.size(), "path": path, "up": up}
+
+
+## The reference ride as a ghost: replay its inputs from the start (one sim, the legs
+## run on from each other as in the check) recording each frame, and make sure the
+## replay gets to the finish as the search did. Returns a line for the log.
+func _save_line(lv: Dictionary, mode: String, i: int, r: Dictionary) -> String:
+	var up: Dictionary = r.up
+	var s = Search.start_sim(lv, REF, 0.0, up)
+	var frames := PackedFloat32Array()
+	var path: PackedByteArray = r.path
+	var f := 0
+	var airs := []      # [takeoff x, s in the air] for jumps of 0.3 s or more
+	var air_x := 0.0
+	var air_t := 0.0
+	for ai in path:
+		var act: Vector2 = Search.ACTIONS[ai]
+		for k in Search.BLOCK:
+			s.gas = act.x
+			s.brake = act.y
+			var was: bool = s.grounded
+			s.step()
+			if was and not s.grounded:
+				air_x = s.pos.x
+			if s.grounded and not was and float(s.airtime) == 0.0 and air_t >= 0.3:
+				airs.append([snappedf(air_x, 1.0), snappedf(air_t, 0.01)])
+			air_t = 0.0 if s.grounded else air_t + 1.0 / 60.0
+			if f % Ghost.RATE == 0:
+				Ghost.add_frame(frames, s)
+			f += 1
+	var ok: bool = not s.crashed and s.pos.x >= float(lv.finish_x)
+	if not ok:
+		return "REPLAY DIVERGED (ended at x=%.0f of %.0f%s), not saved" % [s.pos.x, float(lv.finish_x), ", crashed" if s.crashed else ""]
+	Ghost.save_line(String(lv.id), {"frames": frames, "time": f / 60.0, "rig": Ghost.LINE_RIG, "up": up,
+		"path": path, "hops": int(s.hops), "airs": airs})
+	return "saved %d frames, %.1fs, %d hops, %d jumps of 0.3s+ (longest %.2fs)" % [frames.size() / Ghost.STRIDE, f / 60.0,
+		int(s.hops), airs.size(), airs.map(func(a): return float(a[1])).max() if not airs.is_empty() else 0.0]
 
 
 func _write(new_pars: Dictionary, new_ride: Dictionary) -> void:

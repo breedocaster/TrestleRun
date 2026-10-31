@@ -91,10 +91,14 @@ func _ready() -> void:
 		await get_tree().process_frame
 	await _pad(JOY_BUTTON_DPAD_DOWN)
 	_check(_focus() != "-", "the SUMMIT picker takes focus: " + _focus())
-	for i in 6:
+	if OS.get_cmdline_user_args().has("--nav-debug"):
+		for b in _dbg_buttons(main.current):
+			print("   btn %-14s %s" % [b.text, str(b.get_global_rect())])
+	# (From the top bar's GHOST button it's down to the cards; from the bottom bar, up.)
+	for i in 8:
 		if _focus() == "RIDE":
 			break
-		await _pad(JOY_BUTTON_DPAD_UP)
+		await _pad(JOY_BUTTON_DPAD_DOWN if i < 3 else JOY_BUTTON_DPAD_UP)
 	_check(_focus() == "RIDE", "can reach RIDE (at %s)" % _focus())
 	await _pad(JOY_BUTTON_A)
 	for i in 5:
@@ -124,3 +128,12 @@ func _ready() -> void:
 	get_tree().paused = false
 	print("NAV_TEST %s (%d failed)" % ["OK" if fails == 0 else "FAILED", fails])
 	get_tree().quit(fails)
+
+
+func _dbg_buttons(root: Node) -> Array:
+	var out := []
+	for c in root.get_children():
+		if c is Button and c.is_visible_in_tree() and not c.disabled:
+			out.append(c)
+		out.append_array(_dbg_buttons(c))
+	return out

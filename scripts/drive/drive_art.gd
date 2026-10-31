@@ -272,6 +272,40 @@ static func fuel(ci: CanvasItem, p: Vector2, electric: bool, t: float) -> void:
 	ci.draw_arc(q, 9.0, 0.0, TAU, 14, Color(1, 1, 0.8, 0.18 + 0.1 * sin(t * 4.0)), 1.0)
 
 
+## An event's thing to collect (events.gd): pumpkin, heart, egg or star, bobbing.
+static func item(ci: CanvasItem, p: Vector2, kind: String, t: float) -> void:
+	var q := (p + Vector2(0, floorf(sin(t * 3.0 + p.x * 0.02) * 1.5))).round()
+	match kind:
+		"pumpkin":
+			ci.draw_rect(Rect2(q.x - 4, q.y - 3, 9, 7), Color("e8792a"))
+			ci.draw_rect(Rect2(q.x - 3, q.y - 4, 7, 9), Color("e8792a"))
+			ci.draw_rect(Rect2(q.x - 1, q.y - 3, 1, 7), Color("b8521a"))
+			ci.draw_rect(Rect2(q.x + 2, q.y - 3, 1, 7), Color("b8521a"))
+			ci.draw_rect(Rect2(q.x, q.y - 6, 2, 2), Color("4a7a2a"))
+			# A face, for the night.
+			ci.draw_rect(Rect2(q.x - 2, q.y - 1, 1, 1), Color("ffe08a"))
+			ci.draw_rect(Rect2(q.x + 2, q.y - 1, 1, 1), Color("ffe08a"))
+			ci.draw_rect(Rect2(q.x - 1, q.y + 2, 3, 1), Color("ffe08a"))
+		"heart":
+			ci.draw_rect(Rect2(q.x - 4, q.y - 3, 3, 3), Color("e8445a"))
+			ci.draw_rect(Rect2(q.x + 1, q.y - 3, 3, 3), Color("e8445a"))
+			ci.draw_colored_polygon(PackedVector2Array([q + Vector2(-4, -1), q + Vector2(4, -1), q + Vector2(0, 4)]), Color("e8445a"))
+			ci.draw_rect(Rect2(q.x - 3, q.y - 3, 1, 1), Color("ffb0bc"))
+		"egg":
+			ci.draw_rect(Rect2(q.x - 2, q.y - 5, 5, 10), Color("bfe8f2"))
+			ci.draw_rect(Rect2(q.x - 3, q.y - 3, 7, 7), Color("bfe8f2"))
+			ci.draw_rect(Rect2(q.x - 3, q.y - 1, 7, 2), Color("f28ac0"))
+			ci.draw_rect(Rect2(q.x - 2, q.y + 2, 5, 1), Color("f2d84a"))
+		_:
+			var pts := PackedVector2Array()
+			for k in 10:
+				var a := -PI * 0.5 + k * PI / 5.0 + sin(t * 2.0) * 0.1
+				pts.append(q + Vector2(cos(a), sin(a)) * (5.0 if k % 2 == 0 else 2.2))
+			ci.draw_colored_polygon(pts, Color("ffe14a"))
+			ci.draw_rect(Rect2(q.x - 1, q.y - 2, 1, 1), Color("fff8c8"))
+	ci.draw_arc(q, 8.0, 0.0, TAU, 14, Color(1, 1, 0.85, 0.15 + 0.1 * sin(t * 4.0)), 1.0)
+
+
 ## Distance post every 100 m: a little sign with the metres on it.
 static func post(ci: CanvasItem, x: float, y: float, m: int, font: Font) -> void:
 	var s := "%dM" % m

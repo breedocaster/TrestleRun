@@ -26,6 +26,7 @@ var hanging := false  # on a zipline
 var sticky := false   # sticky tires: green, gooey
 var rocket := 0.0     # rocket flame 0..1
 var hat := false      # hard hat on
+var pose := 0.0       # SUMMIT / GAUNTLET air trick: id + how far into it (drive/tricks.gd)
 
 ## Set while one rig draws (draw_rig reads them), so menus never see them.
 static var _tire_override := Color(0, 0, 0, 0)
@@ -36,6 +37,10 @@ const BIG_HEAD := 2.0
 ## The canvas transform the current draw_rig call sits under (callers that scale or
 ## move the rig set it), so a big head can be scaled about its own centre.
 static var xf := Transform2D.IDENTITY
+## The trick pose draw_rig draws (1 whip, 2 no-hander, 3 heel clicker, 4 superman) and
+## how far into it (0..1); set by the caller around one draw_rig call.
+static var pose_id := 0
+static var pose_k := 0.0
 
 
 func _draw() -> void:
@@ -49,7 +54,11 @@ func _draw() -> void:
 		_rocket_flame(self, Vector2(-13, -7), rocket, anim_t)
 	_tire_override = Color("6fe84a") if sticky else Color(0, 0, 0, 0)
 	_hat = hat
+	pose_id = int(pose)
+	pose_k = pose - float(pose_id)
 	var a := draw_rig(self, Vector2.ZERO, rig, wheel_angle, anim_t, lean, flutter)
+	pose_id = 0
+	pose_k = 0.0
 	_tire_override = Color(0, 0, 0, 0)
 	_hat = false
 	if umbrella > 0.02:
@@ -63,7 +72,20 @@ static func draw_rig(ci: CanvasItem, o: Vector2, r: Dictionary, wa: float, t: fl
 	if _tire_override.a > 0.0:
 		paint = paint.duplicate()
 		paint.tire = _tire_override
-	var a := draw_bike(ci, o, String(r.get("bike", "scrambler")), paint, wa)
+	var a: Dictionary
+	if pose_id == 1 and pose_k > 0.0:
+		# WHIP: the bike thrown sideways under the rider, so it's seen end-on-ish: drawn
+		# narrower and turned nose-down about the seat, the rider's feet and hands with it.
+		var piv := o + Vector2(-2, -10)
+		var m := Transform2D(0.0, piv) * Transform2D(0.45 * pose_k, Vector2(1.0 - 0.5 * pose_k, 1.0), 0.0, Vector2.ZERO) \
+			* Transform2D(0.0, -piv)
+		ci.draw_set_transform_matrix(xf * m)
+		a = draw_bike(ci, o, String(r.get("bike", "scrambler")), paint, wa).duplicate()
+		ci.draw_set_transform_matrix(xf)
+		for key in ["peg", "grip"]:
+			a[key] = m * (o + (a[key] as Vector2)) - o
+	else:
+		a = draw_bike(ci, o, String(r.get("bike", "scrambler")), paint, wa)
 	draw_rider(ci, o, String(r.get("rider", "dusty")), a, t, lean, flutter)
 	return a
 
@@ -450,12 +472,27 @@ static func draw_rider(ci: CanvasItem, o: Vector2, id: String, a: Dictionary, t:
 	var big := id == "frosty"
 	var tl := 8.0 if big else 6.5
 	var ang: float = float(a.torso) - lean * 0.18
+	var knee_off: Vector2 = a.get("knee", Vector2(3, -2))
+	var pk := pose_k
+	if pose_id == 4:
+		# SUPERMAN: off the seat, stretched out flat behind the bars, legs out the back.
+		hip = hip.lerp(hip + Vector2(-6, -3), pk)
+		ang = lerpf(ang, 1.3, pk)
+		peg = peg.lerp(hip + Vector2(-8, 0), pk)
+		knee_off = knee_off.lerp(Vector2(0, 1), pk)
+	elif pose_id == 3:
+		# HEEL CLICKER: both feet off the pegs and up over the bars.
+		peg = peg.lerp(grip + Vector2(3, 2), pk)
+		knee_off = knee_off.lerp(Vector2(1, -3), pk)
 	var up := Vector2(sin(ang), -cos(ang))
 	var shoulder := hip + up * tl
 	var head := shoulder + up * (4.5 if big else 3.5) + Vector2(0.5, 0)
 	if big_head:
 		head = shoulder + up * ((4.5 if big else 3.5) * BIG_HEAD * 0.85) + Vector2(0.5, 0)
-	var knee: Vector2 = hip.lerp(peg, 0.5) + a.get("knee", Vector2(3, -2))
+	if pose_id == 2:
+		# NO-HANDER: hands off the bars and up.
+		grip = grip.lerp(shoulder + Vector2(6, -6), pk)
+	var knee: Vector2 = hip.lerp(peg, 0.5) + knee_off
 	var fl := clampf(flutter, 0.0, 1.0)
 	var R := _rider_colors(id)
 

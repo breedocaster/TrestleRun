@@ -272,6 +272,8 @@ func _ready() -> void:
 			var w2 = ds.world
 			if "--pedals" in args:
 				ds.hud.show_pedals = true   # as on a phone
+			if "--store" in args:
+				w2.objectives = []   # (the list shown at the start of a ride)
 			w2.bot = load("res://scripts/drive/drive_bot.gd").new()
 			var tx2 := float(parts[3])
 			while w2.sim.pos.x < tx2 and w2.ticks < 60 * 300 and w2.phase == "ride":
@@ -282,6 +284,41 @@ func _ready() -> void:
 				ds.pause()
 			elif parts.size() > 4 and parts[4] == "results":
 				w2._finish(true, "finish")
+		"drive_trick":
+			# drive_trick:<mode>:<index>:<x>:<BG|GG|GB|BB> — the bot rides to x, then on the
+			# next jump taps out that trick; the shot is taken with the rider in the pose.
+			# (Fully upgraded, for the speed: the dev bot is no racer.)
+			var Pg = load("res://scripts/drive/drive_progress.gd")
+			Pg.upgrades(GameState.equipped("bike"))
+			GameState.data.drive.upgrades[GameState.equipped("bike")] = {"engine": 5, "suspension": 5, "tires": 5, "tank": 5}
+			main.navigate("drive", "%s:%s" % [parts[1], parts[2]])
+			await get_tree().process_frame
+			var ds3 = main.current
+			var w3 = ds3.world
+			w3.bot = load("res://scripts/drive/drive_bot.gd").new()
+			while w3.sim.pos.x < float(parts[3]) and w3.ticks < 60 * 300 and w3.phase == "ride":
+				w3.tick()
+			var tb := TrickBot.new()
+			tb.pattern = parts[4]
+			w3.bot = tb
+			var posed := false
+			while w3.ticks < 60 * 400 and w3.phase == "ride":
+				w3.tick()
+				if not w3.tricks.active.is_empty() and w3.tricks.t >= float(w3.tricks.active.t) * 0.45:
+					posed = true
+					break
+			print("TRICK posed=%s at x=%.0f air=%.2fs max air %.2fs phase %s landed %d" % [posed, w3.sim.pos.x, w3.sim.airtime, w3.max_air, w3.phase, w3.tricks.landed])
+			w3._acc = -1.0e9
+			w3.cam.position = w3._cam_target().round()
+			w3.set_process(false)
+			w3.queue_redraw()
+			ds3.hud.queue_redraw()
+		"poses":
+			# Every trick pose on a few bikes, big.
+			var board := PoseBoard.new()
+			main.add_child(board)
+			if main.current:
+				main.current.visible = false
 		"feature":
 			# Play Console's feature graphic: the title scene with only the logo. Drawn at
 			# 512 x 250 (tools/store/make_store_art.py sets that size with an override.cfg
@@ -383,3 +420,51 @@ class GuideReplay:
 		i += 1
 		var hd: PackedByteArray = g.get("held", PackedByteArray())
 		return [(g.get("taps", PackedInt32Array()) as PackedInt32Array).has(i), i < hd.size() and hd[i] == 1]
+
+
+## Gas on the ground; in the air, taps out its pattern (G = gas, B = brake) once.
+class TrickBot:
+	var pattern := "GG"
+	var _air := 0
+	var _done := false
+
+	func control(w) -> Vector2:
+		if w.sim.grounded:
+			_air = 0
+			return Vector2(1, 0)
+		_air += 1
+		if _done or _air < 3:
+			return Vector2.ZERO
+		# 3 frames on, 3 off, 3 on: two quick taps.
+		var f := _air - 3
+		if f >= 9:
+			_done = true
+			return Vector2.ZERO
+		var key := pattern[0] if f < 6 else pattern[1]
+		var on := f < 3 or f >= 6
+		if not on:
+			return Vector2.ZERO
+		return Vector2(1, 0) if key == "G" else Vector2(0, 1)
+
+
+class PoseBoard extends Node2D:
+	const BV := preload("res://scripts/game/bike_view.gd")
+
+	func _draw() -> void:
+		draw_rect(Rect2(0, 0, 480, 270), Color("6a8fc8"))
+		var rigs := [{"bike": "scrambler", "rider": "dusty", "paint": "stock"},
+			{"bike": "chopper", "rider": "granny", "paint": "stock"},
+			{"bike": "goliath", "rider": "zorp", "paint": "stock"}]
+		for r in rigs.size():
+			for p in 5:
+				var o := Vector2(50 + p * 92, 78 + r * 86)
+				var m := Transform2D(0.0, Vector2(2, 2), 0.0, o)
+				draw_set_transform_matrix(m)
+				BV.xf = m
+				BV.pose_id = p
+				BV.pose_k = 0.99 if p > 0 else 0.0
+				BV.draw_rig(self, Vector2.ZERO, rigs[r], 0.3, 0.0, 0.0, 0.4)
+		BV.pose_id = 0
+		BV.pose_k = 0.0
+		BV.xf = Transform2D.IDENTITY
+		draw_set_transform_matrix(Transform2D.IDENTITY)

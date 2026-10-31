@@ -1,7 +1,8 @@
 ## A ride in SUMMIT (hill climb) or GAUNTLET (trials). Steps the vehicle sim at 60 Hz,
 ## reads gas and brake (keys, pad triggers or the HUD's touch pedals), follows with
 ## the camera, draws the course and the rider, and keeps score: fuel, coins and
-## distance in SUMMIT; time, faults and checkpoints in GAUNTLET.
+## distance in SUMMIT; time, faults and checkpoints in GAUNTLET; air tricks and combos
+## in both (tricks.gd). Records the ride as a ghost, and plays one back (ghost.gd).
 extends Node2D
 
 signal done(result: Dictionary)
@@ -11,12 +12,13 @@ const Art := preload("res://scripts/drive/drive_art.gd")
 const BikeView := preload("res://scripts/game/bike_view.gd")
 const Backdrop := preload("res://scripts/game/backdrop.gd")
 const Icons := preload("res://scripts/game/icons.gd")
+const Tricks := preload("res://scripts/drive/tricks.gd")
+const Ghost := preload("res://scripts/drive/ghost.gd")
 
 const DT := 1.0 / 60.0
 const PX_PER_M := 8.0
 const CRASH_T := 1.2        # s of tumble before the results (SUMMIT) or a respawn (GAUNTLET)
 const EMPTY_T := 1.5        # s stopped with an empty tank before the run ends
-const FLIP_COINS := 25
 const ZOOM_SUMMIT := 1.5
 const ZOOM_GAUNTLET := 2.0
 
@@ -38,6 +40,11 @@ var faults := 0
 var flips := 0
 var cp := 0                 # GAUNTLET: last checkpoint reached (0 = start)
 var best_x := 0.0
+var tricks = Tricks.new()
+var trick_pts := 0          # GAUNTLET: banked trick points
+var pickup_coins := 0       # coins picked up (not counting trick and flip pay)
+var cans := 0               # fuel cans / charge points taken
+var max_air := 0.0          # longest single jump (s)
 var result: Dictionary = {}
 var popups: Array = []      # [text, world pos, age]
 
@@ -67,6 +74,23 @@ var _hops_seen := 0
 var _tip_i := 0
 var tip_text := ""          # the how-to sign showing (the HUD draws it), and for how long
 var tip_t := 0.0
+## Ghost: this ride as it goes (ghost.gd frames), and one to race ({"frames", "rig",
+## "gold"}: set before the world enters the tree).
+var rec := PackedFloat32Array()
+var ghost: Dictionary = {}
+## The level's objectives still to do, as text, shown as the ride starts (set by the
+## screen).
+var objectives: Array = []
+## An event's rules (events.gd, level.event; {} on a SUMMIT or GAUNTLET level) and what
+## it counts.
+var ev: Dictionary = {}
+var items_got := 0
+var _item_got := {}
+var jump_m := -1.0          # LONG JUMP: the jump, once landed
+var _lj_air := false
+var _lj_land_t := 0.0
+var _ghost_view: Node2D
+var _ride_ticks := 0
 
 
 func setup(p_mode: String, lv: Dictionary, p_rig: Dictionary, p_up := {}) -> void:
@@ -97,11 +121,21 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 	sim = Vehicles.build(bike_id, level.terrain, up, mode)
+	Vehicles.apply_mods(sim, level.get("mods", {}))
 	sim.place(level.start)
 	tank = Vehicles.tank_seconds(bike_id, up)
+	ev = level.get("event", {})
+	if ev.has("tank"):
+		tank = float(ev.tank)
 	fuel = tank
 	lean_swap = GameState.flag("lean_swap", false)
+	tricks.enabled = GameState.flag("tricks", true)
 	cam.position = _cam_target()
+	if not ghost.is_empty():
+		_ghost_view = BikeView.new()
+		_ghost_view.rig = ghost.get("rig", rig)
+		_ghost_view.modulate = Color(1.0, 0.85, 0.35, 0.42) if bool(ghost.get("gold", false)) else Color(0.75, 0.9, 1.0, 0.38)
+		add_child(_ghost_view)
 	_audio = bot == null and DisplayServer.get_name() != "headless"
 	if _audio:
 		AudioDirector.engine_start(Vehicles.sound_id(bike_id))
@@ -123,6 +157,7 @@ func _process(delta: float) -> void:
 		var top: float = maxf(1.0, sim.top_w)
 		AudioDirector.engine_update(delta, sim.grounded, clampf(absf(sim.drive_w) / top * 1.3 + 0.35, 0.5, 1.8))
 	tip_t = maxf(0.0, tip_t - delta)
+	_sync_ghost()
 	for p in popups:
 		p[2] += delta
 	popups = popups.filter(func(p): return p[2] < 1.2)
@@ -142,12 +177,21 @@ func tick() -> void:
 			sim.lean_sign = -1.0 if lean_swap else 1.0
 			sim.step()
 			ride_time += DT
+			if _ride_ticks % Ghost.RATE == 0:
+				Ghost.add_frame(rec, sim, tricks.pose())
+			_ride_ticks += 1
 			if mode == "summit":
 				fuel = maxf(0.0, fuel - DT)
+			max_air = maxf(max_air, float(sim.airtime))
 			_pickups()
+			_event_tick()
 			_hop_and_tips()
 			_landing()
-			_checks()
+			tricks.update(DT, gas > 0.5, brake > 0.5, sim.grounded, float(sim.airtime))
+			sim.air_lock = not tricks.active.is_empty() and not tricks.pending
+			_trick_events()
+			if phase == "ride":
+				_checks()
 		"crash":
 			sim.gas = 0.0
 			sim.brake = 0.0
@@ -188,6 +232,7 @@ func _pickups() -> void:
 		if (c[0] as Vector2).distance_squared_to(p) < 196.0:
 			_coin_got[i] = true
 			coins += int(c[1])
+			pickup_coins += int(c[1])
 			_sfx("coin")
 	var fl: Array = level.get("fuel", [])
 	for i in fl.size():
@@ -195,9 +240,65 @@ func _pickups() -> void:
 			continue
 		if (fl[i] as Vector2).distance_squared_to(p) < 256.0:
 			_fuel_got[i] = true
+			cans += 1
 			fuel = tank
 			popups.append(["FULL CHARGE" if electric else "FUEL!", fl[i], 0.0])
 			_sfx("power")
+
+
+## Event rules: collecting, the long jump, the time limit.
+func _event_tick() -> void:
+	if ev.is_empty():
+		return
+	var items: Array = level.get("items", [])
+	for i in items.size():
+		if not _item_got.has(i) and (items[i] as Vector2).distance_squared_to(sim.pos) < 196.0:
+			_item_got[i] = true
+			items_got += 1
+			if _audio:
+				AudioDirector.coin()
+	match String(ev.kind):
+		"long_jump":
+			var lip := float(ev.lip_x)
+			if not _lj_air and sim.pos.x > lip and not sim.grounded:
+				_lj_air = true
+			elif _lj_air and jump_m < 0.0 and sim.grounded:
+				jump_m = maxf(0.0, (sim.pos.x - lip) / PX_PER_M)
+				_lj_land_t = ride_time
+				popups.append(["%.1f M!" % jump_m, sim.pos + Vector2(0, -24), 0.0])
+				_sfx("prize")
+			elif jump_m >= 0.0 and ride_time - _lj_land_t > 1.5:
+				_finish(true, "landed")
+			elif ride_time > 30.0:
+				_finish(false, "time")
+		"trick_attack":
+			if ride_time >= float(ev.get("time_limit", 60.0)):
+				_finish(true, "time")
+
+
+## The event's score for this ride, or null. (ok: how the ride ended.)
+func _event_score_at(ok: bool):
+	match String(ev.kind):
+		"long_jump":
+			return snappedf(jump_m, 0.1) if jump_m >= 0.0 and ok else null
+		"time_attack", "moon":
+			return snappedf(ride_time, 0.01) if ok else null
+	return _event_score()
+
+
+func _event_score():
+	match String(ev.kind):
+		"long_jump":
+			return snappedf(jump_m, 0.1) if jump_m >= 0.0 and phase == "ride" else null
+		"collect":
+			return items_got
+		"trick_attack":
+			return trick_pts
+		"time_attack", "moon":
+			return snappedf(ride_time, 0.01) if result.get("ok", false) else null
+		"fuel_saver":
+			return int(best_x / PX_PER_M)
+	return null
 
 
 ## Hops (GAUNTLET) and the how-to signs.
@@ -220,13 +321,43 @@ func _landing() -> void:
 		if sim.flips != 0:
 			var n: int = absi(sim.flips)
 			flips += n
-			if mode == "summit":
-				coins += FLIP_COINS * n
-				popups.append(["%s +%d" % ["FLIP!" if n == 1 else "%dX FLIP!" % n, FLIP_COINS * n], sim.pos, 0.0])
-			else:
-				popups.append(["FLIP!" if n == 1 else "%dX FLIP!" % n, sim.pos, 0.0])
+			# Flips go into the combo (tricks.gd) and pay when it's banked.
+			tricks.add_flips(n)
+			popups.append(["FLIP!" if n == 1 else "%dX FLIP!" % n, sim.pos, 0.0])
 			_sfx("trick")
 	_was_grounded = g
+
+
+## What the trick tracker said this frame.
+func _trick_events() -> void:
+	var evs: Array = tricks.events
+	tricks.events = []
+	for e in evs:
+		match String(e[0]):
+			"start":
+				popups.append([String(e[1]), sim.pos + Vector2(0, -6), 0.4])
+				_sfx("dash")
+			"done":
+				_sfx("trick")
+			"cancel":
+				pass
+			"bail":
+				popups.append(["BAILED!", sim.pos, 0.0])
+				_crash("bail")
+			"bank":
+				var n := int(e[1])
+				var names: Array = e[4]
+				var what := String(names[0]) if n == 1 else "COMBO X%d" % n
+				if mode == "summit":
+					coins += int(e[2])
+					popups.append(["%s +%d" % [what, int(e[2])], sim.pos + Vector2(0, -10), 0.0])
+				else:
+					trick_pts += int(e[3])
+					popups.append(["%s +%d" % [what, int(e[3])], sim.pos + Vector2(0, -10), 0.0])
+				if n > 1:
+					_sfx("prize")
+			"lost":
+				popups.append(["COMBO LOST", sim.pos + Vector2(0, -10), 0.0])
 
 
 func _checks() -> void:
@@ -262,8 +393,13 @@ func _checks() -> void:
 
 
 func _crash(reason: String) -> void:
+	if phase != "ride":
+		return
 	phase = "crash"
 	_crash_t = 0.0
+	sim.air_lock = false
+	tricks.lose()
+	_trick_events()
 	result.reason = reason
 	_shake = 3.0
 	_sfx("crash")
@@ -280,6 +416,7 @@ func _respawn() -> void:
 	var y: float = t.top_at(x)
 	var a := atan2(t.top_at(x + 8.0) - t.top_at(x - 8.0), 16.0)
 	sim.place(Vector2(x, y), a)
+	tricks.reset()
 	phase = "ride"
 	_was_grounded = true
 	if _audio:
@@ -290,13 +427,25 @@ func _respawn() -> void:
 func _finish(ok: bool, reason: String) -> void:
 	if phase == "done":
 		return
+	if phase == "ride":
+		# (A crash already lost the combo in hand; running dry or the finish banks it.)
+		tricks.bank()
+		_trick_events()
 	phase = "done"
 	result = {
 		"mode": mode, "level_id": String(level.id), "ok": ok, "reason": reason,
 		"time": snappedf(ride_time, 0.01), "coins": coins, "distance_m": int(best_x / PX_PER_M),
 		"length_m": int(float(level.finish_x) / PX_PER_M), "faults": faults, "flips": flips,
 		"fuel_left": fuel / tank if tank > 0.0 else 0.0, "bike": bike_id,
+		"tricks": tricks.landed, "trick_kinds": tricks.kinds.keys(), "best_combo": tricks.best_combo, "trick_pts": trick_pts,
+		"trick_coins": tricks.banked_coins, "pickup_coins": pickup_coins, "cans": cans,
+		"max_air": snappedf(max_air, 0.01), "hops": int(sim.hops), "ghost": rec,
 	}
+	if not ev.is_empty():
+		result.event = String(ev.kind)
+		result.items = items_got
+		result.jump_m = jump_m
+		result.score = _event_score_at(ok)
 	if _audio:
 		AudioDirector.engine_stop(0.8)
 	done.emit(result)
@@ -379,7 +528,14 @@ func _draw() -> void:
 	var fx := float(level.finish_x)
 	if fx > left - 40.0 and fx < right:
 		Art.summit_flag(self, fx, level.terrain.top_at(fx), _t)
-	# Pickups.
+	# Pickups (and an event's things to collect).
+	var its: Array = level.get("items", [])
+	for i in its.size():
+		var ip: Vector2 = its[i]
+		if not _item_got.has(i) and ip.x > left and ip.x < right:
+			Art.item(self, ip, String(ev.get("item", "star")), _t)
+	if String(ev.get("kind", "")) == "long_jump":
+		_draw_jump_marks(left, right)
 	var coins_list: Array = level.get("coins", [])
 	for i in coins_list.size():
 		var c: Array = coins_list[i]
@@ -403,6 +559,25 @@ func _draw() -> void:
 		draw_string(GameState.font, (pp - Vector2(w * 0.5, 0)).round(), s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.92, 0.5, a))
 
 
+## LONG JUMP: a board every 10 m past the lip, so you can see how far you're going.
+func _draw_jump_marks(left: float, right: float) -> void:
+	var lip := float(ev.lip_x)
+	for k in range(1, 30):
+		var x := lip + k * 10.0 * PX_PER_M
+		if x < left or x > right:
+			continue
+		var y: float = level.terrain.top_at(x)
+		draw_rect(Rect2(x - 1, y - 14, 2, 14), Color("e8e2d0"))
+		var s := "%dM" % (k * 10)
+		var w := GameState.font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+		draw_rect(Rect2(x - w * 0.5 - 2, y - 24, w + 4, 10), Color("2a2434"))
+		draw_string(GameState.font, Vector2(x - w * 0.5, y - 16), s, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("f2c14e"))
+	if jump_m >= 0.0:
+		var jx := lip + jump_m * PX_PER_M
+		var jy: float = level.terrain.top_at(jx)
+		draw_rect(Rect2(jx - 1, jy - 10, 2, 10), Color("ff5a4a"))
+
+
 ## GAUNTLET props (crates, logs, plates), drawn from the level's prop list.
 func _draw_props(left: float, right: float) -> void:
 	for pr in level.get("props", []):
@@ -422,7 +597,32 @@ func _draw_props(left: float, right: float) -> void:
 func _draw_rider() -> void:
 	var o: Vector2 = sim.world(sim.art)
 	draw_set_transform(o.round(), sim.ang)
+	BikeView.xf = Transform2D(sim.ang, o.round())
 	var wa: float = (sim.wheels[0] as Object).spin
 	var lean := (gas - brake) * (1.0 if not lean_swap else -1.0) * 1.2 if phase == "ride" else 0.0
+	var pz := tricks.pose()
+	BikeView.pose_id = int(pz)
+	BikeView.pose_k = pz - float(int(pz))
 	BikeView.draw_rig(self, Vector2.ZERO, rig, wa, _t, lean, clampf(absf(sim.speed()) / 200.0, 0.2, 1.0))
+	BikeView.pose_id = 0
+	BikeView.pose_k = 0.0
+	BikeView.xf = Transform2D.IDENTITY
 	draw_set_transform(Vector2.ZERO)
+
+
+## The ghost at the same riding time as you (hidden while it's right on top of you).
+func _sync_ghost() -> void:
+	if _ghost_view == null:
+		return
+	var g := Ghost.at(ghost.frames, ride_time)
+	if g.is_empty():
+		_ghost_view.visible = false
+		return
+	var me: Vector2 = sim.world(sim.art)
+	_ghost_view.visible = (g.pos as Vector2).distance_to(me) > 6.0 or phase != "ride"
+	_ghost_view.position = (g.pos as Vector2).round()
+	_ghost_view.rotation = float(g.ang)
+	_ghost_view.wheel_angle = float(g.spin)
+	_ghost_view.pose = float(g.pose)
+	_ghost_view.anim_t = _t
+	_ghost_view.queue_redraw()

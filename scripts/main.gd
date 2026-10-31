@@ -80,6 +80,12 @@ func _ready() -> void:
 		if a == "--drive-physics":
 			add_child(load("res://scripts/dev/drive_check.gd").new())
 			return
+		if a == "--drive-air":
+			add_child(load("res://scripts/dev/drive_air.gd").new())
+			return
+		if a == "--event-check":
+			add_child(load("res://scripts/dev/event_check.gd").new())
+			return
 		if a == "--nav-test":
 			var nt = load("res://scripts/dev/nav_test.gd").new()
 			nt.main = self

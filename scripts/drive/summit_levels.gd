@@ -75,8 +75,10 @@ static func _noise(x: float, seed: float) -> float:
 
 ## Build level i: {"terrain", "surface" (drawn ground line), "bridges", "gaps",
 ## "coins", "fuel", "start", "finish_x", "length_m", meta...}.
-static func build(i: int) -> Dictionary:
-	var m := meta(i)
+## (meta_override: a climb made to order, for events; i still picks the seeds and how
+## many walls and ramps.)
+static func build(i: int, meta_override: Dictionary = {}) -> Dictionary:
+	var m := meta_override if not meta_override.is_empty() else meta(i)
 	var seed := float(i) * 7.31 + 3.0
 	var length := float(m.m) * PX_PER_M
 	var rng := RandomNumberGenerator.new()
@@ -101,7 +103,15 @@ static func build(i: int) -> Dictionary:
 	# Hold gas up one and the front keeps coming up until you're over backwards; ease
 	# off and let the momentum carry you. They're why holding gas only gets you to the
 	# top of the first climb.
-	var walls := _walls(i, length, feats)
+	# (An event's climb can say how hard it is: walls and ramps as for that climb.)
+	var di := int(m.get("difficulty", i))
+	var walls := _walls(di, length, feats)
+	# Jump ramps (from climb 2): a short steep kicker with the ground falling away after
+	# it, for air: flips and tricks (tricks.gd). They go in the room the walls leave, and
+	# are built the same way (the ground's steps in a window), so walls and ramps are one
+	# list for the ground below.
+	var ramps := _ramps(di, length, feats, walls)
+	var shapes: Array = walls + ramps
 	# 1. The natural ground: a climb with hills on it, slopes kept within limits. A wall
 	# takes over the ground in its window (flat run-in, the straight wall, a flat shelf on
 	# top); after it the hills carry on from the shelf's height (off), so a wall is
@@ -137,8 +147,8 @@ static func build(i: int) -> Dictionary:
 		elif x >= length - 120.0:
 			target = y  # summit plateau
 		var dy := clampf(target - y, -up_max * STEP, down_max * STEP)
-		for wi in walls.size():
-			var wl: Array = walls[wi]
+		for wi in shapes.size():
+			var wl: Array = shapes[wi]
 			if x >= float(wl[0]) and x < float(wl[5]):
 				dy = 0.0
 				var kk := int(roundf((x - float(wl[1])) / STEP))
@@ -147,7 +157,7 @@ static func build(i: int) -> Dictionary:
 		if x <= 240.0:
 			dy = 0.0
 		y += dy
-		for wl in walls:
+		for wl in shapes:
 			if x >= float(wl[0]) and x < float(wl[5]):
 				off = y - natural
 		pts.append(Vector2(x, y))
@@ -266,6 +276,10 @@ static func build(i: int) -> Dictionary:
 		for wl in walls:
 			if at > float(wl[1]) - 60.0 and at < float(wl[5]):
 				at = float(wl[1]) + float(wl[2]) + WALL_SHELF * 0.5
+		# (or a jump ramp: well after its landing, so you've got the bike back first)
+		for rp in ramps:
+			if at > float(rp[1]) - 60.0 and at < float(rp[5]) + 200.0:
+				at = float(rp[5]) + 240.0
 		fuel.append(Vector2(at, _surface_y(t, at) - 8.0))
 		fx += float(m.fuel) * PX_PER_M
 	var coins := []
@@ -286,18 +300,33 @@ static func build(i: int) -> Dictionary:
 				continue
 			coins.append([Vector2(px, sy - 9.0), 25 if big else 5])
 		cx += rng.randf_range(260.0, 420.0)
+	# A few coins in the air off each jump ramp's lip, along about where a bike at speed
+	# flies (a bonus for taking it flat out).
+	for rp in ramps:
+		var lip := Vector2(float(rp[1]) + RAMP_UP * STEP, _surface_y(t, float(rp[1]) + RAMP_UP * STEP - 1.0))
+		if lip.y == INF:
+			continue
+		for q in 3:
+			var tt := 0.12 + 0.12 * float(q)
+			coins.append([lip + Vector2(130.0 * tt, -85.0 * tt + 300.0 * tt * tt - 12.0), 5])
 	# How-to signs: the first wall on climb 2, the first kicker gap.
 	var tips := []
 	if i == 1 and not walls.is_empty():
 		tips.append([float(walls[0][0]), "STEEP! EASE OFF THE GAS OR YOU FLIP"])
 	if not gaps.is_empty() and i == 4:
 		tips.append([float(gaps[0][0]) - 300.0, "JUMP! IN THE AIR, GAS TIPS YOU BACK"])
+	if i == 1 and not ramps.is_empty():
+		tips.append([float(ramps[0][0]), "RAMP! TAP GAS TWICE IN THE AIR: NO-HANDER"])
+	if i == 2 and not ramps.is_empty():
+		tips.append([float(ramps[0][0]), "IN THE AIR: TAP GAS THEN BRAKE FOR A HEEL CLICKER"])
+	tips.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
 	return {
 		"tips": tips,
 		"id": m.id, "name": m.name, "theme": m.theme, "time": m.time, "weather": "clear",
 		"terrain": t, "ground": pts, "bridges": bridges, "gaps": gaps,
 		"coins": coins, "fuel": fuel, "start": Vector2(0, 0), "finish_x": length,
 		"length_m": float(m.m), "kill_y": 2000.0, "mode": "summit",
+		"ramps": ramps.map(func(rp): return float(rp[1]) + RAMP_UP * STEP),
 	}
 
 
@@ -371,6 +400,64 @@ static func _walls(i: int, length: float, feats: Array) -> Array:
 		for q in c:
 			var x0 := a0 + gap * float(q + 1) + w * float(q)
 			out.append([x0, x0 + WALL_RUN_IN, run, rise, deg, x0 + w, seq])
+	out.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
+	return out
+
+
+## Jump ramps for climb i, in the same form as _walls (the step list rises then drops):
+## a flat run-in, RAMP_UP steps up to about 34 degrees (25 px), then the ground falls
+## away down a 32-degree landing slope, 152 px in all over 256: long enough that a fully
+## upgraded sportbike taking it flat out still comes down on the slope (on a 92 px one
+## the fast bikes flew past the bottom and crashed), then 80 px of flat before the hill
+## carries on (straight into an uphill, the bottom was a V that threw the unicycles). A bike at speed is in the air
+## about half a second, long enough for a trick. One on climbs 2-4, two on 5-8, three
+## after; none on the first (holding gas there should still get you up). Placed in what
+## the walls leave of the stretches clear of bridges and gaps.
+const RAMP_RUN_IN := 160.0
+const RAMP_UP := 3
+const RAMP_SEQ := [5.0, 9.0, 11.0, -14.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0,
+	-10.0, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+static func _ramps(i: int, length: float, feats: Array, walls: Array) -> Array:
+	if i == 0:
+		return []
+	var n := 1 if i < 4 else (2 if i < 8 else 3)
+	var run := float(RAMP_SEQ.size()) * STEP
+	var w := RAMP_RUN_IN + run + 32.0
+	var blocked := []
+	for f in feats:
+		blocked.append([float(f[0]) - 300.0, float(f[0]) + 500.0])
+	for wl in walls:
+		blocked.append([float(wl[0]) - 150.0, float(wl[5]) + 150.0])
+	blocked.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
+	var free := []
+	var a := maxf(length * 0.1, 900.0)
+	var end := length * 0.9
+	for b in blocked:
+		if float(b[0]) > a:
+			free.append([a, minf(float(b[0]), end)])
+		a = maxf(a, float(b[1]))
+	if end > a:
+		free.append([a, end])
+	free = free.filter(func(f): return float(f[1]) - float(f[0]) > w + 120.0)
+	# The biggest stretches first, one in the middle of each, then a second at the far
+	# third of a long one.
+	free.sort_custom(func(p, q): return float(p[1]) - float(p[0]) > float(q[1]) - float(q[0]))
+	var cands := []
+	for f in free:
+		cands.append((float(f[0]) + float(f[1])) * 0.5 - w * 0.5)
+	for f in free:
+		if float(f[1]) - float(f[0]) > 2.0 * w + 400.0:
+			cands.append(float(f[0]) + (float(f[1]) - float(f[0])) * 0.75 - w * 0.5)
+	var out := []
+	for x0 in cands:
+		if out.size() >= n:
+			break
+		var clash := false
+		for o in out:
+			if absf(float(o[0]) - float(x0)) < w + 200.0:
+				clash = true
+		if not clash:
+			out.append([float(x0), float(x0) + RAMP_RUN_IN, run, 25.0, 34.0, float(x0) + w, RAMP_SEQ])
 	out.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
 	return out
 

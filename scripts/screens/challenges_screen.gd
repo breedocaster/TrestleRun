@@ -1,5 +1,5 @@
-## CHALLENGES: the season strip, then a card each for the daily ride, today's missions,
-## endless and the weekly league (with its table). A week that's ended is settled here
+## CHALLENGES: the season strip, then a card each for the event (events.gd), the daily
+## ride, today's missions, endless and the weekly league (with its table). A week that's ended is settled here
 ## the first time you look in (your place, the reward, up or down a division).
 extends Control
 
@@ -12,6 +12,7 @@ const Kit := preload("res://scripts/ui/kit.gd")
 const UITheme := preload("res://scripts/ui/ui_theme.gd")
 const Widgets := preload("res://scripts/ui/widgets.gd")
 const BikeView := preload("res://scripts/game/bike_view.gd")
+const Events := preload("res://scripts/drive/events.gd")
 
 const CARD_W := 96
 
@@ -68,6 +69,7 @@ func _exit_tree() -> void:
 func _build() -> void:
 	for c in _row.get_children():
 		c.queue_free()
+	_row.add_child(_event_card())
 	_row.add_child(_daily_card())
 	_row.add_child(_missions_card())
 	_row.add_child(_endless_card())
@@ -115,6 +117,32 @@ func _season_strip() -> Control:
 	h.add_child(b)
 	panel.add_child(h)
 	return panel
+
+
+func _event_card() -> Control:
+	var ev := Events.current()
+	var kind: Dictionary = Events.KINDS[ev.kind]
+	var pv: Array = _panel("HOLIDAY EVENT" if bool(ev.holiday) else "EVENT")
+	var v: VBoxContainer = pv[1]
+	v.add_child(_wrap(String(ev.name), UITheme.CREAM))
+	var th := Widgets.LevelThumb.new(int(ev.theme), false, String(ev.time), "clear")
+	th.custom_minimum_size = Vector2(CARD_W, 32)
+	v.add_child(th)
+	v.add_child(_wrap(String(kind.name), UITheme.DIM))
+	var rec := Events.record(ev)
+	var tier := Events.tier_of(ev, float(rec.best)) if rec.best != null else 0
+	var have := [tier >= 1, tier >= 2, tier >= 3]
+	v.add_child(Widgets.MedalRow.new(have, [false, false, false], 0.0, 0, true))
+	v.add_child(_wrap("BEST " + Events.fmt(ev, float(rec.best)) if rec.best != null else "NOT RIDDEN", UITheme.GOLD if rec.best != null else UITheme.DIM))
+	var t := Events.tiers(ev)
+	if tier < 3 and t.size() == 3:
+		v.add_child(_wrap("NEXT: " + Events.fmt(ev, float(t[tier])), UITheme.DIM))
+	v.add_child(_wrap("%d DAY%s LEFT" % [int(ev.days_left), "" if int(ev.days_left) == 1 else "S"], UITheme.DIM))
+	v.add_child(Kit.spacer(false))
+	var b := Kit.button("RIDE", 0, 24)
+	b.pressed.connect(func(): navigate.emit("drive", "event"))
+	v.add_child(b)
+	return pv[0]
 
 
 func _daily_card() -> Control:

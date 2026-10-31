@@ -34,6 +34,7 @@ static func fell(level: Dictionary, s) -> bool:
 static func start_sim(level: Dictionary, bike: String, x: float, up := {}, lean_k := 1.0):
 	var t = level.terrain
 	var s = Vehicles.build(bike, t, up, String(level.get("mode", "summit")))
+	Vehicles.apply_mods(s, level.get("mods", {}))
 	s.lean_ground *= lean_k
 	var a := atan2(t.top_at(x + 8.0) - t.top_at(x - 8.0), 16.0)
 	s.place(Vector2(x, t.top_at(x)), a)

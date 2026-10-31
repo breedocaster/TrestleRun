@@ -48,6 +48,11 @@ var front_brake := 0.55     # the front brake's share of brake_t (vehicles.gd)
 var reverse_w := 14.0       # reverse top spin
 var lean_ground := 260.0    # rider lean torque on the ground
 var lean_air := 620.0       # ...and in the air
+## Mid-trick (drive_world.gd, tricks.gd) the rider is off the seat or the pegs and can't
+## steer the bike in the air: no lean, no balancing. It turns on with what it had.
+var air_lock := false
+## Unicycles: braking torque as a multiple of the drive torque.
+const UNI_BRAKE_K := 1.8
 var air_damp := 0.0
 var grip := 1.1             # tire friction coefficient
 var hull_grip := 0.55
@@ -171,6 +176,7 @@ func place(ground: Vector2, a := 0.0) -> void:
 	_gas_was = 0.0
 	_hop_cd = 0.0
 	_over_t = 0.0
+	air_lock = false
 
 
 func _vel_at(r: Vector2) -> Vector2:
@@ -279,7 +285,12 @@ func _substep() -> void:
 			target -= signf(v) * minf(over * 0.006, 0.3)
 		if any_ground:
 			var want := balance_p * (ang - target) + balance_d * angvel
-			var tq := clampf(want, -torque, torque)
+			# Braking (torque against the wheel's spin) can go past the motor's drive
+			# torque, as a real wheel's regenerative braking does: without it a long steep
+			# downhill (a SUMMIT jump ramp's landing) ran away with the wheel until the
+			# rider fell off the back.
+			var lim := torque * (UNI_BRAKE_K if want * w.omega < 0.0 else 1.0)
+			var tq := clampf(want, -lim, lim)
 			w.omega += tq * H / w.iw
 			angvel -= tq * H / inertia
 			# Overpower (SUMMIT): asking the motor for more than 85% of what it has, under
@@ -294,7 +305,7 @@ func _substep() -> void:
 						crashed = true
 				else:
 					_over_t = maxf(0.0, _over_t - H * 0.5)
-		else:
+		elif not air_lock:
 			# In the air the wheel coasts and the rider holds the board level with body
 			# English (gas / brake still tip it, like a bike).
 			var ta := clampf(0.5 * balance_p * (ang - (gas - brake) * 0.08) + balance_d * angvel, -lean_air, lean_air)
@@ -348,7 +359,7 @@ func _substep() -> void:
 					tq = clampf(hold_p * (ang - (ground_ang + hold_down * -lean_in)) + hold_d * angvel, -2.0 * lean_ground, 2.0 * lean_ground)
 				angvel -= tq * H / inertia
 		else:
-			var lt := lean_ground if any_ground else lean_air
+			var lt := lean_ground if any_ground else (0.0 if air_lock else lean_air)
 			if any_ground and wheelie_ease > 0.0 and lean_in > 0.0 and ground_ang - ang > wheelie_ease:
 				lt = 0.0   # (and the rider stops leaning back)
 			angvel -= lean_in * lt * H / inertia

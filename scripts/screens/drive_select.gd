@@ -19,11 +19,14 @@ const BLURB := {
 	"summit": "HILL CLIMBS ON ONE TANK. FULL GAS UP A STEEP HILL FLIPS YOU: EASE OFF. IN THE AIR, GAS TIPS YOU BACK, BRAKE FORWARD.",
 	"gauntlet": "OBSTACLES AGAINST THE CLOCK. GAS LIFTS THE FRONT, BRAKE DIPS IT. BRAKE THEN GAS QUICKLY TO HOP. EVERY CRASH IS A FAULT.",
 }
+const GHOST_NAMES := {"best": "GHOST: BEST", "gold": "GHOST: GOLD", "off": "GHOST: OFF"}
 const UPGRADE_NAMES := {"engine": "ENGINE", "suspension": "SUSPENSION", "tires": "TIRES", "tank": "TANK"}
 const UPGRADE_NAMES_E := {"engine": "MOTOR", "suspension": "SUSPENSION", "tires": "TIRES", "tank": "BATTERY"}
 
 var mode := "summit"
 var _open_shop := false
+var _ghost_btn: Button
+var _bottom: Control
 var _row: HBoxContainer
 var _scroll: ScrollContainer
 var _shop: Control
@@ -51,7 +54,22 @@ func _ready() -> void:
 	add_child(shade)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 6)
-	col.add_child(Kit.top_bar(NAMES[mode], func(): navigate.emit("title", "")))
+	var bar := Kit.top_bar(NAMES[mode], func(): navigate.emit("title", ""))
+	# Which ghost rides with you: your best run (the gold line until you have one), the
+	# level checker's gold line, or none.
+	var gb := Kit.button(GHOST_NAMES[Progress.ghost_mode()], 92, 22)
+	gb.pressed.connect(func():
+		var order := ["best", "gold", "off"]
+		var nxt: String = order[(order.find(Progress.ghost_mode()) + 1) % order.size()]
+		Progress.set_ghost_mode(nxt)
+		gb.text = GHOST_NAMES[nxt]
+		AudioDirector.play("toggle"))
+	bar.add_child(gb)
+	# Beside BACK: on a pad, up from GARAGE should reach the cards' RIDE, not this
+	# (nav_input.gd picks the nearest button in line, and on the right it was in line).
+	bar.move_child(gb, 1)
+	_ghost_btn = gb
+	col.add_child(bar)
 	var blurb := Kit.label(BLURB[mode], 8, UITheme.DIM)
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD
 	col.add_child(blurb)
@@ -66,7 +84,8 @@ func _ready() -> void:
 	center.add_child(_row)
 	_scroll.add_child(center)
 	col.add_child(_scroll)
-	col.add_child(_bottom_bar())
+	_bottom = _bottom_bar()
+	col.add_child(_bottom)
 	add_child(Kit.full_rect(Kit.margin(col, 8)))
 	_build_cards()
 	_scroll_to_current.call_deferred()
@@ -108,6 +127,7 @@ func _scroll_to_current() -> void:
 			return
 
 
+
 func _build_cards() -> void:
 	for c in _row.get_children():
 		c.queue_free()
@@ -130,7 +150,12 @@ func _card(i: int, meta: Dictionary) -> Control:
 	tl.custom_minimum_size = Vector2(92, 20)
 	v.add_child(tl)
 	v.add_child(ProfileThumb.new(mode, i, int(meta.theme), String(meta.time), not open))
-	v.add_child(Widgets.MedalRow.new(rec.medals, [false, false, false], 0.0, 0, true))
+	var mr := HBoxContainer.new()
+	mr.add_theme_constant_override("separation", 2)
+	mr.alignment = BoxContainer.ALIGNMENT_CENTER
+	mr.add_child(Widgets.MedalRow.new(rec.medals, [false, false, false], 0.0, 0, true))
+	mr.add_child(Widgets.StarRow.new(rec.obj))
+	v.add_child(mr)
 	var info := ""
 	if mode == "summit":
 		info = "%d M" % int(meta.m)
