@@ -3,7 +3,8 @@
     python3 tools/audio/build.py <kenney+blanket source dir> [--only=engines,sfx,ambience,music] [--track=a,b]
 
 --only: rebuild just those groups (the manifest keeps the rest). --track: with music,
-just those loops.
+just those loops. Files brought in from a DAW with import_audio.py are marked "imported"
+in the manifest and are never overwritten.
 
 Sources (fetched with git, licenses verified):
   KenneyNL/Starter-Kit-* (CC0)        -> impact, land, break, UI clicks
@@ -35,6 +36,10 @@ OUT = os.path.join(ROOT, "assets", "audio")
 
 
 def save(rel, x, q=4, loop=False, meta=None, manifest=None, rate=None):
+    if manifest.get(rel, {}).get("imported"):
+        # Brought in from a DAW with import_audio.py: never overwrite it.
+        print(f"  {rel:34s} kept (imported from {manifest[rel].get('source', 'a DAW')})")
+        return
     path = os.path.join(OUT, rel)
     write_ogg(path, x, q, rate)
     entry = {"seconds": round(x.shape[0] / SR, 3), "lufs": round(float(lufs(x)), 1),
@@ -52,7 +57,9 @@ def want(part):
 
 def main():
     mpath = os.path.join(OUT, "manifest.json")
-    manifest = json.load(open(mpath)) if os.path.exists(mpath) and ONLY else {}
+    old = json.load(open(mpath)) if os.path.exists(mpath) else {}
+    # A full rebuild starts over, except for files imported from a DAW (import_audio.py).
+    manifest = old if ONLY else {k: v for k, v in old.items() if v.get("imported")}
     if want("engines"):
         print("engines")
     for name in (engines.ENGINES if want("engines") else []):

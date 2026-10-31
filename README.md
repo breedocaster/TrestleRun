@@ -277,9 +277,19 @@ The title screen runs the far and valley layers too, so rivals race behind the m
 - **Settings:** MUSIC, SOUND and **ENGINE** sliders (0–100%, squared taper so 50% sounds about half as loud). ENGINE is the bike alone, so you can keep the music and chimes up and the engine down. Moving it revs your bike so you can hear the level (on the title screen's SETTINGS; in a paused run the engine is paused too). Music now starts at 50% (existing saves still at the old 100% default move to 50% once; any other level you set is kept) under SETTINGS on the title screen and in the pause menu. Sources and licenses: `CREDITS.md` and the in-game Credits screen.
 - **Mix:** set from Movie Maker captures of real gameplay with each bus soloed: engine and theme near -24 LUFS, chimes -24, nature bed -33, about -19 LUFS overall.
 - **Quality:** music and sound effects are Ogg Vorbis at q5 (about 160 kbps), ambience q4, engines q6, with 8 s engine loops. (Up to 0.8.1 these were squeezed to fit a 30 MB APK cap that's since been dropped: music at q0-q1 with 16-bar trail loops, beds mono at 22 kHz and 10-26 s long, sound effects at q2, 4 s engine loops, and the story areas borrowing Free Ride's music.)
-- **Swapping sounds:** replace any file in `assets/audio/` with one of the same name. Engine files should loop cleanly. To use real engine recordings later, drop in `<bike>_idle.ogg` / `<bike>_cruise.ogg`.
+- **Swapping sounds:** bring a bounce in with `tools/audio/import_audio.py` (see [ART_AND_AUDIO.md](ART_AND_AUDIO.md)). It cuts a seamless loop, matches the old file's loudness and channels, and marks it so `build.py` won't overwrite it. Real engine recordings go in as `<bike>_idle.ogg` / `<bike>_cruise.ogg`.
 
 Debug builds only: tap the wallet on the title screen 5 times for +500 coins to test unlocks.
+
+## Making art and music
+
+[ART_AND_AUDIO.md](ART_AND_AUDIO.md) is the how-to. It covers:
+- every piece of art the game would need by hand, with sizes, frames, the bike wheel points and the colours the game swaps;
+- the store and app icon sizes for Play, Steam and iOS;
+- the tools: Aseprite or the free Pixelorama for art, Pro Tools or the free Ardour for music;
+- bouncing seamless loops and bringing them in with `tools/audio/import_audio.py`.
+
+The art is all drawn in code today, so hand-made art needs a loader per group (not written yet). Audio drops straight in.
 
 ## Run it on Arch
 
@@ -418,7 +428,8 @@ scripts/
   ui/                    theme, HUD, widgets, hint card (live demo in a SubViewport), achievement badges
   audio/audio_director.gd  autoload: buses, engine, ambience, SFX pool, theme
   dev/                   bot, verifier, screenshots, input test, Movie Maker demo (excluded from export)
-tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio
+tools/audio/             python: engine models, SFX, ambience loops, theme; build.py regenerates assets/audio,
+                         import_audio.py brings in DAW bounces (kept by build.py)
 tools/store/play_ids.py  Play Console achievement ids -> scripts/achievements.gd (see ACHIEVEMENTS.md)
 tools/endless/make_table.py  --endless-check output -> scripts/game/endless_table.gd
 store/achievements/      store icons and import files (not part of the game; .gdignore keeps it out of the APK)
